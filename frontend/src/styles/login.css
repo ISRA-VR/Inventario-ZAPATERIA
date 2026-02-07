@@ -1,0 +1,276 @@
+/* Definición de variables */
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+  --bg-panel: #f3f4f6; /* Gris suave para el fondo del panel */
+  --bg-card: #ffffff;   /* Blanco puro para la tarjeta */
+  --border-color: #e5e7eb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+.login-split-screen {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Lado Izquierdo: Imagen */
+.login-brand-side {
+  display: none;
+  width: 50%;
+  background-image: url('https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1200');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.brand-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0.9));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  color: white;
+}
+
+.brand-overlay h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; }
+.brand-overlay p { font-size: 1.1rem; color: #d1d5db; line-height: 1.6; }
+
+/* Lado Derecho: El Panel del Formulario */
+.login-form-side {
+  width: 100%;
+  background-color: var(--bg-panel); /* AQUI EL CAMBIO: Fondo gris */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* --- LA TARJETA (CARD) --- */
+.form-container-pro {
+  width: 100%;
+  max-width: 440px; /* Un poco más ancha para respirar */
+  background-color: var(--bg-card); /* Fondo blanco */
+  padding: 2.5rem; /* Espaciado interno generoso */
+  border-radius: 16px; /* Bordes redondeados modernos */
+  /* Sombra suave y elevada */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.form-header { text-align: center; margin-bottom: 2rem; }
+.form-header h2 { font-size: 1.75rem; color: var(--text-dark); margin: 0 0 0.5rem 0; font-weight: 700; }
+.text-muted { color: var(--text-muted); margin: 0; font-size: 0.95rem; }
+
+/* Inputs y Labels */
+.form-group { margin-bottom: 1.25rem; }
+.form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.5rem; }
+
+.input-pro {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #fff;
+  transition: all 0.2s;
+  color: var(--text-dark);
+}
+
+.input-pro:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); /* Anillo de focus azul suave */
+}
+
+/* Password Toggle */
+.input-group-pro { position: relative; }
+.input-group-pro .input-pro { padding-right: 3rem; }
+.toggle-password-btn {
+  position: absolute; right: 0; top: 0; height: 100%;
+  padding: 0 1rem; background: transparent; border: none;
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center;
+}
+.toggle-password-btn:hover { color: var(--text-dark); }
+.toggle-password-btn svg { width: 20px; height: 20px; }
+
+/* Botón Submit */
+.btn-submit-pro {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  margin-top: 0.5rem;
+}
+.btn-submit-pro:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+.btn-submit-pro:active { transform: translateY(0); }
+
+/* Alertas y Wrappers */
+.error-alert {
+  background-color: #fef2f2; border: 1px solid #fee2e2;
+  color: #991b1b; padding: 0.75rem; border-radius: 8px;
+  font-size: 0.9rem; margin-bottom: 1.5rem; display: flex; align-items: center;
+}
+.error-alert::before { content: "⚠️ "; margin-right: 8px; }
+.captcha-wrapper { margin-bottom: 1.5rem; }
+
+/* --- CAPTCHA INTEGRADO (Si usas el nuevo diseño) --- */
+.captcha-box-math {
+  background-color: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+}
+.captcha-header-math {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 0.8rem;
+  color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+}
+.security-icon { width: 14px; height: 14px; color: var(--primary-color); }
+.captcha-challenge-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+.math-expression {
+  font-family: 'Courier New', monospace; font-size: 1.4rem; font-weight: bold;
+  color: #1e293b; background: white; padding: 4px 12px;
+  border-radius: 6px; border: 1px solid #cbd5e1; display: flex; gap: 6px; align-items: center;
+}
+.math-operator { color: var(--primary-color); }
+.math-question { color: #ef4444; }
+.btn-refresh-mini {
+  background: transparent; border: none; color: var(--primary-color);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.btn-refresh-mini svg { width: 14px; height: 14px; }
+.captcha-input-math {
+  width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1;
+  border-radius: 6px; font-size: 0.9rem; text-align: center;
+}
+.captcha-input-math:focus { outline: none; border-color: var(--primary-color); }
+
+/* --- RESPONSIVE --- */
+@media (min-width: 1024px) {
+  .login-brand-side { display: flex; }
+  .login-form-side { width: 50%; }
+}
+
+@media (max-width: 640px) {
+  /* En móviles, quitamos un poco de padding para aprovechar espacio */
+  .form-container-pro { padding: 1.5rem; box-shadow: none; background: transparent; }
+  .login-form-side { background-color: white; } /* Fondo blanco simple en móvil */
+}
+/* --- ESTILOS CAPTCHA MATEMÁTICO --- */
+
+.captcha-box-math {
+  background-color: #f8fafc; /* Gris muy claro (Slate 50) */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  /* Sombra interna sutil */
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+
+.captcha-header-math {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.security-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-color);
+}
+
+/* Fila donde están los números y el botón */
+.captcha-challenge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Estilo de los números */
+.math-expression {
+  font-family: 'Courier New', monospace; /* Fuente monoespaciada para estilo técnico */
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1e293b;
+  background: white;
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.math-operator {
+  color: var(--primary-color);
+}
+
+.math-question {
+  color: #ef4444; /* Rojo para indicar que falta algo */
+}
+
+/* Botón "Nuevo" pequeño y elegante */
+.btn-refresh-mini {
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.btn-refresh-mini:hover {
+  background-color: #eff6ff;
+}
+
+.btn-refresh-mini svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Input específico para el resultado */
+.captcha-input-math {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.captcha-input-math:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
