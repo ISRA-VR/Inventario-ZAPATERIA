@@ -1,0 +1,319 @@
+/* =========================================
+   1. VARIABLES Y CONFIGURACIÓN BASE
+   ========================================= */
+:root {
+  --primary: #0E65C6;
+  --bg-sidebar: #082F5A; /* Slate 900 - Fondo oscuro profesional */
+  --text-sidebar: #F8FAFC; /* Gris claro para texto inactivo */
+  --text-white: #ffffff;
+  --hover-bg: rgba(255, 255, 255, 0.1);
+  --transition-speed: 0.3s;
+}
+
+/* =========================================
+   2. CONTENEDOR PRINCIPAL (SIDEBAR)
+   ========================================= */
+.sidebar {
+  height: 100vh;
+  width: 260px; /* Ancho expandido */
+  background-color: var(--bg-sidebar);
+  color: var(--text-sidebar);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition-speed) ease;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  overflow: hidden; /* Evita que el texto se rompa al colapsar */
+}
+
+/* Estado Colapsado del contenedor */
+.sidebar.collapsed {
+  width: 80px;
+}
+
+/* =========================================
+   3. HEADER (LOGO Y MARCA)
+   ========================================= */
+.sidebar-header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.logo-circle {
+  min-width: 40px;
+  height: 40px;
+  background-color: var(--primary);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  margin-right: 12px;
+  box-shadow: 0 0 10px rgba(14, 101, 198, 0.5);
+  transition: margin 0.3s;
+}
+
+.brand-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-white);
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+/* Ajuste Header Colapsado */
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 0;
+}
+.sidebar.collapsed .logo-circle {
+  margin-right: 0;
+}
+
+/* =========================================
+   4. NAVEGACIÓN (VERSIÓN BLINDADA)
+   ========================================= */
+.sidebar-nav {
+  flex: 1; /* Ocupa el espacio disponible */
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; 
+  overflow-y: auto; /* Scroll si es necesario */
+}
+
+/* Scrollbar estilizado (Invisible pero funcional) */
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+.nav-link {
+  /* Alineación forzada horizontal */
+  display: flex !important;
+  flex-direction: row !important; 
+  align-items: center !important;
+  justify-content: flex-start !important;
+  
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--text-sidebar);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  
+  white-space: nowrap; 
+  overflow: hidden;
+}
+
+/* Contenedor del Icono */
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px; /* Ancho fijo para alinear textos verticalmente */
+  height: 24px;
+  margin-right: 12px;
+}
+
+/* Texto del enlace */
+.nav-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1;
+}
+
+/* --- Estados Hover y Active --- */
+.nav-link:hover {
+  background-color: var(--hover-bg);
+  color: white;
+  padding-left: 2px; /* Efecto de movimiento */
+}
+
+.nav-link.active {
+  background-color: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+/* Ajuste Navegación Colapsada */
+.sidebar.collapsed .nav-link {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+}
+.sidebar.collapsed .nav-icon {
+  margin-right: 0 !important;
+}
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+/* =========================================
+   5. FOOTER (PERFIL Y BOTONES)
+   ========================================= */
+.sidebar-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: rgba(0,0,0,0.2);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.user-avatar {
+  min-width: 40px;
+  height: 40px;
+  background-color: #334155;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary);
+  margin-right: 12px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.user-name {
+  color: var(--text-white);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-email {
+  color: var(--text-sidebar);
+  font-size: 0.75rem;
+}
+
+/* Botones Logout y Colapsar */
+.logout-btn, .collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-sidebar);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn:hover { color: #ef4444; }
+
+.collapse-btn {
+  background-color: var(--hover-bg);
+  padding: 8px;
+  border-radius: 6px;
+  width: 100%;
+}
+.collapse-btn:hover { background-color: var(--primary); color: white; }
+
+/* Ajuste Footer Colapsado */
+.sidebar.collapsed .user-profile { justify-content: center; }
+.sidebar.collapsed .user-avatar { margin-right: 0; }
+
+/* --- MODAL DE CONFIRMACIÓN --- */
+
+.modal-overlay {
+  position: fixed; /* Fijo respecto a la pantalla */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6); /* Fondo negro semitransparente */
+  backdrop-filter: blur(4px); /* Efecto borroso elegante */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Por encima de TODO */
+}
+
+.modal-box {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-icon {
+  background-color: #fef3c7; /* Amarillo muy suave */
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px auto;
+}
+
+.modal-box h3 {
+  margin: 0 0 10px 0;
+  color: #1f2937;
+  font-size: 1.2rem;
+}
+
+.modal-box p {
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-cancel, .btn-confirm {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-confirm {
+  background-color: #ef4444; /* Rojo peligro */
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #dc2626;
+}
