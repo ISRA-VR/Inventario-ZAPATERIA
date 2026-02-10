@@ -63,9 +63,13 @@
 - Terminal 2 (frontend):
   ```bash
   cd frontend
+  npm install lucide-react react-router-dom
   npm install
   npm run dev
   ```
+  - lucide-react es una libreria para los iconos,
+  - (Opcional pero recomendado) Verificar que se instaló:
+  - Abre el archivo frontend/package.json y busca en "dependencies". Deberían aparecer ahí.
 
 ## Stack
 - Backend: Node.js, Express 5, mysql2, bcryptjs, jsonwebtoken, dotenv, cors
