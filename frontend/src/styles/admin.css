@@ -11,7 +11,23 @@
 }
 
 /* =========================================
-   2. CONTENEDOR PRINCIPAL (SIDEBAR)
+   2. LAYOUT PRINCIPAL
+   ========================================= */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.admin-main {
+  flex-grow: 1;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+
+/* =========================================
+   3. CONTENEDOR PRINCIPAL (SIDEBAR)
    ========================================= */
 .sidebar {
   height: 100vh;
@@ -35,7 +51,7 @@
 }
 
 /* =========================================
-   3. HEADER (LOGO Y MARCA)
+   4. HEADER (LOGO Y MARCA)
    ========================================= */
 .sidebar-header {
   height: 80px;
@@ -80,7 +96,7 @@
 }
 
 /* =========================================
-   4. NAVEGACIÓN (VERSIÓN BLINDADA)
+   5. NAVEGACIÓN (VERSIÓN BLINDADA)
    ========================================= */
 .sidebar-nav {
   flex: 1; /* Ocupa el espacio disponible */
