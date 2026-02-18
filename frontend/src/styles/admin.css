@@ -1,6 +1,3 @@
-/* =========================================
-   1. VARIABLES Y CONFIGURACIÓN BASE
-   ========================================= */
 :root {
   --primary: #0E65C6;
   --bg-sidebar: #082F5A; /* Slate 900 - Fondo oscuro profesional */
@@ -10,9 +7,7 @@
   --transition-speed: 0.3s;
 }
 
-/* =========================================
-   2. LAYOUT PRINCIPAL
-   ========================================= */
+/* LAYOUT PRINCIPAL */
 .admin-layout {
   display: flex;
   height: 100vh;
@@ -26,12 +21,10 @@
 }
 
 
-/* =========================================
-   3. CONTENEDOR PRINCIPAL (SIDEBAR)
-   ========================================= */
+/* CONTENEDOR PRINCIPAL (SIDEBAR) */
 .sidebar {
   height: 100vh;
-  width: 260px; /* Ancho expandido */
+  width: 260px; 
   background-color: var(--bg-sidebar);
   color: var(--text-sidebar);
   display: flex;
@@ -42,17 +35,14 @@
   top: 0;
   left: 0;
   z-index: 100;
-  overflow: hidden; /* Evita que el texto se rompa al colapsar */
+  overflow: hidden;
 }
 
-/* Estado Colapsado del contenedor */
 .sidebar.collapsed {
   width: 80px;
 }
 
-/* =========================================
-   4. HEADER (LOGO Y MARCA)
-   ========================================= */
+/* HEADER (LOGO Y MARCA) */
 .sidebar-header {
   height: 80px;
   display: flex;
@@ -95,11 +85,9 @@
   margin-right: 0;
 }
 
-/* =========================================
-   5. NAVEGACIÓN (VERSIÓN BLINDADA)
-   ========================================= */
+/* NAVEGACIÓN (VERSIÓN BLINDADA) */
 .sidebar-nav {
-  flex: 1; /* Ocupa el espacio disponible */
+  flex: 1; 
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -134,7 +122,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px; /* Ancho fijo para alinear textos verticalmente */
+  min-width: 30px;
   height: 24px;
   margin-right: 12px;
 }
@@ -172,9 +160,7 @@
   display: none;
 }
 
-/* =========================================
-   5. FOOTER (PERFIL Y BOTONES)
-   ========================================= */
+/* FOOTER (PERFIL Y BOTONES) */
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 20px;
@@ -247,19 +233,18 @@
 .sidebar.collapsed .user-avatar { margin-right: 0; }
 
 /* --- MODAL DE CONFIRMACIÓN --- */
-
 .modal-overlay {
-  position: fixed; /* Fijo respecto a la pantalla */
+  position: fixed; 
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6); /* Fondo negro semitransparente */
-  backdrop-filter: blur(4px); /* Efecto borroso elegante */
+  background-color: rgba(0, 0, 0, 0.6); 
+  backdrop-filter: blur(4px); 
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Por encima de TODO */
+  z-index: 1000; 
 }
 
 .modal-box {
@@ -278,7 +263,7 @@
 }
 
 .modal-icon {
-  background-color: #fef3c7; /* Amarillo muy suave */
+  background-color: #fef3c7; 
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -326,7 +311,7 @@
 }
 
 .btn-confirm {
-  background-color: #ef4444; /* Rojo peligro */
+  background-color: #ef4444; 
   color: white;
 }
 

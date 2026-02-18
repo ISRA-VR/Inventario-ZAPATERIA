@@ -217,7 +217,7 @@ tr:hover {
     padding: 0.6rem;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    box-sizing: border-box; /* Importante para que el padding no rompa el ancho */
+    box-sizing: border-box;
 }
 
 .password-input-container {

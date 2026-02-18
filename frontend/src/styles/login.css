@@ -50,7 +50,7 @@ body {
 /* Lado Derecho: El Panel del Formulario */
 .login-form-side {
   width: 100%;
-  background-color: var(--bg-panel); /* AQUI EL CAMBIO: Fondo gris */
+  background-color: var(--bg-panel); 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,11 +60,10 @@ body {
 /* --- LA TARJETA (CARD) --- */
 .form-container-pro {
   width: 100%;
-  max-width: 440px; /* Un poco más ancha para respirar */
-  background-color: var(--bg-card); /* Fondo blanco */
-  padding: 2.5rem; /* Espaciado interno generoso */
-  border-radius: 16px; /* Bordes redondeados modernos */
-  /* Sombra suave y elevada */
+  max-width: 440px; 
+  background-color: var(--bg-card); 
+  padding: 2.5rem;
+  border-radius: 16px; 
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -172,15 +171,14 @@ body {
   .form-container-pro { padding: 1.5rem; box-shadow: none; background: transparent; }
   .login-form-side { background-color: white; } /* Fondo blanco simple en móvil */
 }
-/* --- ESTILOS CAPTCHA MATEMÁTICO --- */
 
+/* --- ESTILOS CAPTCHA MATEMÁTICO --- */
 .captcha-box-math {
-  background-color: #f8fafc; /* Gris muy claro (Slate 50) */
+  background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1.2rem;
   margin-bottom: 1.5rem;
-  /* Sombra interna sutil */
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
 }
 
