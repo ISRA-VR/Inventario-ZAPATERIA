@@ -1,17 +1,23 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useContext } from "react";
 
+// 1. Creamos el contexto
 export const AuthContext = createContext();
 
+// 2. Definimos el proveedor
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user"))
-  );
+  // Inicializamos el estado con lo que haya en localStorage
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
+  // Función para iniciar sesión
   const login = (data) => {
     setUser(data);
     localStorage.setItem("user", JSON.stringify(data));
   };
 
+  // Función para cerrar sesión
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -22,4 +28,13 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// 3. ¡EL PILÓN! Custom Hook para usar el contexto más fácil
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth debe usarse dentro de un AuthProvider");
+  }
+  return context;
 };

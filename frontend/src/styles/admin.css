@@ -7,17 +7,21 @@
   --transition-speed: 0.3s;
 }
 
-/* LAYOUT PRINCIPAL */
 .admin-layout {
-  display: flex;
-  height: 100vh;
-  background-color: #f9f9f9;
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: white; /* Esto mata lo rojo de una vez */
 }
 
-.admin-main {
-  flex-grow: 1;
-  overflow-y: auto;
-  height: 100vh;
+.main-content {
+    flex: 1; /* ¡ESTO ES LO MÁS IMPORTANTE! Obliga a lo blanco a comerse todo el espacio */
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
 }
 
 

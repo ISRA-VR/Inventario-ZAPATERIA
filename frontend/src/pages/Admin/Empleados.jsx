@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaEdit, FaTrash } from 'react-icons/fa';
 import { register, getEmpleados, updateEmpleado, deleteEmpleado } from '../../api/auth';
+import { toast } from 'react-toastify';
 import '../../styles/Empleados.css';
 
 const EmpleadosPage = () => {
@@ -19,6 +20,7 @@ const EmpleadosPage = () => {
         confirmPassword: '',
         rol: 'empleado'
     });
+
     const [error, setError] = useState('');
 
     const openModal = () => setModalOpen(true);
@@ -72,6 +74,7 @@ const EmpleadosPage = () => {
             setEmpleados(res.data);
         } catch (error) {
             console.error("Error al obtener empleados:", error);
+            toast.error("No se pudo cargar la lista de empleados"); // Notificación de error
         }
     };
 
@@ -87,14 +90,19 @@ const EmpleadosPage = () => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
+            toast.warning("¡Checa las contraseñas, no coinciden!"); // Aviso preventivo
             return;
         }
         try {
             await register(formData);
+            // 2. ÉXITO AL CREAR
+            toast.success("¡Empleado creado con éxito!");
             closeModal();
             fetchEmpleados();
         } catch (error) {
-            setError(error.response?.data?.message || "Error al crear el empleado");
+            const msg = error.response?.data?.message || "Error al crear el empleado";
+            setError(msg);
+            toast.error(msg); // Error del servidor
         }
     };
 
@@ -102,6 +110,7 @@ const EmpleadosPage = () => {
         e.preventDefault();
         if (formData.password && formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
+            toast.warning("Las nuevas contraseñas no coinciden");
             return;
         }
         try {
@@ -114,20 +123,27 @@ const EmpleadosPage = () => {
                 dataToUpdate.password = formData.password;
             }
             await updateEmpleado(selectedEmpleado.id, dataToUpdate);
+            // 3. ÉXITO AL EDITAR
+            toast.info("¡Datos actualizados correctamente!");
             closeEditModal();
             fetchEmpleados();
         } catch (error) {
-            setError(error.response?.data?.message || "Error al actualizar el empleado");
+            const msg = error.response?.data?.message || "Error al actualizar el empleado";
+            setError(msg);
+            toast.error(msg);
         }
     };
 
     const handleDelete = async () => {
         try {
             await deleteEmpleado(selectedEmpleado.id);
+            // 4. ÉXITO AL ELIMINAR
+            toast.warn("Empleado eliminado del sistema");
             closeDeleteModal();
             fetchEmpleados();
         } catch (error) {
             console.error("Error al eliminar empleado:", error);
+            toast.error("Hubo un fallo al intentar eliminar el empleado");
         }
     };
 

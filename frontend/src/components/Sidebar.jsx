@@ -1,18 +1,22 @@
 import React, { useState, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { 
-  LayoutDashboard, Users, Package, Tags, 
-  ArrowUpRight, ArrowDownLeft, Search, 
-  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle 
+import { useAuth } from "../context/AuthContext";
+
+import {
+  LayoutDashboard, Users, Package, Tags,
+  ArrowUpRight, ArrowDownLeft, Search,
+  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle
 } from 'lucide-react';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showModal, setShowModal] = useState(false); // 1. Estado para el modal
-  
+
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const { user } = useAuth();
 
   // 2. Función que solo ABRE el modal
   const clickCerrarSesion = () => {
@@ -45,7 +49,7 @@ const Sidebar = () => {
   return (
     <>
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-        
+
         {/* HEADER */}
         <div className="sidebar-header">
           <div className="logo-circle">👟</div>
@@ -55,9 +59,9 @@ const Sidebar = () => {
         {/* NAV */}
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
-            <NavLink 
-              key={index} 
-              to={item.path} 
+            <NavLink
+              key={index}
+              to={item.path}
               className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
               title={isCollapsed ? item.label : ""}
             >
@@ -73,23 +77,25 @@ const Sidebar = () => {
             <div className="user-avatar">👤</div>
             {!isCollapsed && (
               <div className="user-info">
-                <span className="user-name">Admin</span>
-                <span className="user-email">admin@zapateria.com</span>
+                {/* Mostramos el nombre real que viene de la BD */}
+                <span className="user-name">{user?.nombre || "Cargando..."}</span>
+                {/* Mostramos el correo real */}
+                <span className="user-email">{user?.email}</span>
               </div>
             )}
-            
+
             {!isCollapsed && (
-              <button 
-                  className="logout-btn" 
-                  style={{marginLeft: 'auto'}}
-                  onClick={clickCerrarSesion} /* Ahora abre el modal */
-                  title="Cerrar sesión"
+              <button
+                className="logout-btn"
+                style={{ marginLeft: 'auto' }}
+                onClick={clickCerrarSesion}
+                title="Cerrar sesión"
               >
-                  <LogOut size={18} />
+                <LogOut size={18} />
               </button>
             )}
           </div>
-          
+
           <button className="collapse-btn" onClick={() => setIsCollapsed(!isCollapsed)}>
             {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>

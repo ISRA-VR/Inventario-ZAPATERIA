@@ -5,8 +5,8 @@ import "../styles/admin.css";
 const AdminLayout = () => {
   return (
     <div className="admin-layout">
-      <Sidebar />
-      <main className="admin-main">
+      <Sidebar /> 
+      <main className="admin-content">
         <Outlet />
       </main>
     </div>
@@ -14,3 +14,4 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
+

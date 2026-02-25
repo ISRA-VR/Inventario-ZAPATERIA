@@ -1,11 +1,17 @@
-/* --- Contenedor Principal --- */
 .empleados-container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #334155;
+    width: 100% !important; /* Que use todo el espacio que le da el layout */
+    max-width: none !important; /* ELIMINA el límite de 1200px o lo que tengas */
+    margin: 0 !important; /* Quita el margin: auto para que no se centre */
+    padding: 2rem; /* Espacio interno para que el texto no toque el borde del monitor */
+    background-color: white;
 }
+
+.empleados-list {
+    width: 100%; /* Asegura que la tabla también se estire */
+}
+
 
 .empleados-container h2 {
     font-size: 1.8rem;
