@@ -52,8 +52,10 @@ const Sidebar = () => {
 
         {/* HEADER */}
         <div className="sidebar-header">
-          <div className="logo-circle">👟</div>
-          {!isCollapsed && <span className="brand-name">Zapatería Brenda</span>}
+          <div className="logo-circle">
+            <img src="/favicon.ico" alt="Logo" className="logo-beni-van-img" height={30} />
+          </div>
+          {!isCollapsed && <span className="brand-name">Beni Van Zapateria</span>}
         </div>
 
         {/* NAV */}

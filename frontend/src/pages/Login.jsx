@@ -38,8 +38,8 @@ export default function Login() {
       
       <div className="login-brand-side">
         <div className="brand-overlay">
-          {/* Aquí se va a poner el logo: <img src="/logo-white.svg" alt="Logo" className="brand-logo" /> */}
-          <h1>Sistema de Gestión de Inventario</h1>
+          <img src="/logo-Beni_Van-sin-fondo.png" alt="Logo" className="brand-logo" />
+          <h1>Control de Inventario</h1>
           <p>Accede a tu panel de control para administrar tus recursos de forma eficiente.</p>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function Login() {
       <div className="login-form-side">
         <div className="form-container-pro">
           <div className="form-header">
-            <h2>Hola de nuevo</h2>
+            <h2>Hola</h2>
             <p className="text-muted">Ingresa tus credenciales para continuar.</p>
           </div>
 
