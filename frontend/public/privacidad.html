@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aviso de Privacidad — Beni Van</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #0E65C6;
+      --secondary: #082F5A;
+      --bg:        #F8FAFC;
+      --white:     #ffffff;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --text:      #1e293b;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      background: var(--secondary);
+      position: relative;
+      overflow: hidden;
+      padding: 56px 0 48px;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: rgba(14, 101, 198, 0.25);
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
+    }
+
+    .header-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(14, 101, 198, 0.3);
+      border: 1px solid rgba(91, 163, 245, 0.3);
+      color: #93c5fd;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 2px;
+      margin-bottom: 20px;
+    }
+
+    .header-badge svg { width: 13px; height: 13px; }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .page-header p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.55);
+      font-weight: 300;
+    }
+
+    /* ── BACK BUTTON ── */
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding: 9px 18px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--secondary);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .btn-back:hover {
+      background: var(--secondary);
+      color: #ffffff;
+      border-color: var(--secondary);
+    }
+
+    .btn-back svg { width: 14px; height: 14px; transition: transform 0.2s; }
+    .btn-back:hover svg { transform: translateX(-3px); }
+
+    /* ── CONTENT ── */
+    .content-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 32px 64px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.2s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+
+    .card-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon svg { width: 17px; height: 17px; color: #fff; }
+
+    .card-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+
+    .card-body {
+      padding: 22px 24px;
+    }
+
+    .card-body p {
+      font-size: 0.875rem;
+      line-height: 1.8;
+      color: #475569;
+      margin-bottom: 14px;
+    }
+
+    .card-body p:last-child { margin-bottom: 0; }
+
+    /* ── LIST ── */
+    .policy-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .policy-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.875rem;
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    .policy-list li::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight-box {
+      background: #eff6ff;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 3px 3px 0;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: var(--secondary);
+      font-weight: 500;
+      line-height: 1.6;
+    }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-footer p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.85rem;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
+        Aviso de Privacidad
+      </div>
+      <h1>Política de Privacidad<br/>y Protección de Datos</h1>
+      <p>Última actualización: enero 2024 · Beni Van Zapatería</p>
+    </div>
+  </header>
+
+  <main class="content-wrap">
+
+    <button class="btn-back" onclick="window.close()" style="padding: 10px; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+        Cerrar
+    </button>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>
+        </div>
+        <h2>¿Qué información recopilamos?</h2>
+      </div>
+      <div class="card-body">
+        <p>En <strong>Beni Van Zapatería</strong>, la seguridad y privacidad de tus datos es una prioridad fundamental. Este sistema de inventario interno recopila únicamente la información estrictamente necesaria para garantizar el control de acceso y la trazabilidad de operaciones.</p>
+        <ul class="policy-list">
+          <li>Nombre completo del empleado o administrador registrado.</li>
+          <li>Correo electrónico corporativo, utilizado como identificador único de acceso.</li>
+          <li>Registro de hora y fecha de inicio de sesión para auditoría interna.</li>
+          <li>Historial de acciones realizadas sobre el inventario (altas, bajas, modificaciones).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+        </div>
+        <h2>Seguridad y confidencialidad</h2>
+      </div>
+      <div class="card-body">
+        <p>Implementamos medidas de seguridad técnicas y organizativas para proteger tu información contra accesos no autorizados, pérdida o alteración.</p>
+        <ul class="policy-list">
+          <li>Las contraseñas son almacenadas con cifrado unidireccional (hashing bcrypt). Nadie puede ver tu contraseña, ni el equipo de administración.</li>
+          <li>La sesión expira automáticamente tras un período de inactividad.</li>
+          <li>El acceso al sistema está restringido por roles: solo ves lo que tu perfil tiene permitido.</li>
+          <li>Las comunicaciones entre tu navegador y el servidor viajan cifradas mediante HTTPS.</li>
+        </ul>
+        <div class="highlight-box">
+          🔒 Nunca compartimos tu información personal con terceros, socios comerciales ni plataformas externas.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>
+        </div>
+        <h2>Tus derechos</h2>
+      </div>
+      <div class="card-body">
+        <p>Como usuario del sistema, tienes derecho a solicitar en cualquier momento la revisión, corrección o eliminación de tus datos personales. Para ejercer estos derechos, comunícate con el administrador del sistema o con el equipo de soporte técnico M.A.Y.I.E a través de <strong>soporte@mayie.com</strong>.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>© 2024 Beni Van Zapatería · Sistema de Control de Inventario</p>
+    <span class="footer-logo">Beni Van</span>
+  </footer>
+
+</body>
+</html>
