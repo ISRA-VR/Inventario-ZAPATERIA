@@ -6,7 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Package, Tags,
   ArrowUpRight, ArrowDownLeft, Search,
-  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle
+  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle,
+  Ruler
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -39,8 +40,7 @@ const Sidebar = () => {
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados' },
     { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos' },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias' },
-    { icon: <ArrowUpRight size={20} />, label: 'Entradas', path: '/admin/entradas' },
-    { icon: <ArrowDownLeft size={20} />, label: 'Salidas', path: '/admin/salidas' },
+    { icon: <Ruler size={20} />, label: 'Tallas y Variantes', path: '/admin/tallaVariante' },
     { icon: <Search size={20} />, label: 'Búsquedas', path: '/admin/busquedas' },
     { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes' },
     { icon: <History size={20} />, label: 'Historial', path: '/admin/historial' },
