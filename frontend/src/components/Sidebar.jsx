@@ -12,39 +12,53 @@ import {
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showModal, setShowModal] = useState(false); // 1. Estado para el modal
+  const [showModal, setShowModal] = useState(false);
 
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
-
   const { user } = useAuth();
 
-  // 2. Función que solo ABRE el modal
   const clickCerrarSesion = () => {
     setShowModal(true);
   };
 
-  // 3. Función que SI cierra la sesión (Confirmar)
   const confirmarCierre = () => {
     logout();
     navigate("/");
   };
 
-  // 4. Función para cancelar (Cerrar modal)
   const cancelarCierre = () => {
     setShowModal(false);
   };
 
-  const menuItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados' },
-    { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos' },
-    { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias' },
-    { icon: <Ruler size={20} />, label: 'Tallas y Variantes', path: '/admin/tallaVariante' },
-    { icon: <Search size={20} />, label: 'Búsquedas', path: '/admin/busquedas' },
-    { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes' },
-    { icon: <History size={20} />, label: 'Historial', path: '/admin/historial' },
+  // Definimos todos los items con una propiedad de 'roles' para filtrar
+  const allMenuItems = [
+    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
+    { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
+    { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos', roles: ['admin'] },
+    { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
+    { icon: <Ruler size={20} />, label: 'Tallas y Variantes', path: '/admin/tallaVariante', roles: ['admin'] },
+    // Estas rutas las ven ambos pero con sus respectivos prefijos si es necesario
+    {
+      icon: <ArrowUpRight size={20} />,
+      label: 'Entradas',
+      path: user?.role === 'admin' ? '/admin/entradas' : '/empleado/entradas',
+      roles: ['admin', 'empleado']
+    },
+    {
+      icon: <ArrowDownLeft size={20} />,
+      label: 'Salidas',
+      path: user?.role === 'admin' ? '/admin/salidas' : '/empleado/salidas',
+      roles: ['admin', 'empleado']
+    },
+    { icon: <Search size={20} />, label: 'Búsquedas', path: user?.role === 'admin' ? '/admin/busquedas' : '/empleado/busquedas', roles: ['admin', 'empleado'] },
+    // Reportes e Historial solo Admin
+    { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes', roles: ['admin'] },
+    { icon: <History size={20} />, label: 'Historial', path: '/admin/historial', roles: ['admin'] },
   ];
+
+  // Filtramos los items basándonos en el rol del usuario logueado
+  const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
 
   return (
     <>
@@ -55,7 +69,7 @@ const Sidebar = () => {
           <div className="logo-circle">
             <img src="/favicon.ico" alt="Logo" className="logo-beni-van-img" height={30} />
           </div>
-          {!isCollapsed && <span className="brand-name">Beni Van Zapateria</span>}
+          {!isCollapsed && <span className="brand-name">Beni Van Zapatería</span>}
         </div>
 
         {/* NAV */}
@@ -79,9 +93,7 @@ const Sidebar = () => {
             <div className="user-avatar">👤</div>
             {!isCollapsed && (
               <div className="user-info">
-                {/* Mostramos el nombre real que viene de la BD */}
                 <span className="user-name">{user?.nombre || "Cargando..."}</span>
-                {/* Mostramos el correo real */}
                 <span className="user-email">{user?.email}</span>
               </div>
             )}
@@ -104,7 +116,7 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* --- EL MODAL (Fuera del aside para que no se corte) --- */}
+      {/* --- MODAL DE CONFIRMACIÓN --- */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-box">
@@ -112,7 +124,7 @@ const Sidebar = () => {
               <AlertTriangle size={40} color="#f59e0b" />
             </div>
             <h3>¿Cerrar sesión?</h3>
-            <p>Estás a punto de salir del sistema.</p>
+            <p>Estás a punto de salir del sistema de inventario.</p>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={cancelarCierre}>Cancelar</button>
               <button className="btn-confirm" onClick={confirmarCierre}>Sí, salir</button>

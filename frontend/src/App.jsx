@@ -15,7 +15,12 @@ import BusquedaPage from "./pages/Admin/busquedas";
 import ReportesPage from "./pages/Admin/reportes";
 import HistorialPage from "./pages/Admin/historial";
 
-import Empleado from "./pages/Empleado";
+/* Rutas para el empleado */
+import EntradasEmpleado from "./pages/Empleado/entrada"; // Capitalizado para seguir buenas prácticas
+import SalidasEmpleado from "./pages/Empleado/salidas";
+import BusquedasEmpleado from "./pages/Empleado/busquedas";
+
+import EmpleadoLayout from "./pages/Empleado"; // Asumiendo que funciona como Layout
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -23,7 +28,7 @@ import { AuthProvider } from "./context/AuthContext";
 export default function App() {
   return (
     <AuthProvider>
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={4000}
         hideProgressBar={false}
@@ -47,6 +52,7 @@ export default function App() {
             }
           />
 
+          {/* Rutas Protegidas: Administrador */}
           <Route
             path="/admin"
             element={
@@ -60,6 +66,10 @@ export default function App() {
             <Route path="empleados" element={<EmpleadosPage />} />
             <Route path="categorias" element={<CategoriasPage />} />
             <Route path="tallaVariante" element={<EntradasPage />} />
+
+            <Route path="entradas" element={<EntradasEmpleado />} />
+            <Route path="salidas" element={<SalidasEmpleado />} />
+
             <Route path="busquedas" element={<BusquedaPage />} />
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="historial" element={<HistorialPage />} />
@@ -70,10 +80,16 @@ export default function App() {
             path="/empleado"
             element={
               <ProtectedRoute role="empleado">
-                <Empleado />
+                <EmpleadoLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            {/* Rutas hijas para el panel de empleado */}
+            <Route path="entradas" element={<EntradasEmpleado />} />
+            <Route path="salidas" element={<SalidasEmpleado />} />
+            <Route path="busquedas" element={<BusquedasEmpleado />} />
+          </Route>
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

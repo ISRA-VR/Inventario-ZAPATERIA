@@ -1,23 +1,19 @@
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Outlet } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+/* Reutilizamos el estilo de layout para mantener la coherencia visual */
+import "../styles/admin.css"; 
 
-export default function Empleado() {
-  const { logout } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  const cerrarSesion = () => {
-    logout();
-    navigate("/");
-  };
-
+const EmpleadoLayout = () => {
   return (
-    <div>
-      <h1>Bienvenido Empleado</h1>
-
-      <button onClick={cerrarSesion}>
-        Cerrar sesión
-      </button>
+    <div className="admin-layout">
+      {/* El Sidebar detectará automáticamente al usuario para mostrar las opciones */}
+      <Sidebar /> 
+      <main className="admin-content">
+        {/* Aquí se renderizarán entradas, salidas y búsquedas */}
+        <Outlet />
+      </main>
     </div>
   );
-}
+};
+
+export default EmpleadoLayout;
