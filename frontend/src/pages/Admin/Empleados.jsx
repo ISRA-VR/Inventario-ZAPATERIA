@@ -71,10 +71,14 @@ const EmpleadosPage = () => {
     const fetchEmpleados = async () => {
         try {
             const res = await getEmpleados();
-            setEmpleados(res.data);
+            console.log("Datos recibidos:", res.data); // <-- AGREGA ESTO para ver qué llega
+
+            // Si el backend envía un objeto con una propiedad, ajusta aquí
+            const data = Array.isArray(res) ? res : res.data;
+            setEmpleados(data || []);
         } catch (error) {
             console.error("Error al obtener empleados:", error);
-            toast.error("No se pudo cargar la lista de empleados"); // Notificación de error
+            toast.error("No se pudo cargar la lista de empleados");
         }
     };
 

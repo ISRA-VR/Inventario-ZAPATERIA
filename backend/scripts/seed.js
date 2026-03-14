@@ -9,7 +9,6 @@ async function ensureSchema() {
       email VARCHAR(150) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
       role VARCHAR(20) NOT NULL DEFAULT 'empleado',
-      activo TINYINT(1) NOT NULL DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
@@ -23,7 +22,7 @@ async function upsertUser({ nombre, email, password, role }) {
   }
   const hash = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
-    "INSERT INTO usuarios (nombre, email, password, role, activo) VALUES (?, ?, ?, ?, 1)",
+    "INSERT INTO usuarios (nombre, email, password, role) VALUES (?, ?, ?, ?)",
     [nombre, email, hash, role]
   );
   console.log(`Usuario creado: ${email} (id ${result.insertId})`);

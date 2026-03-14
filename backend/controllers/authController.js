@@ -7,7 +7,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     const [rows] = await pool.query(
-      "SELECT * FROM usuarios WHERE email = ? AND activo = 1",
+      "SELECT * FROM usuarios WHERE email = ?",
       [email]
     );
 
@@ -45,20 +45,17 @@ export const register = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
 
-    // Verificar si el email ya existe
     const [existingUser] = await pool.query("SELECT id FROM usuarios WHERE email = ?", [email]);
     if (existingUser.length > 0) {
       return res.status(400).json({ message: "El correo electrónico ya está en uso." });
     }
 
-    // Hashear la contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Insertar el nuevo usuario
     const [result] = await pool.query(
-      "INSERT INTO usuarios (nombre, email, password, role, activo) VALUES (?, ?, ?, ?, 1)",
-      [nombre, email, hashedPassword, rol || 'empleado'] // Asegurar que rol tenga un valor
+      "INSERT INTO usuarios (nombre, email, password, role) VALUES (?, ?, ?, ?)",
+      [nombre, email, hashedPassword, rol || 'empleado']
     );
 
     res.status(201).json({
@@ -75,7 +72,7 @@ export const register = async (req, res) => {
 
 export const getEmpleados = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT id, nombre, email, role, created_at FROM usuarios WHERE activo = 1");
+    const [rows] = await pool.query("SELECT id, nombre, email, role, created_at FROM usuarios");
     res.json(rows);
   } catch (err) {
     console.error("Error en getEmpleados:", err.message);
@@ -88,7 +85,6 @@ export const updateEmpleado = async (req, res) => {
     const { id } = req.params;
     const { nombre, email, rol, password } = req.body;
 
-    // Verificar si el email ya existe en otro usuario
     const [existingUser] = await pool.query("SELECT id FROM usuarios WHERE email = ? AND id != ?", [email, id]);
     if (existingUser.length > 0) {
       return res.status(400).json({ message: "El correo electrónico ya está en uso por otro usuario." });
@@ -103,22 +99,10 @@ export const updateEmpleado = async (req, res) => {
     const fields = [];
     const params = [];
 
-    if (nombre) {
-      fields.push("nombre = ?");
-      params.push(nombre);
-    }
-    if (email) {
-      fields.push("email = ?");
-      params.push(email);
-    }
-    if (rol) {
-      fields.push("role = ?");
-      params.push(rol);
-    }
-    if (hashedPassword) {
-      fields.push("password = ?");
-      params.push(hashedPassword);
-    }
+    if (nombre) { fields.push("nombre = ?"); params.push(nombre); }
+    if (email) { fields.push("email = ?"); params.push(email); }
+    if (rol) { fields.push("role = ?"); params.push(rol); }
+    if (hashedPassword) { fields.push("password = ?"); params.push(hashedPassword); }
 
     if (fields.length === 0) {
       return res.status(400).json({ message: "No se proporcionaron datos para actualizar." });
@@ -147,9 +131,9 @@ export const deleteEmpleado = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Soft delete: marcar como inactivo
+    // Cambiado a DELETE real (Hard Delete)
     const [result] = await pool.query(
-      "UPDATE usuarios SET activo = 0 WHERE id = ?",
+      "DELETE FROM usuarios WHERE id = ?",
       [id]
     );
 
@@ -157,7 +141,7 @@ export const deleteEmpleado = async (req, res) => {
       return res.status(404).json({ message: "Empleado no encontrado." });
     }
 
-    res.json({ message: "Empleado eliminado correctamente." });
+    res.json({ message: "Empleado eliminado permanentemente." });
   } catch (err) {
     console.error("Error en deleteEmpleado:", err.message);
     res.status(500).json({ message: "Error del servidor" });
