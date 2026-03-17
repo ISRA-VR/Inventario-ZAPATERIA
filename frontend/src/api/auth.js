@@ -3,11 +3,12 @@ import axios from "axios";
 const API_URL = "http://localhost:3001/api/auth";
 
 // Función auxiliar para obtener el token del localStorage
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user"));
+  if (!user?.token) return {};
   return {
     headers: {
-      Authorization: `Bearer ${user?.token}`, // Mandamos el token de seguridad
+      Authorization: `Bearer ${user.token}`,
     },
   };
 };
