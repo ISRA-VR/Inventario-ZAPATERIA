@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getProductos, createProducto, updateProducto, deleteProducto, getCategorias } from '../../api/productos';
+import { toast } from 'react-toastify';
 import '../../styles/addproducto.css';
 
 /* ── Iconos ── */
@@ -41,7 +42,6 @@ const ProductosPage = () => {
   const [categorias,  setCategorias]  = useState([]);
   const [busqueda,    setBusqueda]    = useState('');
   const [filtroCat,   setFiltroCat]   = useState('');
-  const [toast,       setToast]       = useState(null);
 
   /* Modales */
   const [modalCrear,    setModalCrear]    = useState(false);
@@ -54,20 +54,25 @@ const ProductosPage = () => {
   const [productoActual, setProductoActual] = useState(null);
 
   /* ── Helpers ── */
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const fetchProductos = useCallback(async () => {
     try {
       const { data } = await getProductos();
       setProductos(data);
-    } catch (err) { console.error('Error al obtener productos:', err); }
+    } catch (err) { 
+      console.error('Error al obtener productos:', err);
+      toast.error("No se pudo cargar la lista de productos");
+    }
   }, []);
 
   const fetchCategorias = useCallback(async () => {
     try {
       const { data } = await getCategorias();
       setCategorias(data);
-    } catch (err) { console.error('Error al obtener categorías:', err); }
+    } catch (err) { 
+      console.error('Error al obtener categorías:', err);
+      toast.error("No se pudo cargar la lista de categorías");
+    }
   }, []);
 
   useEffect(() => { fetchProductos(); fetchCategorias(); }, [fetchProductos, fetchCategorias]);
@@ -85,15 +90,19 @@ const ProductosPage = () => {
   /* ── CREAR ── */
   const handleCrear = async () => {
     if (!formCrear.descripcion.trim() || !formCrear.modelo.trim()) return;
+    if (!formCrear.id_categoria) {
+      toast.warn('No se puede crear un producto sin seleccionar una categoría');
+      return;
+    }
     try {
-      const { data } = await createProducto(formCrear);
-      showToast(data.message || 'Producto creado');
+      await createProducto(formCrear);
+      toast.success('¡Producto creado con éxito!');
       setFormCrear(FORM_EMPTY);
       setModalCrear(false);
       fetchProductos();
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Error al crear el producto';
-      showToast(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -114,13 +123,13 @@ const ProductosPage = () => {
   const handleEditar = async () => {
     if (!formEditar.descripcion.trim()) return;
     try {
-      const { data } = await updateProducto(productoActual.id_producto, formEditar);
-      showToast(data.message || 'Producto actualizado');
+      await updateProducto(productoActual.id_producto, formEditar);
+      toast.info('¡Producto actualizado correctamente!');
       setModalEditar(false);
       fetchProductos();
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Error al editar el producto';
-      showToast(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -129,11 +138,13 @@ const ProductosPage = () => {
 
   const handleEliminar = async () => {
     try {
-      const { data } = await deleteProducto(productoActual.id_producto);
-      showToast(data.message || 'Producto eliminado');
+      await deleteProducto(productoActual.id_producto);
+      toast.warn('Producto eliminado del sistema');
       setModalEliminar(false);
       fetchProductos();
-    } catch { showToast('Error al eliminar el producto'); }
+    } catch { 
+      toast.error('Error al eliminar el producto'); 
+    }
   };
 
   /* ── RENDER ── */
@@ -317,7 +328,7 @@ const ProductosPage = () => {
       )}
 
       {/* Toast */}
-      {toast && <div className="toast">{toast}</div>}
+      
     </div>
   );
 };

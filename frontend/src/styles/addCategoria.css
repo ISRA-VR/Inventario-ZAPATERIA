@@ -18,7 +18,7 @@
   --badge-bg:      #dbeafe;
   --badge-text:    #1d4ed8;
   --danger:        #dc2626;
-  --danger-light:  #fef2f2;
+  --danger-light:  #ff0000;
   --shadow-card:   0 2px 12px rgba(8,47,90,0.08);
   --shadow-modal:  0 16px 48px rgba(8,47,90,0.20);
   --radius-card:   14px;
@@ -191,11 +191,11 @@ body, .categorias-page {
 
 .btn-icon:hover { transform: translateY(-1px); }
 
-.btn-icon-edit  { background: transparent; color: var(--text-sub); }
-.btn-icon-edit:hover  { background: var(--badge-bg); color: var(--primary); }
+.btn-icon-edit  { background: transparent; color: var(--primary); }
+.btn-icon-edit:hover  { background: var(--badge-bg); color: #fff; }
 
-.btn-icon-delete { background: transparent; color: var(--text-light); }
-.btn-icon-delete:hover { background: var(--danger-light); color: var(--danger); }
+.btn-icon-delete { background: transparent; color: var(--danger); }
+.btn-icon-delete:hover { background: var(--danger-light); color: #fff; }
 
 /* ── Empty state ── */
 .empty-state {

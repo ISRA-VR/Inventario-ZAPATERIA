@@ -14,7 +14,7 @@
   --brand-cream:   #F8FAFC;
   --brand-white:   #ffffff;
   --brand-muted:   #082F5A;
-  --brand-border:  #e8e4de;
+  --brand-border:  #dfdee8;
   --brand-error:   #c0392b;
   --radius:        4px;
   --transition:    0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -206,7 +206,7 @@ html, body, #root {
 }
 
 .input-pro::placeholder {
-  color: #c5bfb8;
+  color: #8a8a8a;
 }
 
 .input-pro:focus {
@@ -376,7 +376,7 @@ html, body, #root {
 }
 
 .captcha-input-math::placeholder {
-  color: #c5bfb8;
+  color: #7b7b7b;
   font-size: 0.85rem;
 }
 

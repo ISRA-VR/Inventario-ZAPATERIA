@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash } from 'react-icons/fa';
+import {
+    Eye, EyeOff, FilePenLine, Trash2, Search, PlusCircle,
+    UserPlus, UserCog, AlertTriangle, Save, CheckCircle, X
+} from 'lucide-react';
 import { register, getEmpleados, updateEmpleado, deleteEmpleado } from '../../api/auth';
 import { toast } from 'react-toastify';
 import '../../styles/Empleados.css';
+
+const IconPlus   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconEdit   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IconTrash  = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 
 const EmpleadosPage = () => {
     const [modalOpen, setModalOpen] = useState(false);
@@ -162,14 +169,20 @@ const EmpleadosPage = () => {
             <p>Administra Cuentas para los Empleados</p>
             <header className="empleados-header">
                 <div className="header-actions">
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre o email..."
-                        className="search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <button onClick={openModal} className="btn-crear">Crear Empleado</button>
+                    <div className="search-container">
+                        <Search className="search-icon" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre o email..."
+                            className="search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <button onClick={openModal} className="btn-crear">
+                        <IconPlus size={18} />
+                        Crear Empleado
+                    </button>
                 </div>
             </header>
 
@@ -195,7 +208,7 @@ const EmpleadosPage = () => {
                                 <div className="password-input-container">
                                     <input type={showPassword ? "text" : "password"} id="password" name="password" value={formData.password} onChange={handleChange} required />
                                     <span onClick={() => setShowPassword(!showPassword)} className="password-toggle-icon">
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                        {showPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
                             </div>
@@ -204,7 +217,7 @@ const EmpleadosPage = () => {
                                 <div className="password-input-container">
                                     <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required />
                                     <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="password-toggle-icon">
-                                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
                             </div>
@@ -246,7 +259,7 @@ const EmpleadosPage = () => {
                                 <div className="password-input-container">
                                     <input type={showPassword ? "text" : "password"} id="password" name="password" value={formData.password} onChange={handleChange} />
                                     <span onClick={() => setShowPassword(!showPassword)} className="password-toggle-icon">
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                        {showPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
                             </div>
@@ -255,7 +268,7 @@ const EmpleadosPage = () => {
                                 <div className="password-input-container">
                                     <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
                                     <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="password-toggle-icon">
-                                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
                             </div>
@@ -325,14 +338,14 @@ const EmpleadosPage = () => {
                                                 onClick={() => openEditModal(empleado)}
                                                 title="Editar"
                                             >
-                                                <FaEdit />
+                                                <IconEdit />
                                             </button>
                                             <button
                                                 className="btn-action delete"
                                                 onClick={() => openDeleteModal(empleado)}
                                                 title="Eliminar"
                                             >
-                                                <FaTrash />
+                                                <IconTrash />
                                             </button>
                                         </div>
                                     </td>

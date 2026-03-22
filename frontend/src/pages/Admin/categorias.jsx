@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext'; // 1. IMPORTAR useAuth
 import '../../styles/addCategoria.css';
+import { toast } from 'react-toastify';
 
 /* ── Iconos (sin cambios) ── */
 const IconPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -18,7 +19,6 @@ const API_CATEGORIAS = 'http://localhost:3001/api/categorias';
 const CategoriasPage = () => {
   const { user } = useAuth(); // 2. OBTENER DATOS DE AUTH
   const [categorias, setCategorias] = useState([]);
-  const [toast, setToast] = useState(null);
 
   /* Modales */
   const [modalCrear, setModalCrear] = useState(false);
@@ -30,12 +30,6 @@ const CategoriasPage = () => {
   const [formEditar, setFormEditar] = useState({ nombre: '', descripcion: '' });
   const [categoriaActual, setCategoriaActual] = useState(null);
 
-  /* ── Helpers ── */
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
-
   const fetchCategorias = useCallback(async () => {
     if (!user?.token) return;
     try {
@@ -43,6 +37,7 @@ const CategoriasPage = () => {
       setCategorias(data);
     } catch (err) {
       console.error('Error al obtener categorías:', err);
+      toast.error('Error al cargar las categorías');
     }
   }, [user]);
 
@@ -59,7 +54,7 @@ const CategoriasPage = () => {
   const handleCrear = async () => {
     if (!formCrear.nombre.trim()) return;
     try {
-      const { data } = await axios.post(
+      await axios.post(
         API_CATEGORIAS,
         {
           nombre_categoria: formCrear.nombre.trim(),
@@ -67,12 +62,12 @@ const CategoriasPage = () => {
         },
         getAuthConfig() // 3. USAR TOKEN
       );
-      showToast(data.message || 'Categoría creada con éxito');
+      toast.success('Categoría creada con éxito');
       setFormCrear({ nombre: '', descripcion: '' });
       setModalCrear(false);
       fetchCategorias();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al crear la categoría');
+      toast.error(err.response?.data?.message || 'Error al crear la categoría');
     }
   };
 
@@ -88,7 +83,7 @@ const CategoriasPage = () => {
   const handleEditar = async () => {
     if (!formEditar.nombre.trim() || !categoriaActual) return;
     try {
-      const { data } = await axios.put(
+      await axios.put(
         `${API_CATEGORIAS}/${categoriaActual.id_categoria}`,
         {
           nombre_categoria: formEditar.nombre.trim(),
@@ -96,11 +91,11 @@ const CategoriasPage = () => {
         },
         getAuthConfig() // 3. USAR TOKEN
       );
-      showToast(data.message || 'Categoría actualizada correctamente');
+      toast.info('Categoría actualizada correctamente');
       setModalEditar(false);
       fetchCategorias();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al editar la categoría');
+      toast.error(err.response?.data?.message || 'Error al editar la categoría');
     }
   };
 
@@ -112,15 +107,15 @@ const CategoriasPage = () => {
   const handleEliminar = async () => {
     if (!categoriaActual) return;
     try {
-      const { data } = await axios.delete(
+      await axios.delete(
         `${API_CATEGORIAS}/${categoriaActual.id_categoria}`,
         getAuthConfig() // 3. USAR TOKEN
       );
-      showToast(data.message || 'Categoría eliminada');
+      toast.warn('Categoría eliminada');
       setModalEliminar(false);
       fetchCategorias();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al eliminar la categoría');
+      toast.error(err.response?.data?.message || 'Error al eliminar la categoría');
     }
   };
 
@@ -271,6 +266,7 @@ const CategoriasPage = () => {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+{toast && <div className="toast">{toast}</div>}
     </div>
   );
 };

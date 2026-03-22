@@ -6,7 +6,7 @@ const AdminLayout = () => {
   return (
     <div className="admin-layout">
       <Sidebar /> 
-      <main className="admin-content">
+      <main className="admin-content" style={{ padding: 0 }}>
         <Outlet />
       </main>
     </div>

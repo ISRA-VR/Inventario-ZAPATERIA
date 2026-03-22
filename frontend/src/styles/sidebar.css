@@ -35,7 +35,7 @@ html, body {
 }
 
 /* CONTENIDO PRINCIPAL: Ahora se expande correctamente */
-.main-content {
+.admin-content {
   flex: 1; /* Ocupa todo el espacio restante después del sidebar */
   background-color: #f8fafc;
   display: flex;

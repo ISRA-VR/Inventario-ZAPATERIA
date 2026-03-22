@@ -1,4 +1,3 @@
-
 /* Empleados.css */
 
 :root {
@@ -14,9 +13,12 @@
 }
 
 .empleados-container {
-  padding: 2rem;
-  background-color: var(--bg-light);
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ocupa toda la altura del contenedor padre */
   width: 100%;
+  background-color: var(--bg-light);
+  padding: 2rem; /* Mantenemos un padding para que no se pegue a los bordes */
 }
 
 .empleados-container h2 {
@@ -41,9 +43,24 @@
   align-items: center;
 }
 
-.search-input {
+/* Contenedor para el input de búsqueda con ícono */
+.search-container {
   flex: 1;
-  padding: 0.75rem 1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-muted);
+  pointer-events: none; /* Para que no interfiera con el click en el input */
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem; /* Aumentamos padding izquierdo para el ícono */
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
@@ -57,6 +74,9 @@
 }
 
 .btn-crear {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background-color: var(--primary-color);
   color: var(--white);
@@ -73,6 +93,8 @@
 
 /* --- TABLA --- */
 .empleados-list {
+  flex-grow: 1; /* Hace que la tabla ocupe el espacio restante */
+  overflow-y: auto; /* Añade scroll si el contenido es muy largo */
   background: var(--white);
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -140,10 +162,10 @@ tr:last-child td {
   transition: background-color 0.2s;
 }
 
-.btn-action.edit { color: var(--primary-color); }
+.btn-action.edit { color: var(--primary); }
 .btn-action.edit:hover { background-color: #eff6ff; }
 
-.btn-action.delete { color: var(--error); }
+.btn-action.delete { color: var(--danger); }
 .btn-action.delete:hover { background-color: #fef2f2; }
 
 /* --- MODALES --- */
@@ -176,13 +198,26 @@ tr:last-child td {
   margin-bottom: 1.5rem;
 }
 
+.modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+}
+
 .close-button {
   background: none;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
   color: var(--text-muted);
+  transition: color 0.2s;
 }
+
+.close-button:hover {
+    color: var(--text-dark);
+}
+
 
 /* --- FORMULARIO MODAL --- */
 .empleado-form .form-group {
@@ -224,37 +259,35 @@ tr:last-child td {
   margin-top: 2rem;
 }
 
-.btn-guardar {
+.btn-guardar,
+.btn-cancelar,
+.btn-eliminar {
   flex: 1;
-  background-color: var(--primary-color);
-  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.75rem;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-guardar {
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .btn-cancelar {
-  flex: 1;
   background-color: #f1f5f9;
   color: var(--text-dark);
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 .btn-eliminar {
-  flex: 1;
   background-color: var(--error);
   color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 .error-message {

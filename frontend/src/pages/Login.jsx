@@ -42,7 +42,7 @@ export default function Login() {
           <img src="/logo-Beni_Van-sin-fondo.png" alt="Logo" className="brand-logo" />
           <h1>Control de<br />Inventario</h1>
           <p>Accede a tu panel de control para administrar tus recursos de forma eficiente.</p>
-          <p className="brand-footer">© 2026 Beni Van Zapatería. Todos los derechos reservados.</p>
+          <p className="brand-footer">© 2026 Beni Van Zapatería. <br />Todos los derechos son reservados.</p>
         </div>
       </div>
 
