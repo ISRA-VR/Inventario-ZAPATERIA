@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Términos y Condiciones — Beni Van</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --primary:   #0E65C6;
+      --primary: #0E65C6;
       --secondary: #082F5A;
-      --bg:        #F8FAFC;
-      --white:     #ffffff;
-      --muted:     #64748b;
-      --border:    #e2e8f0;
-      --text:      #1e293b;
+      --bg: #F8FAFC;
+      --white: #ffffff;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --text: #1e293b;
     }
 
     body {
@@ -35,8 +44,10 @@
     .page-header::before {
       content: '';
       position: absolute;
-      bottom: -80px; right: -40px;
-      width: 280px; height: 280px;
+      bottom: -80px;
+      right: -40px;
+      width: 280px;
+      height: 280px;
       border-radius: 50%;
       background: rgba(14, 101, 198, 0.2);
     }
@@ -44,7 +55,9 @@
     .page-header::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
       height: 3px;
       background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
     }
@@ -73,7 +86,10 @@
       margin-bottom: 20px;
     }
 
-    .header-badge svg { width: 13px; height: 13px; }
+    .header-badge svg {
+      width: 13px;
+      height: 13px;
+    }
 
     .page-header h1 {
       font-family: 'Playfair Display', serif;
@@ -86,7 +102,7 @@
 
     .page-header p {
       font-size: 0.9rem;
-      color: rgba(255,255,255,0.55);
+      color: rgba(255, 255, 255, 0.55);
       font-weight: 300;
     }
 
@@ -107,12 +123,24 @@
       text-decoration: none;
       cursor: pointer;
       transition: all 0.2s ease;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
 
-    .btn-back:hover { background: var(--secondary); color: #fff; border-color: var(--secondary); }
-    .btn-back svg { width: 14px; height: 14px; transition: transform 0.2s; }
-    .btn-back:hover svg { transform: translateX(-3px); }
+    .btn-back:hover {
+      background: var(--secondary);
+      color: #fff;
+      border-color: var(--secondary);
+    }
+
+    .btn-back svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.2s;
+    }
+
+    .btn-back:hover svg {
+      transform: translateX(-3px);
+    }
 
     .content-wrap {
       max-width: 800px;
@@ -126,18 +154,36 @@
       border-radius: 4px;
       overflow: hidden;
       margin-bottom: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
       animation: fadeUp 0.4s ease both;
     }
 
-    .card:nth-child(2) { animation-delay: 0.05s; }
-    .card:nth-child(3) { animation-delay: 0.1s; }
-    .card:nth-child(4) { animation-delay: 0.15s; }
-    .card:nth-child(5) { animation-delay: 0.2s; }
+    .card:nth-child(2) {
+      animation-delay: 0.05s;
+    }
+
+    .card:nth-child(3) {
+      animation-delay: 0.1s;
+    }
+
+    .card:nth-child(4) {
+      animation-delay: 0.15s;
+    }
+
+    .card:nth-child(5) {
+      animation-delay: 0.2s;
+    }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .card-header {
@@ -150,14 +196,21 @@
     }
 
     .card-icon {
-      width: 34px; height: 34px;
+      width: 34px;
+      height: 34px;
       background: linear-gradient(135deg, var(--primary), #3b82f6);
       border-radius: 3px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
     }
 
-    .card-icon svg { width: 17px; height: 17px; color: #fff; }
+    .card-icon svg {
+      width: 17px;
+      height: 17px;
+      color: #fff;
+    }
 
     .card-header h2 {
       font-family: 'Playfair Display', serif;
@@ -177,7 +230,9 @@
       margin-bottom: 14px;
     }
 
-    .card-body p:last-child { margin-bottom: 0; }
+    .card-body p:last-child {
+      margin-bottom: 0;
+    }
 
     .policy-list {
       list-style: none;
@@ -197,7 +252,8 @@
 
     .policy-list li::before {
       content: '';
-      width: 6px; height: 6px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: var(--primary);
       flex-shrink: 0;
@@ -252,19 +308,40 @@
       align-items: center;
     }
 
-    .page-footer p { font-size: 0.72rem; color: var(--muted); }
-    .footer-logo { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: var(--secondary); font-weight: 600; }
+    .page-footer p {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.85rem;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+
+    @media (max-width: 500px) {
+      .page-footer {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+    }
   </style>
 </head>
+
 <body>
 
   <header class="page-header">
     <div class="header-inner">
       <div class="header-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        </svg>
         Términos y Condiciones
       </div>
-      <h1>Términos de Uso<br/>del Sistema</h1>
+      <h1>Términos de Uso<br />del Sistema</h1>
       <p>Última actualización: Marzo 2026 · Beni Van Zapatería</p>
     </div>
   </header>
@@ -272,19 +349,27 @@
   <main class="content-wrap">
 
     <button class="btn-back" onclick="window.close()" style="padding: 10px; cursor: pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
-        Cerrar
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Cerrar
     </button>
 
     <div class="card">
       <div class="card-header">
         <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+          </svg>
         </div>
         <h2>Acceso autorizado</h2>
       </div>
       <div class="card-body">
-        <p>El uso del sistema de inventario <strong>Beni Van</strong> está reservado exclusivamente para personal autorizado por la administración de la empresa. Al ingresar al sistema, el usuario confirma que ha recibido credenciales válidas y acepta utilizarlas únicamente para los fines laborales correspondientes.</p>
+        <p>El uso del sistema de inventario <strong>Beni Van</strong> está reservado exclusivamente para personal
+          autorizado por la administración de la empresa. Al ingresar al sistema, el usuario confirma que ha recibido
+          credenciales válidas y acepta utilizarlas únicamente para los fines laborales correspondientes.</p>
         <ul class="policy-list">
           <li>Está prohibido compartir credenciales de acceso con terceros bajo cualquier circunstancia.</li>
           <li>Cada sesión queda registrada con el ID de usuario, fecha, hora y dirección IP de origen.</li>
@@ -296,14 +381,21 @@
     <div class="card">
       <div class="card-header">
         <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+          </svg>
         </div>
         <h2>Responsabilidad sobre el inventario</h2>
       </div>
       <div class="card-body">
-        <p>Cualquier acción realizada dentro del sistema — registro de productos, modificación de cantidades, eliminación de registros — queda vinculada al ID del usuario que la ejecutó. La empresa se reserva el derecho de auditar estas acciones en cualquier momento.</p>
+        <p>Cualquier acción realizada dentro del sistema — registro de productos, modificación de cantidades,
+          eliminación de registros — queda vinculada al ID del usuario que la ejecutó. La empresa se reserva el derecho
+          de auditar estas acciones en cualquier momento.</p>
         <div class="warning-box">
-          ⚠️ El mal uso deliberado del sistema, como la alteración fraudulenta de inventario, constituye una falta grave sujeta a las medidas disciplinarias establecidas en el reglamento interno.
+          ⚠️ El mal uso deliberado del sistema, como la alteración fraudulenta de inventario, constituye una falta grave
+          sujeta a las medidas disciplinarias establecidas en el reglamento interno.
         </div>
       </div>
     </div>
@@ -311,14 +403,22 @@
     <div class="card">
       <div class="card-header">
         <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          </svg>
         </div>
         <h2>Modificaciones y vigencia</h2>
       </div>
       <div class="card-body">
-        <p>Beni Van Zapatería se reserva el derecho de actualizar estos términos en cualquier momento. Los cambios serán notificados al personal a través de los canales internos habituales. El uso continuo del sistema tras la notificación implica la aceptación de los nuevos términos.</p>
+        <p>Beni Van Zapatería se reserva el derecho de actualizar estos términos en cualquier momento. Los cambios serán
+          notificados al personal a través de los canales internos habituales. El uso continuo del sistema tras la
+          notificación implica la aceptación de los nuevos términos.</p>
         <div class="highlight-box">
-          📋 Para dudas sobre estos términos, contacta al administrador del sistema o al equipo de soporte en <a class="email-link" href="mailto:codesmish01@gmail.com">codesmish01@gmail.com</a>.
+          📋 Para dudas sobre estos términos, contacta al administrador del sistema o al equipo de soporte en <a
+            class="email-link" href="mailto:codesmish01@gmail.com">codesmish01@gmail.com</a>.
         </div>
       </div>
     </div>
@@ -327,8 +427,10 @@
 
   <footer class="page-footer">
     <p>© 2026 Beni Van Zapatería · Sistema de Control de Inventario</p>
-    <span class="footer-logo">Beni Van</span>
+    <span class="footer-logo"><img src="logo-Beni_Van-sin-fondo.png" alt="Beni Van Logo" target="_blank"
+        rel="noopener noreferrer" height="50px"></img></span>
   </footer>
 
 </body>
+
 </html>
