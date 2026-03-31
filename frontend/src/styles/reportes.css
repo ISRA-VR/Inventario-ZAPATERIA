@@ -1,0 +1,151 @@
+.reportes-container {
+  padding: 28px 32px;
+  background-color: #f4f6f9;
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.reportes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.reportes-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+}
+
+.reportes-header p {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+.btn-exportar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #1a1a2e;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-exportar:hover {
+  background-color: #2d2d4e;
+}
+
+.btn-exportar.exportando {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.icono-exportar {
+  font-size: 16px;
+}
+
+.tarjetas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.tarjeta-reporte {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.tarjeta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tarjeta-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.tarjeta-icono {
+  font-size: 18px;
+}
+
+.tarjeta-desc {
+  font-size: 12px;
+  color: #aaa;
+  margin: 0 0 16px 0;
+}
+
+.btn-generar {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-generar:hover {
+  background: #f0f4ff;
+  border-color: #aac0ff;
+}
+
+.graficas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.grafica-card {
+  background: white;
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.grafica-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #1a1a2e;
+}
+
+.grafica-subtitulo {
+  font-size: 12px;
+  color: #aaa;
+  margin: 0 0 18px 0;
+}
+
+@media (max-width: 900px) {
+  .tarjetas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .graficas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reportes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

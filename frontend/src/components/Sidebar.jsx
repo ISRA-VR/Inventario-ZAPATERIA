@@ -3,29 +3,26 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   LayoutDashboard, Users, Package, Tags, 
-  ArrowUpRight, ArrowDownLeft, Search, 
+  Layers, Search, 
   FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle 
 } from 'lucide-react';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showModal, setShowModal] = useState(false); // 1. Estado para el modal
+  const [showModal, setShowModal] = useState(false);
   
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // 2. Función que solo ABRE el modal
   const clickCerrarSesion = () => {
     setShowModal(true);
   };
 
-  // 3. Función que SI cierra la sesión (Confirmar)
   const confirmarCierre = () => {
     logout();
     navigate("/");
   };
 
-  // 4. Función para cancelar (Cerrar modal)
   const cancelarCierre = () => {
     setShowModal(false);
   };
@@ -35,8 +32,7 @@ const Sidebar = () => {
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados' },
     { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos' },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias' },
-    { icon: <ArrowUpRight size={20} />, label: 'Entradas', path: '/admin/entradas' },
-    { icon: <ArrowDownLeft size={20} />, label: 'Salidas', path: '/admin/salidas' },
+    { icon: <Layers size={20} />, label: 'Tallas y Variantes', path: '/admin/tallasYvariantes' },
     { icon: <Search size={20} />, label: 'Búsquedas', path: '/admin/busquedas' },
     { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes' },
     { icon: <History size={20} />, label: 'Historial', path: '/admin/historial' },
@@ -82,7 +78,7 @@ const Sidebar = () => {
               <button 
                   className="logout-btn" 
                   style={{marginLeft: 'auto'}}
-                  onClick={clickCerrarSesion} /* Ahora abre el modal */
+                  onClick={clickCerrarSesion}
                   title="Cerrar sesión"
               >
                   <LogOut size={18} />
@@ -96,7 +92,6 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* --- EL MODAL (Fuera del aside para que no se corte) --- */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-box">

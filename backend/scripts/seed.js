@@ -49,11 +49,11 @@ async function upsertUser({ nombre, email, password, role }) {
       role: "empleado",
     });
 
-    console.log("✅ Seed completado. Credenciales de prueba:");
+    console.log(" Seed completado. Credenciales de prueba:");
     console.log("- Admin: admin@demo.com / 123456");
     console.log("- Empleado: empleado@demo.com / 123456");
   } catch (err) {
-    console.error("❌ Error en seed:", err.message);
+    console.error(" Error en seed:", err.message);
   } finally {
     await pool.end();
   }

@@ -1,0 +1,204 @@
+.pagina-dashboard {
+  padding: 2rem 2.5rem;
+  font-family: "Segoe UI", sans-serif;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.encabezado-pagina h1 {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.encabezado-pagina p {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* tarjetas resumen */
+
+.tarjetas-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.tarjeta {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.tarjeta-label {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.tarjeta-numero {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.tarjeta-cambio {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tarjeta-cambio.positivo {
+  color: #16a34a;
+}
+
+.tarjeta-cambio.negativo {
+  color: #dc2626;
+}
+
+.tarjeta-cambio.critico {
+  color: #dc2626;
+}
+
+.tarjeta-icono {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta-icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icono-azul {
+  background: #3b82f6;
+  color: white;
+}
+
+.icono-verde {
+  background: #22c55e;
+  color: white;
+}
+
+.icono-naranja {
+  background: #f97316;
+  color: white;
+}
+
+.icono-rojo {
+  background: #ef4444;
+  color: white;
+}
+
+/* seccion inferior */
+
+.seccion-inferior {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.card-grafica,
+.card-top {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.card-header {
+  margin-bottom: 16px;
+}
+
+.card-header h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.card-header p {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.grafica-wrapper {
+  width: 100%;
+}
+
+/* lista top productos */
+
+.lista-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fila-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fila-top:last-child {
+  border-bottom: none;
+}
+
+.numero-posicion {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.info-producto {
+  flex: 1;
+}
+
+.nombre-producto {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.stock-producto {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.ventas-producto {
+  text-align: right;
+}
+
+.numero-ventas {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.label-ventas {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}

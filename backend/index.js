@@ -8,6 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("API Zapatería funcionando");
+});
+
 app.use("/api/auth", authRoutes);
 
 app.listen(3001, async () => {

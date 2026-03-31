@@ -1,0 +1,249 @@
+.pagina-tallas {
+  padding: 2rem 2.5rem;
+  font-family: "Segoe UI", sans-serif;
+  min-height: 100%;
+}
+
+.encabezado-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.encabezado-pagina h1 {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.encabezado-pagina p {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.boton-nueva-talla {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.boton-nueva-talla:hover {
+  background: #2563eb;
+}
+
+/* grid de tarjetas */
+
+.grid-tallas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.tarjeta-talla {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  transition: box-shadow 0.15s;
+}
+
+.tarjeta-talla:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+.tarjeta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tarjeta-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.tarjeta-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icono {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.btn-icono svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-editar {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.btn-editar:hover {
+  background: #dbeafe;
+}
+
+.btn-eliminar {
+  background: #fff1f2;
+  color: #ef4444;
+}
+
+.btn-eliminar:hover {
+  background: #fee2e2;
+}
+
+.stock-talla {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+/* modales */
+
+.fondo-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+}
+
+.ventana-modal {
+  background: white;
+  border-radius: 10px;
+  width: 400px;
+  max-width: 95vw;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.ventana-modal h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.subtitulo-modal {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: -8px;
+}
+
+.ventana-chica {
+  width: 340px;
+  text-align: center;
+}
+
+.fila-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.grupo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.grupo-campo label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.grupo-campo input {
+  padding: 9px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.grupo-campo input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pie-modal {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.boton-cancelar {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.boton-cancelar:hover {
+  background: #e2e8f0;
+}
+
+.boton-guardar {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.boton-guardar:hover {
+  background: #2563eb;
+}
+
+.boton-aceptar {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.boton-aceptar:hover {
+  background: #2563eb;
+}
