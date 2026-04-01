@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/AdminLayout";
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-/* Rutas para el administrador */
+/* ADMIN */
 import DashboardPage from "./pages/Admin/Dashboard";
 import EmpleadosPage from "./pages/Admin/Empleados";
 import ProductosPage from "./pages/Admin/Productos";
@@ -15,12 +15,13 @@ import BusquedaPage from "./pages/Admin/busquedas";
 import ReportesPage from "./pages/Admin/reportes";
 import HistorialPage from "./pages/Admin/historial";
 
-/* Rutas para el empleado */
-import EntradasEmpleado from "./pages/Empleado/entrada"; // Capitalizado para seguir buenas prácticas
+/* EMPLEADO */
+import EntradasEmpleado from "./pages/Empleado/entrada";
 import SalidasEmpleado from "./pages/Empleado/salidas";
 import BusquedasEmpleado from "./pages/Empleado/busquedas";
+import EmpleadoLayout from "./pages/Empleado";
 
-import EmpleadoLayout from "./pages/Empleado"; // Asumiendo que funciona como Layout
+/* AUTH */
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -31,18 +32,13 @@ export default function App() {
       <ToastContainer
         position="top-right"
         autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
         theme="colored"
       />
+
       <BrowserRouter>
         <Routes>
-          {/* Ruta Pública: Login */}
+
+          {/* LOGIN */}
           <Route
             path="/"
             element={
@@ -52,7 +48,7 @@ export default function App() {
             }
           />
 
-          {/* Rutas Protegidas: Administrador */}
+          {/* ADMIN */}
           <Route
             path="/admin"
             element={
@@ -61,7 +57,11 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="dashboard" index element={<DashboardPage />} />
+            {/* 🔥 RUTA PRINCIPAL (AQUÍ ESTÁ LA MAGIA) */}
+            <Route index element={<DashboardPage />} />
+
+            {/* Rutas normales */}
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="productos" element={<ProductosPage />} />
             <Route path="empleados" element={<EmpleadosPage />} />
             <Route path="categorias" element={<CategoriasPage />} />
@@ -75,7 +75,7 @@ export default function App() {
             <Route path="historial" element={<HistorialPage />} />
           </Route>
 
-          {/* Rutas Protegidas: Empleado */}
+          {/* EMPLEADO */}
           <Route
             path="/empleado"
             element={
@@ -84,10 +84,12 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            {/* Rutas hijas para el panel de empleado */}
             <Route path="entradas" element={<EntradasEmpleado />} />
             <Route path="salidas" element={<SalidasEmpleado />} />
             <Route path="busquedas" element={<BusquedasEmpleado />} />
+
+            {/* Opcional: redirigir si entran directo */}
+            <Route index element={<Navigate to="entradas" />} />
           </Route>
 
         </Routes>

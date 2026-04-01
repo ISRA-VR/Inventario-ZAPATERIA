@@ -194,7 +194,7 @@ const ProductosPage = () => {
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Gestión de Inventario - STOCKFLOW</h1>
+          <h1>Gestión de Productos</h1>
           <p>Administra y Crea los Modelos de Productos</p>
         </div>
         <button className="btn-primary" onClick={() => setModalCrear(true)}>
