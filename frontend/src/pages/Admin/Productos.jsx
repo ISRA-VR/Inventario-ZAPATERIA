@@ -12,22 +12,22 @@ const IconClose  = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 const IconWarn   = () => <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
 const IconBox    = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
 
-
-
 /* ── Formulario vacío ── */
 const FORM_EMPTY = {
-  descripcion:  '',
-  modelo:       '',
-  id_categoria: '',
-  stock:        '',
-  precio:       '',
-  estado:       'activo',
+  modelo:           '',
+  id_categoria:     '',
+  stock:            '',
+  precio:           '',
+  tallas:           '',
+  cantidad_inicial: '',
+  estado:           'activo',
 };
 
 /* ── Helpers ── */
 const estadoBadge = (estado, stock) => {
   if (estado === 'inactivo') return { cls: 'badge-inactivo', label: 'Inactivo' };
-  if (Number(stock) <= 10)   return { cls: 'badge-bajo',     label: 'Stock Bajo' };
+  // Ajuste: Ahora detecta stock bajo cuando es menor o igual a 40
+  if (Number(stock) <= 40)   return { cls: 'badge-bajo',      label: 'Stock Bajo' };
   return { cls: 'badge-activo', label: 'Activo' };
 };
 
@@ -38,7 +38,7 @@ const formatPrecio = (v) =>
    COMPONENTE PRINCIPAL
    ══════════════════════════════════════ */
 const ProductosPage = () => {
-  const [productos,   setProductos]   = useState([]);
+  const [productos,    setProductos]    = useState([]);
   const [categorias,  setCategorias]  = useState([]);
   const [busqueda,    setBusqueda]    = useState('');
   const [filtroCat,   setFiltroCat]   = useState('');
@@ -53,8 +53,7 @@ const ProductosPage = () => {
   const [formEditar,  setFormEditar]  = useState(FORM_EMPTY);
   const [productoActual, setProductoActual] = useState(null);
 
-  /* ── Helpers ── */
-
+  /* ── Fetch Data ── */
   const fetchProductos = useCallback(async () => {
     try {
       const { data } = await getProductos();
@@ -75,27 +74,55 @@ const ProductosPage = () => {
     }
   }, []);
 
-  useEffect(() => { fetchProductos(); fetchCategorias(); }, [fetchProductos, fetchCategorias]);
+  useEffect(() => { 
+    fetchProductos(); 
+    fetchCategorias(); 
+  }, [fetchProductos, fetchCategorias]);
 
   /* ── Filtro local ── */
   const productosFiltrados = useMemo(() => {
     return productos.filter((p) => {
-      const matchBusq = p.descripcion?.toLowerCase().includes(busqueda.toLowerCase()) ||
-                        String(p.modelo).includes(busqueda);
+      const matchBusq = String(p.modelo).toLowerCase().includes(busqueda.toLowerCase());
       const matchCat  = filtroCat === '' || String(p.id_categoria) === filtroCat;
       return matchBusq && matchCat;
     });
   }, [productos, busqueda, filtroCat]);
 
-  /* ── CREAR ── */
-  const handleCrear = async () => {
-    if (!formCrear.descripcion.trim() || !formCrear.modelo.trim()) return;
-    if (!formCrear.id_categoria) {
-      toast.warn('No se puede crear un producto sin seleccionar una categoría');
-      return;
+  /* ── VALIDACIÓN ── */
+  const validarFormulario = (form) => {
+    const camposRequeridos = {
+      modelo: 'Modelo',
+      id_categoria: 'Categoría',
+      stock: 'Stock',
+      precio: 'Precio',
+      tallas: 'Tallas',
+      cantidad_inicial: 'Cantidad Inicial'
+    };
+
+    for (const [key, label] of Object.entries(camposRequeridos)) {
+      if (form[key] === '' || form[key] === null || form[key] === undefined) {
+        toast.warn(`El campo "${label}" no puede estar vacío.`);
+        return false;
+      }
     }
+    return true;
+  };
+
+  /* ── CREAR ── */
+  const handleCrear = async (e) => {
+    e.preventDefault();
+    if (!validarFormulario(formCrear)) return;
+
     try {
-      await createProducto(formCrear);
+      // Conversión estricta a números para prevenir desfases en BD
+      const payload = {
+        ...formCrear,
+        stock: Number(formCrear.stock),
+        precio: Number(formCrear.precio),
+        cantidad_inicial: Number(formCrear.cantidad_inicial)
+      };
+
+      await createProducto(payload);
       toast.success('¡Producto creado con éxito!');
       setFormCrear(FORM_EMPTY);
       setModalCrear(false);
@@ -110,20 +137,31 @@ const ProductosPage = () => {
   const abrirEditar = (p) => {
     setProductoActual(p);
     setFormEditar({
-      descripcion:  p.descripcion  ?? '',
-      modelo:       p.modelo       ?? '',
-      id_categoria: p.id_categoria ?? '',
-      stock:        p.stock        ?? '',
-      precio:       p.precio       ?? '',
-      estado:       p.estado       ?? 'activo',
+      modelo:           p.modelo           ?? '',
+      id_categoria:     p.id_categoria     ?? '',
+      stock:            p.stock            ?? '',
+      precio:           p.precio           ?? '',
+      tallas:           p.tallas           ?? '',
+      cantidad_inicial: p.cantidad_inicial ?? '',
+      estado:           p.estado           ?? 'activo',
     });
     setModalEditar(true);
   };
 
-  const handleEditar = async () => {
-    if (!formEditar.descripcion.trim()) return;
+  const handleEditar = async (e) => {
+    e.preventDefault();
+    if (!validarFormulario(formEditar)) return;
+
     try {
-      await updateProducto(productoActual.id_producto, formEditar);
+      // Conversión estricta a números para prevenir el error de "resta 1" o truncamiento
+      const payload = {
+        ...formEditar,
+        stock: Number(formEditar.stock),
+        precio: Number(formEditar.precio),
+        cantidad_inicial: Number(formEditar.cantidad_inicial)
+      };
+
+      await updateProducto(productoActual.id_producto, payload);
       toast.info('¡Producto actualizado correctamente!');
       setModalEditar(false);
       fetchProductos();
@@ -134,7 +172,10 @@ const ProductosPage = () => {
   };
 
   /* ── ELIMINAR ── */
-  const abrirEliminar = (p) => { setProductoActual(p); setModalEliminar(true); };
+  const abrirEliminar = (p) => { 
+    setProductoActual(p); 
+    setModalEliminar(true); 
+  };
 
   const handleEliminar = async () => {
     try {
@@ -150,23 +191,22 @@ const ProductosPage = () => {
   /* ── RENDER ── */
   return (
     <div className="productos-page">
-
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Gestión de Productos</h1>
-          <p>Administra el catálogo completo de productos</p>
+          <h1>Gestión de Inventario - STOCKFLOW</h1>
+          <p>Administra y Crea los Modelos de Productos</p>
         </div>
         <button className="btn-primary" onClick={() => setModalCrear(true)}>
-          <IconPlus /> Nuevo Producto
+          <IconPlus /> Registrar Modelo
         </button>
       </div>
 
       {/* Card */}
       <div className="card">
         <div className="card-top">
-          <div className="card-top-title">Lista de Productos</div>
-          <div className="card-top-sub">{productosFiltrados.length} producto{productosFiltrados.length !== 1 ? 's' : ''} en total</div>
+          <div className="card-top-title">Catálogo de Modelos</div>
+          <div className="card-top-sub">{productosFiltrados.length} modelo{productosFiltrados.length !== 1 ? 's' : ''} en total</div>
         </div>
 
         {/* Filtros */}
@@ -176,7 +216,7 @@ const ProductosPage = () => {
             <input
               type="text"
               className="search-input"
-              placeholder="Buscar productos..."
+              placeholder="Buscar por modelo (Ej. 1100)..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
@@ -195,15 +235,15 @@ const ProductosPage = () => {
           </select>
         </div>
 
-        {/* Tabla */}
+        {/* Tabla ajustada a requerimientos */}
         <table className="productos-table">
           <thead>
             <tr>
-              <th>Descripcion</th>
               <th>Modelo</th>
-              <th>Categoria</th>
-              <th>Stock</th>
+              <th>Categoría</th>
+              <th>Stock Total</th>
               <th>Precio</th>
+              <th>Tallas Disp.</th>
               <th>Estado</th>
               <th className="col-acciones">Acciones</th>
             </tr>
@@ -214,7 +254,7 @@ const ProductosPage = () => {
                 <td colSpan={7}>
                   <div className="empty-state">
                     <div><IconBox /></div>
-                    <p>No hay productos registrados</p>
+                    <p>No hay modelos registrados</p>
                   </div>
                 </td>
               </tr>
@@ -224,11 +264,11 @@ const ProductosPage = () => {
                 const catNombre = categorias.find(c => c.id_categoria === p.id_categoria)?.nombre_categoria ?? '—';
                 return (
                   <tr key={p.id_producto}>
-                    <td className="td-desc">{p.descripcion}</td>
-                    <td className="td-muted">{p.modelo}</td>
+                    <td className="td-desc"><strong>{p.modelo}</strong></td>
                     <td className="td-muted">{catNombre}</td>
                     <td className="td-muted">{p.stock}</td>
                     <td className="td-precio">{formatPrecio(p.precio)}</td>
+                    <td className="td-muted">{p.tallas || 'N/A'}</td>
                     <td><span className={`badge ${cls}`}>{label}</span></td>
                     <td className="col-acciones">
                       <div className="acciones-cell">
@@ -250,27 +290,26 @@ const ProductosPage = () => {
 
       {/* ── MODAL: Crear ── */}
       {modalCrear && (
-        <div className="modal-overlay" onClick={() => setModalCrear(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal-box">
             <div className="modal-header">
-              <h2>Nuevo Producto</h2>
+              <h2>Registrar Modelo</h2>
               <button className="modal-close" onClick={() => setModalCrear(false)}><IconClose /></button>
             </div>
-
-            <FormProducto
-              form={formCrear}
-              setForm={setFormCrear}
-              categorias={categorias}
-            />
-
+            <div className="modal-body">
+              <FormularioProducto
+                form={formCrear}
+                setForm={setFormCrear}
+                categorias={categorias}
+              />
+            </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalCrear(false)}>Cancelar</button>
               <button
                 className="btn-primary"
                 onClick={handleCrear}
-                disabled={!formCrear.descripcion.trim() || !formCrear.modelo.trim()}
               >
-                Crear Producto
+                Registrar
               </button>
             </div>
           </div>
@@ -282,22 +321,21 @@ const ProductosPage = () => {
         <div className="modal-overlay" onClick={() => setModalEditar(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Editar Producto</h2>
+              <h2>Editar Modelo {formEditar.modelo}</h2>
               <button className="modal-close" onClick={() => setModalEditar(false)}><IconClose /></button>
             </div>
-
-            <FormProducto
-              form={formEditar}
-              setForm={setFormEditar}
-              categorias={categorias}
-            />
-
+            <div className="modal-body">
+              <FormularioProducto
+                form={formEditar}
+                setForm={setFormEditar}
+                categorias={categorias}
+              />
+            </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalEditar(false)}>Cancelar</button>
               <button
                 className="btn-primary"
                 onClick={handleEditar}
-                disabled={!formEditar.descripcion.trim()}
               >
                 Guardar Cambios
               </button>
@@ -311,13 +349,13 @@ const ProductosPage = () => {
         <div className="modal-overlay" onClick={() => setModalEliminar(false)}>
           <div className="modal-box modal-box-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Eliminar Producto</h2>
+              <h2>Eliminar Modelo</h2>
               <button className="modal-close" onClick={() => setModalEliminar(false)}><IconClose /></button>
             </div>
-            <div className="modal-delete-body">
+            <div className="modal-body modal-delete-body">
               <div className="modal-delete-icon"><IconWarn /></div>
-              <p>¿Estás seguro de que deseas eliminar el producto?</p>
-              <strong>"{productoActual?.descripcion}"</strong>
+              <p>¿Estás seguro de que deseas eliminar este modelo de inventario?</p>
+              <strong>Modelo: "{productoActual?.modelo}"</strong>
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalEliminar(false)}>Cancelar</button>
@@ -327,49 +365,71 @@ const ProductosPage = () => {
         </div>
       )}
 
-      {/* Toast */}
-      
     </div>
   );
 };
 
 /* ══════════════════════════════════════
    SUB-COMPONENTE: Formulario de producto
-   (reutilizado en Crear y Editar)
    ══════════════════════════════════════ */
-const FormProducto = ({ form, setForm, categorias }) => {
-  const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+const FormularioProducto = ({ form, setForm, categorias }) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // 1. Validación para modelo, stock y cantidad inicial (Solo números enteros positivos)
+    if (['modelo', 'stock', 'cantidad_inicial'].includes(name)) {
+      if (value === '' || /^\d*$/.test(value)) {
+        setForm((prev) => ({ ...prev, [name]: value }));
+      }
+      return;
+    }
+
+    // 2. Validación para precio (Números positivos con punto decimal)
+    if (name === 'precio') {
+      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+        setForm((prev) => ({ ...prev, [name]: value }));
+      }
+      return;
+    }
+
+    // 3. Validación para tallas (Solo números, comas, puntos y espacios, bloqueando letras)
+    if (name === 'tallas') {
+      if (value === '' || /^[\d\s,.]*$/.test(value)) {
+        setForm((prev) => ({ ...prev, [name]: value }));
+      }
+      return;
+    }
+
+    // 4. Para el resto de los campos (estado, id_categoria)
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Prevenir teclas inválidas en inputs numéricos
+  const handleKeyDown = (e) => {
+    if (['e', 'E', '+', '-'].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
 
   return (
-    <div className="form-grid">
-      {/* Descripción */}
+    <form className="form-producto">
       <div className="form-group span-2">
-        <label>Descripción *</label>
+        <label>Modelo *</label>
         <input
           type="text"
-          value={form.descripcion}
-          onChange={update('descripcion')}
-          placeholder="Ej. Tenis para niño"
+          name="modelo"
+          value={form.modelo}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Ej. 1100"
           autoFocus
         />
       </div>
 
-      {/* Modelo */}
       <div className="form-group">
-        <label>Modelo *</label>
-        <input
-          type="text"
-          value={form.modelo}
-          onChange={update('modelo')}
-          placeholder="Ej. 1000"
-        />
-      </div>
-
-      {/* Categoría */}
-      <div className="form-group">
-        <label>Categoría</label>
-        <select value={form.id_categoria} onChange={update('id_categoria')}>
-          <option value="">Sin categoría</option>
+        <label>Categoría *</label>
+        <select name="id_categoria" value={form.id_categoria} onChange={handleChange}>
+          <option value="">Seleccionar...</option>
           {categorias.map((cat) => (
             <option key={cat.id_categoria} value={cat.id_categoria}>
               {cat.nombre_categoria}
@@ -378,39 +438,68 @@ const FormProducto = ({ form, setForm, categorias }) => {
         </select>
       </div>
 
-      {/* Stock */}
       <div className="form-group">
-        <label>Stock</label>
+        <label>Stock Total *</label>
         <input
           type="number"
+          name="stock"
           min="0"
+          step="1"
           value={form.stock}
-          onChange={update('stock')}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder="0"
         />
       </div>
 
-      {/* Precio */}
       <div className="form-group">
-        <label>Precio</label>
+        <label>Precio Unitario *</label>
         <input
           type="number"
+          name="precio"
           min="0"
+          step="0.01"
           value={form.precio}
-          onChange={update('precio')}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder="0.00"
         />
       </div>
 
-      {/* Estado */}
+      <div className="form-group">
+        <label>Tallas disponibles *</label>
+        <input
+          type="text"
+          name="tallas"
+          value={form.tallas}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Ej: 25, 26, 27.5"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Cantidad Inicial por Talla *</label>
+        <input
+          type="number"
+          name="cantidad_inicial"
+          value={form.cantidad_inicial}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          min="0"
+          step="1"
+          placeholder="Ej: 5"
+        />
+      </div>
+
       <div className="form-group span-2">
-        <label>Estado</label>
-        <select value={form.estado} onChange={update('estado')}>
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
+        <label>Estado en Inventario</label>
+        <select name="estado" value={form.estado} onChange={handleChange}>
+          <option value="activo">Activo (En exhibición/bodega)</option>
+          <option value="inactivo">Inactivo (Descontinuado)</option>
         </select>
       </div>
-    </div>
+    </form>
   );
 };
 

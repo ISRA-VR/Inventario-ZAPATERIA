@@ -30,6 +30,28 @@ const EmpleadosPage = () => {
 
     const [error, setError] = useState('');
 
+    // Expresión regular corregida y más permisiva con los caracteres especiales
+    const validarPassword = (password) => {
+        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+        return regex.test(password);
+    };
+
+    // Función para evaluar el nivel de seguridad y cambiar colores
+    const evaluarSeguridad = (password) => {
+        let score = 0;
+        if (!password) return { score: 0, color: 'transparent', width: '0%' };
+        if (password.length >= 8) score += 1;
+        if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+        if (/\d/.test(password)) score += 1;
+        if (/[\W_]/.test(password)) score += 1;
+
+        if (score <= 2) return { score, color: '#ff4d4f', width: '33%' }; // Rojo - Débil
+        if (score === 3) return { score, color: '#faad14', width: '66%' }; // Amarillo - Medio
+        return { score, color: '#52c41a', width: '100%' }; // Verde - Fuerte
+    };
+
+    const msgPasswordInsegura = "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
+
     const openModal = () => setModalOpen(true);
     const closeModal = () => {
         setModalOpen(false);
@@ -78,9 +100,6 @@ const EmpleadosPage = () => {
     const fetchEmpleados = async () => {
         try {
             const res = await getEmpleados();
-            console.log("Datos recibidos:", res.data); // <-- AGREGA ESTO para ver qué llega
-
-            // Si el backend envía un objeto con una propiedad, ajusta aquí
             const data = Array.isArray(res) ? res : res.data;
             setEmpleados(data || []);
         } catch (error) {
@@ -99,42 +118,58 @@ const EmpleadosPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
         if (formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
-            toast.warning("¡Checa las contraseñas, no coinciden!"); // Aviso preventivo
+            toast.warning("Las contraseñas no coinciden.");
             return;
         }
+
+        if (!validarPassword(formData.password)) {
+            setError(msgPasswordInsegura);
+            toast.warning(msgPasswordInsegura);
+            return;
+        }
+
         try {
             await register(formData);
-            // 2. ÉXITO AL CREAR
             toast.success("¡Empleado creado con éxito!");
             closeModal();
             fetchEmpleados();
         } catch (error) {
             const msg = error.response?.data?.message || "Error al crear el empleado";
             setError(msg);
-            toast.error(msg); // Error del servidor
+            toast.error(msg);
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
+
         if (formData.password && formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
             toast.warning("Las nuevas contraseñas no coinciden");
             return;
         }
+
+        if (formData.password && !validarPassword(formData.password)) {
+            setError(msgPasswordInsegura);
+            toast.warning(msgPasswordInsegura);
+            return;
+        }
+
         try {
             const dataToUpdate = {
                 nombre: formData.nombre,
                 email: formData.email,
                 rol: formData.rol,
             };
+            
             if (formData.password) {
                 dataToUpdate.password = formData.password;
             }
+            
             await updateEmpleado(selectedEmpleado.id, dataToUpdate);
-            // 3. ÉXITO AL EDITAR
             toast.info("¡Datos actualizados correctamente!");
             closeEditModal();
             fetchEmpleados();
@@ -148,7 +183,6 @@ const EmpleadosPage = () => {
     const handleDelete = async () => {
         try {
             await deleteEmpleado(selectedEmpleado.id);
-            // 4. ÉXITO AL ELIMINAR
             toast.warn("Empleado eliminado del sistema");
             closeDeleteModal();
             fetchEmpleados();
@@ -162,6 +196,8 @@ const EmpleadosPage = () => {
         empleado.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         empleado.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const passStrength = evaluarSeguridad(formData.password);
 
     return (
         <div className="empleados-container">
@@ -211,6 +247,11 @@ const EmpleadosPage = () => {
                                         {showPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
+                                {/* Barra de seguridad */}
+                                <div style={{ height: '6px', width: '100%', backgroundColor: '#e5e7eb', marginTop: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: passStrength.width, backgroundColor: passStrength.color, transition: 'all 0.3s ease' }}></div>
+                                </div>
+                                <small className="helper-text">Mínimo 8 caracteres, mayúscula, número y carácter especial.</small>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="confirmPassword">Confirmar Contraseña</label>
@@ -262,6 +303,13 @@ const EmpleadosPage = () => {
                                         {showPassword ? <EyeOff /> : <Eye />}
                                     </span>
                                 </div>
+                                {/* Barra de seguridad */}
+                                {formData.password && (
+                                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e5e7eb', marginTop: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: passStrength.width, backgroundColor: passStrength.color, transition: 'all 0.3s ease' }}></div>
+                                    </div>
+                                )}
+                                <small className="helper-text">Mínimo 8 caracteres, mayúscula, número y carácter especial.</small>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="confirmPassword">Confirmar Nueva Contraseña</label>

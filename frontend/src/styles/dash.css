@@ -1,0 +1,39 @@
+/* ============================================================
+   Dashboard.css — Panel de Administración
+   Basado en el diseño de Tallas
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Colores y variables reutilizados */
+  --primary:       #0E65C6;
+  --primary-dark:  #0a52a0;
+  --secondary:     #082F5A;
+  --bg-page:       #f0f4f8;
+  --bg-card:       #ffffff;
+  --border:        #e8edf2;
+}
+
+/* ── Estructura General ── */
+.dashboard-container {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg-page);
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+  color: var(--text-main);
+}
+
+/* ── Header ── */
+.dashboard-title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--secondary);
+  line-height: 1.2;
+}
+
+.dashboard-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-sub);
+  margin-top: 0.25rem;
+}

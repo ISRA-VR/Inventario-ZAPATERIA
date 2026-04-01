@@ -225,7 +225,7 @@ body, .productos-page {
 }
 
 .badge-activo    { background: var(--badge-activo-bg);   color: var(--badge-activo-text); }
-.badge-bajo      { background: var(--badge-bajo-bg);     color: var(--badge-bajo-text); }
+.badge-bajo      { background: var(--badge-bajo-bg);     color: var(--badge-bajo-text) !important; }
 .badge-inactivo  { background: var(--badge-inactivo-bg); color: var(--badge-inactivo-text); }
 
 /* ── Botones icono ── */

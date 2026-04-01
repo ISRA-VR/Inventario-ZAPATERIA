@@ -1,6 +1,24 @@
 /* Empleados.css */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
 :root {
+  --primary:       #0E65C6;
+  --primary-dark:  #0a52a0;
+  --secondary:     #082F5A;
+  --bg-page:       #f0f4f8;
+  --bg-card:       #ffffff;
+  --border:        #e8edf2;
+  --text-main:     #1a2332;
+  --text-sub:      #64748b;
+  --text-light:    #94a3b8;
+  --danger:        #dc2626;
+  --shadow-card:   0 2px 12px rgba(8,47,90,0.08);
+  --shadow-modal:  0 16px 48px rgba(8,47,90,0.20);
+  --radius-card:   14px;
+  --radius-sm:     8px;
+  --transition:    0.18s ease;
+
+  
   --primary-color: #0E65C6;
   --primary-hover: #082F5A;
   --bg-light: #f8fafc;
@@ -9,27 +27,27 @@
   --white: #ffffff;
   --error: #ef4444;
   --success: #22c55e;
-  --border: #e2e8f0;
 }
 
 .empleados-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%; /* Ocupa toda la altura del contenedor padre */
-  width: 100%;
-  background-color: var(--bg-light);
-  padding: 2rem; /* Mantenemos un padding para que no se pegue a los bordes */
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+  color: var(--text-main);
 }
 
 .empleados-container h2 {
-  color: var(--text-dark);
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--secondary);
+  line-height: 1.2;
 }
 
 .empleados-container p {
-  color: var(--text-muted);
-  margin-bottom: 2rem;
+  font-size: 0.875rem;
+  color: var(--text-sub);
+  margin-top: 0.25rem;
 }
 
 /* --- HEADER & ACTIONS --- */
@@ -74,58 +92,56 @@
 }
 
 .btn-crear {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
-  color: var(--white);
+  gap: 0.4rem;
+  background: var(--primary);
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition);
 }
 
 .btn-crear:hover {
-  background-color: var(--primary-hover);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(14,101,198,0.30);
 }
 
-/* --- TABLA --- */
+/* ── Tabla (Estilo Card) ── */
 .empleados-list {
-  flex-grow: 1; /* Hace que la tabla ocupe el espacio restante */
-  overflow-y: auto; /* Añade scroll si el contenido es muy largo */
-  background: var(--white);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
+table { width: 100%; border-collapse: collapse; }
 
 th {
-  background-color: #f1f5f9;
-  padding: 1rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-dark);
+  background: #f8fafc;
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-sub);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
 }
 
 td {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
   border-bottom: 1px solid var(--border);
-  color: var(--text-dark);
-  font-size: 0.95rem;
 }
 
-tr:last-child td {
-  border-bottom: none;
-}
+tr:hover { background: #f8fafc; }
 
 /* --- BADGES --- */
 .badge-rol {

@@ -22,3 +22,12 @@ export const deleteProducto = (id) => {
 export const getCategorias = () => {
     return axios.get(`${API_URL}/categorias/`, getAuthHeaders());
 };
+
+export const getTallas = () => {
+    return axios.get(`${API_URL}/tallas`, getAuthHeaders());
+};
+
+// Nueva función agregada para actualizar las tallas
+export const updateTalla = (id, data) => {
+    return axios.put(`${API_URL}/tallas/${id}`, data, getAuthHeaders());
+};

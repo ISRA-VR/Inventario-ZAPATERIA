@@ -32,13 +32,12 @@ const Sidebar = () => {
   };
 
   // Definimos todos los items con una propiedad de 'roles' para filtrar
-  const allMenuItems = [
+const allMenuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
     { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
     { icon: <Ruler size={20} />, label: 'Tallas y Variantes', path: '/admin/tallaVariante', roles: ['admin'] },
-    // Estas rutas las ven ambos pero con sus respectivos prefijos si es necesario
     {
       icon: <ArrowUpRight size={20} />,
       label: 'Entradas',
@@ -51,8 +50,12 @@ const Sidebar = () => {
       path: user?.role === 'admin' ? '/admin/salidas' : '/empleado/salidas',
       roles: ['admin', 'empleado']
     },
-    { icon: <Search size={20} />, label: 'Búsquedas', path: user?.role === 'admin' ? '/admin/busquedas' : '/empleado/busquedas', roles: ['admin', 'empleado'] },
-    // Reportes e Historial solo Admin
+    { 
+      icon: <Search size={20} />, 
+      label: 'Búsquedas', 
+      path: '/empleado/busquedas', 
+      roles: ['empleado'] 
+    },
     { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes', roles: ['admin'] },
     { icon: <History size={20} />, label: 'Historial', path: '/admin/historial', roles: ['admin'] },
   ];
