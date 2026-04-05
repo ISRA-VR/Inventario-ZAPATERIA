@@ -1,6 +1,6 @@
 import Producto from '../models/Producto.js';
 
-// Obtener todos los productos (Modelos)
+// Obtener todos los productos
 export const getProductos = async (req, res) => {
   try {
     const productos = await Producto.findAll();
@@ -22,24 +22,27 @@ export const getProductoById = async (req, res) => {
   }
 };
 
-// Crear un nuevo producto (Modelo)
+// Crear un nuevo producto — toma el nombre del usuario logueado desde req.user
 export const createProducto = async (req, res) => {
   try {
     const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = req.body;
 
-    // Validación básica: modelo es indispensable
     if (!modelo) {
       return res.status(400).json({ message: 'El campo modelo es obligatorio' });
     }
 
+    // req.user lo pone el middleware protect, tiene los datos del usuario logueado
+    const registrado_por = req.user?.nombre || req.user?.email || 'Desconocido';
+
     const savedProducto = await Producto.create({
       modelo,
-      id_categoria: id_categoria || null, // Permite null como en tu BD
+      id_categoria: id_categoria || null,
       stock,
       precio,
       estado,
       tallas,
-      cantidad_inicial
+      cantidad_inicial,
+      registrado_por
     });
 
     res.status(201).json(savedProducto);
@@ -49,7 +52,7 @@ export const createProducto = async (req, res) => {
   }
 };
 
-// Actualizar un producto (Modelo)
+// Actualizar un producto
 export const updateProducto = async (req, res) => {
   try {
     const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = req.body;
@@ -59,13 +62,11 @@ export const updateProducto = async (req, res) => {
       return res.status(400).json({ message: 'El campo modelo es obligatorio' });
     }
 
-    // 1. Verificamos si existe
     const existe = await Producto.findByPk(id);
     if (!existe) {
       return res.status(404).json({ message: 'Modelo no encontrado' });
     }
 
-    // 2. Actualizamos
     const updatedProducto = await Producto.update(id, {
       modelo,
       id_categoria: id_categoria || null,
@@ -83,12 +84,11 @@ export const updateProducto = async (req, res) => {
   }
 };
 
-// Eliminar un producto (Modelo)
+// Eliminar un producto
 export const deleteProducto = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Verificamos si existe
     const existe = await Producto.findByPk(id);
     if (!existe) {
       return res.status(404).json({ message: 'Modelo no encontrado' });

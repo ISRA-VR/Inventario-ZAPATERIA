@@ -1,13 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useAuth } from "../context/AuthContext";
 
 import {
   LayoutDashboard, Users, Package, Tags,
   ArrowUpRight, ArrowDownLeft, Search,
-  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle,
-  Ruler
+  FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle, Store,
+  Ruler, ReceiptText
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -16,6 +16,7 @@ const Sidebar = () => {
 
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const clickCerrarSesion = () => {
@@ -31,8 +32,21 @@ const Sidebar = () => {
     setShowModal(false);
   };
 
+  const irAPuntoDeVenta = () => {
+    const rutaPuntoVenta = user?.role === 'admin' ? '/admin/punto-venta' : '/empleado/punto-venta';
+    navigate(rutaPuntoVenta);
+  };
+
+  const irAInventario = () => {
+    const rutaInventario = user?.role === 'admin' ? '/admin/productos' : '/empleado/entradas';
+    navigate(rutaInventario);
+  };
+
+  const basePuntoVentaPath = user?.role === 'admin' ? '/admin/punto-venta' : '/empleado/punto-venta';
+  const enPuntoVenta = location.pathname.startsWith(basePuntoVentaPath);
+
   // Definimos todos los items con una propiedad de 'roles' para filtrar
-const allMenuItems = [
+  const allMenuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
     { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos', roles: ['admin'] },
@@ -60,8 +74,31 @@ const allMenuItems = [
     { icon: <History size={20} />, label: 'Historial', path: '/admin/historial', roles: ['admin'] },
   ];
 
+  const puntoVentaMenuItems = [
+    {
+      icon: <Store size={20} />,
+      label: 'Punto de Venta',
+      path: basePuntoVentaPath,
+      exact: true,
+      roles: ['admin', 'empleado']
+    },
+    {
+      icon: <History size={20} />,
+      label: 'Historial de Ventas',
+      path: `${basePuntoVentaPath}/historial`,
+      roles: ['admin', 'empleado']
+    },
+    {
+      icon: <ReceiptText size={20} />,
+      label: 'Ir a Caja',
+      path: `${basePuntoVentaPath}/caja`,
+      roles: ['admin', 'empleado']
+    },
+  ];
+
   // Filtramos los items basándonos en el rol del usuario logueado
-  const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
+  const menuItemsFuente = enPuntoVenta ? puntoVentaMenuItems : allMenuItems;
+  const menuItems = menuItemsFuente.filter(item => item.roles.includes(user?.role));
 
   return (
     <>
@@ -81,6 +118,7 @@ const allMenuItems = [
             <NavLink
               key={index}
               to={item.path}
+              end={Boolean(item.exact)}
               className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
               title={isCollapsed ? item.label : ""}
             >
@@ -92,6 +130,17 @@ const allMenuItems = [
 
         {/* FOOTER */}
         <div className="sidebar-footer">
+          {!isCollapsed && (
+            <button
+              className={`punto-venta-btn ${enPuntoVenta ? 'inventario-btn' : ''}`}
+              onClick={enPuntoVenta ? irAInventario : irAPuntoDeVenta}
+              title={enPuntoVenta ? 'Ir al inventario' : 'Ir a punto de venta'}
+            >
+              {enPuntoVenta ? <Package size={16} /> : <Store size={16} />}
+              <span>{enPuntoVenta ? 'Ir al inventario' : 'Ir a punto de venta'}</span>
+            </button>
+          )}
+
           <div className="user-profile">
             <div className="user-avatar">👤</div>
             {!isCollapsed && (

@@ -23,7 +23,7 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, nombre: user.nombre },
       process.env.JWT_SECRET || "84c0c491bdc299bd803327fcf3019f0e6f4b35165e7aeb9d58c596e6c4eb78b6",
       { expiresIn: "8h" }
     );
@@ -130,8 +130,7 @@ export const updateEmpleado = async (req, res) => {
 export const deleteEmpleado = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Cambiado a DELETE real (Hard Delete)
+
     const [result] = await pool.query(
       "DELETE FROM usuarios WHERE id = ?",
       [id]

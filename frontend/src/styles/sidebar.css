@@ -1,9 +1,9 @@
 :root {
   --primary: #0E65C6;
-  --bg-sidebar: #082F5A;
-  --text-sidebar: #F8FAFC;
+  --bg-sidebar: #052e5a; /* Azul muy claro */
+  --text-sidebar: #ffffff; /* Texto oscuro para contraste con fondo claro */
   --text-white: #ffffff;
-  --hover-bg: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(14, 101, 198, 0.12); /* Hover suave azul */
   --transition-speed: 0.3s;
   /* Agregamos estas para control total */
   --sidebar-width: 260px;
@@ -195,6 +195,36 @@ html, body {
   flex-direction: column;
   gap: 10px;
   background-color: rgba(0,0,0,0.2);
+}
+
+.punto-venta-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(14, 101, 198, 0.25);
+  color: var(--text-white);
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.punto-venta-btn:hover {
+  background: var(--primary);
+  transform: translateY(-1px);
+}
+
+.inventario-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.inventario-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .user-profile {

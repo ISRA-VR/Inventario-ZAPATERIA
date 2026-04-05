@@ -24,38 +24,44 @@ const Producto = {
         LEFT JOIN categorias c ON p.id_categoria = c.id_categoria 
         WHERE p.id_producto = ? LIMIT 1`;
       const [rows] = await pool.query(sql, [id]);
-      return rows[0]; // Retorna el objeto o undefined
+      return rows[0];
     } catch (error) {
       throw error;
     }
   },
 
-  // 3. Crear un nuevo producto (Modelo)
+  // 3. Crear un nuevo producto — ahora guarda registrado_por
   async create(producto) {
-    // Quitamos 'descripcion'
-    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = producto;
+    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por } = producto;
     
-    // Asignamos valores por defecto si vienen vacíos (para coincidir con las reglas de tu BD)
-    const valPrecio = precio || 0;
+    const valPrecio = Number(precio) || 0;
     const valTallas = tallas || 'N/A';
-    const valCantidadInicial = cantidad_inicial || 0;
+    const valCantidadInicial = Math.max(0, Math.round(Number(cantidad_inicial) || 0));
+    const valStock = Math.max(0, Math.round(Number(stock) || 0));
+
+    if (Number(stock) !== valStock) {
+      console.warn(`Ajustando stock a entero seguro: recibido=${stock}, guardado=${valStock}`);
+    }
+    if (Number(cantidad_inicial) !== valCantidadInicial) {
+      console.warn(`Ajustando cantidad_inicial a entero seguro: recibido=${cantidad_inicial}, guardado=${valCantidadInicial}`);
+    }
 
     const sql = `
       INSERT INTO productos 
-      (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
       
     const [result] = await pool.query(sql, [
       modelo, 
       id_categoria, 
-      stock || 0, 
+      valStock, 
       valPrecio, 
       estado || 'activo', 
       valTallas, 
-      valCantidadInicial
+      valCantidadInicial,
+      registrado_por || null
     ]);
     
-    // Retornamos el objeto recién creado
     return { 
       id_producto: result.insertId, 
       ...producto, 
@@ -69,10 +75,16 @@ const Producto = {
   async update(id, producto) {
     const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = producto;
     
-    // Validación de campos vacíos dentro de la función para evitar el error de MySQL
-    const valCantidadInicial = cantidad_inicial === '' ? 0 : cantidad_inicial;
-    const valPrecio = precio === '' ? 0 : precio;
-    const valStock = stock === '' ? 0 : stock;
+    const valCantidadInicial = Math.max(0, Math.round(Number(cantidad_inicial) || 0));
+    const valPrecio = Number(precio) || 0;
+    const valStock = Math.max(0, Math.round(Number(stock) || 0));
+
+    if (Number(stock) !== valStock) {
+      console.warn(`Ajustando stock a entero seguro (UPDATE): recibido=${stock}, guardado=${valStock}`);
+    }
+    if (Number(cantidad_inicial) !== valCantidadInicial) {
+      console.warn(`Ajustando cantidad_inicial a entero seguro (UPDATE): recibido=${cantidad_inicial}, guardado=${valCantidadInicial}`);
+    }
 
     const sql = `
       UPDATE productos 

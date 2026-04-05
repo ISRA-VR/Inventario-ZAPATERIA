@@ -23,6 +23,9 @@ const FORM_EMPTY = {
   estado:           'activo',
 };
 
+const ENTRADAS_LS_KEY = 'entradas_inventario';
+const ENTRADAS_SNAPSHOT_KEY = 'entradas_stock_snapshot';
+
 /* ── Helpers ── */
 const estadoBadge = (estado, stock) => {
   if (estado === 'inactivo') return { cls: 'badge-inactivo', label: 'Inactivo' };
@@ -33,6 +36,96 @@ const estadoBadge = (estado, stock) => {
 
 const formatPrecio = (v) =>
   v != null ? `$${Number(v).toLocaleString('es-MX')}` : '—';
+
+const toStockNumber = (value) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return 0;
+  return Math.max(0, Math.round(parsed));
+};
+
+const registrarEntradaPorCambioStock = ({ productoAnterior, formActualizado }) => {
+  const stockAnterior = toStockNumber(productoAnterior?.stock);
+  const stockNuevo = toStockNumber(formActualizado?.stock);
+  if (stockNuevo === stockAnterior) return;
+
+  const fecha = new Date();
+  fecha.setSeconds(0, 0);
+
+  try {
+    const entradasRaw = localStorage.getItem(ENTRADAS_LS_KEY);
+    const entradas = entradasRaw ? JSON.parse(entradasRaw) : [];
+
+    const nuevaEntrada = {
+      id_producto: productoAnterior?.id_producto,
+      modelo: formActualizado?.modelo || productoAnterior?.modelo,
+      id_categoria: formActualizado?.id_categoria || productoAnterior?.id_categoria,
+      precio: Number(formActualizado?.precio) || 0,
+      tallas: formActualizado?.tallas || productoAnterior?.tallas || '',
+      cantidad: stockNuevo,
+      stock: stockNuevo,
+      registroId: `${productoAnterior?.id_producto}-${Date.now()}`,
+      fecha_creacion: fecha.toISOString(),
+      registrado_por: 'Administrador',
+    };
+
+    localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify([nuevaEntrada, ...entradas]));
+
+    const snapshotRaw = localStorage.getItem(ENTRADAS_SNAPSHOT_KEY);
+    const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : {};
+    snapshot[productoAnterior?.id_producto] = {
+      stock: stockNuevo,
+      precio: Number(formActualizado?.precio) || 0,
+      modelo: formActualizado?.modelo || productoAnterior?.modelo,
+      id_categoria: formActualizado?.id_categoria || productoAnterior?.id_categoria,
+      tallas: formActualizado?.tallas || productoAnterior?.tallas || '',
+    };
+    localStorage.setItem(ENTRADAS_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch (error) {
+    console.error('No se pudo registrar la entrada de stock en localStorage:', error);
+  }
+};
+
+const registrarEntradaNuevoModelo = ({ productoCreado, formCreado }) => {
+  const stockNuevo = toStockNumber(formCreado?.stock);
+  if (stockNuevo <= 0) return;
+
+  const fecha = new Date();
+  fecha.setSeconds(0, 0);
+
+  try {
+    const entradasRaw = localStorage.getItem(ENTRADAS_LS_KEY);
+    const entradas = entradasRaw ? JSON.parse(entradasRaw) : [];
+
+    const idProducto = productoCreado?.id_producto || `nuevo-${Date.now()}`;
+    const nuevaEntrada = {
+      id_producto: idProducto,
+      modelo: formCreado?.modelo || productoCreado?.modelo,
+      id_categoria: formCreado?.id_categoria || productoCreado?.id_categoria,
+      precio: Number(formCreado?.precio) || 0,
+      tallas: formCreado?.tallas || productoCreado?.tallas || '',
+      cantidad: stockNuevo,
+      stock: stockNuevo,
+      registroId: `${idProducto}-${Date.now()}`,
+      fecha_creacion: fecha.toISOString(),
+      registrado_por: 'Administrador',
+    };
+
+    localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify([nuevaEntrada, ...entradas]));
+
+    const snapshotRaw = localStorage.getItem(ENTRADAS_SNAPSHOT_KEY);
+    const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : {};
+    snapshot[idProducto] = {
+      stock: stockNuevo,
+      precio: Number(formCreado?.precio) || 0,
+      modelo: formCreado?.modelo || productoCreado?.modelo,
+      id_categoria: formCreado?.id_categoria || productoCreado?.id_categoria,
+      tallas: formCreado?.tallas || productoCreado?.tallas || '',
+    };
+    localStorage.setItem(ENTRADAS_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch (error) {
+    console.error('No se pudo registrar la entrada del nuevo modelo en localStorage:', error);
+  }
+};
 
 /* ══════════════════════════════════════
    COMPONENTE PRINCIPAL
@@ -114,15 +207,28 @@ const ProductosPage = () => {
     if (!validarFormulario(formCrear)) return;
 
     try {
-      // Conversión estricta a números para prevenir desfases en BD
+      // Conversión estricta a número entero y verificación de desajustes inexplicados
+      const stockInput = Number(formCrear.stock);
+      const cantidadInitialInput = Number(formCrear.cantidad_inicial);
+      const stockNorm = Math.max(0, Math.round(stockInput));
+      const cantidadInitialNorm = Math.max(0, Math.round(cantidadInitialInput));
+
+      if (stockInput !== stockNorm) {
+        toast.warn(`Stock total ajustado a valor entero: ${stockNorm}`);
+      }
+      if (cantidadInitialInput !== cantidadInitialNorm) {
+        toast.warn(`Cantidad inicial ajustada a valor entero: ${cantidadInitialNorm}`);
+      }
+
       const payload = {
         ...formCrear,
-        stock: Number(formCrear.stock),
-        precio: Number(formCrear.precio),
-        cantidad_inicial: Number(formCrear.cantidad_inicial)
+        stock: stockNorm,
+        precio: Number(formCrear.precio) || 0,
+        cantidad_inicial: cantidadInitialNorm
       };
 
-      await createProducto(payload);
+      const { data: productoCreado } = await createProducto(payload);
+      registrarEntradaNuevoModelo({ productoCreado, formCreado: payload });
       toast.success('¡Producto creado con éxito!');
       setFormCrear(FORM_EMPTY);
       setModalCrear(false);
@@ -153,15 +259,28 @@ const ProductosPage = () => {
     if (!validarFormulario(formEditar)) return;
 
     try {
-      // Conversión estricta a números para prevenir el error de "resta 1" o truncamiento
+      // Conversión estricta a número entero y verificación de desajustes inesperados
+      const stockInput = Number(formEditar.stock);
+      const cantidadInitialInput = Number(formEditar.cantidad_inicial);
+      const stockNorm = Math.max(0, Math.round(stockInput));
+      const cantidadInitialNorm = Math.max(0, Math.round(cantidadInitialInput));
+
+      if (stockInput !== stockNorm) {
+        toast.warn(`Stock total ajustado a valor entero: ${stockNorm}`);
+      }
+      if (cantidadInitialInput !== cantidadInitialNorm) {
+        toast.warn(`Cantidad inicial ajustada a valor entero: ${cantidadInitialNorm}`);
+      }
+
       const payload = {
         ...formEditar,
-        stock: Number(formEditar.stock),
-        precio: Number(formEditar.precio),
-        cantidad_inicial: Number(formEditar.cantidad_inicial)
+        stock: stockNorm,
+        precio: Number(formEditar.precio) || 0,
+        cantidad_inicial: cantidadInitialNorm
       };
 
       await updateProducto(productoActual.id_producto, payload);
+      registrarEntradaPorCambioStock({ productoAnterior: productoActual, formActualizado: payload });
       toast.info('¡Producto actualizado correctamente!');
       setModalEditar(false);
       fetchProductos();
@@ -448,6 +567,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
           value={form.stock}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onWheel={(e) => e.target.blur()}
           placeholder="0"
         />
       </div>
@@ -462,6 +582,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
           value={form.precio}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onWheel={(e) => e.target.blur()}
           placeholder="0.00"
         />
       </div>
@@ -486,6 +607,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
           value={form.cantidad_inicial}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onWheel={(e) => e.target.blur()}
           min="0"
           step="1"
           placeholder="Ej: 5"

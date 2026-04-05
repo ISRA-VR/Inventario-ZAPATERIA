@@ -14,6 +14,9 @@ import EntradasPage from "./pages/Admin/tallaVariante";
 import BusquedaPage from "./pages/Admin/busquedas";
 import ReportesPage from "./pages/Admin/reportes";
 import HistorialPage from "./pages/Admin/historial";
+import PuntoVentaPage from "./pages/punto-venta/puntoVenta";
+import CajaPage from "./pages/punto-venta/caja";
+import HistorialVentasPage from "./pages/punto-venta/historialVentas";
 
 /* EMPLEADO */
 import EntradasEmpleado from "./pages/Empleado/entrada";
@@ -73,6 +76,9 @@ export default function App() {
             <Route path="busquedas" element={<BusquedaPage />} />
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="historial" element={<HistorialPage />} />
+            <Route path="punto-venta" element={<PuntoVentaPage />} />
+            <Route path="punto-venta/caja" element={<CajaPage />} />
+            <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
           </Route>
 
           {/* EMPLEADO */}
@@ -87,6 +93,9 @@ export default function App() {
             <Route path="entradas" element={<EntradasEmpleado />} />
             <Route path="salidas" element={<SalidasEmpleado />} />
             <Route path="busquedas" element={<BusquedasEmpleado />} />
+            <Route path="punto-venta" element={<PuntoVentaPage />} />
+            <Route path="punto-venta/caja" element={<CajaPage />} />
+            <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
 
             {/* Opcional: redirigir si entran directo */}
             <Route index element={<Navigate to="entradas" />} />

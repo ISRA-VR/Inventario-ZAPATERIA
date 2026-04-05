@@ -1,4 +1,19 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
+
+// Validación sencilla de token JWT usando `exp` para proteger rutas cuando ya expiró.
+const isTokenValid = (token) => {
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+
+  try {
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    return payload.exp > Date.now() / 1000;
+  } catch {
+    return false;
+  }
+};
 
 // 1. Creamos el contexto
 export const AuthContext = createContext();
@@ -8,7 +23,19 @@ export const AuthProvider = ({ children }) => {
   // Inicializamos el estado con lo que haya en localStorage
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser) return null;
+
+    try {
+      const parsed = JSON.parse(savedUser);
+      if (!parsed.token || !isTokenValid(parsed.token)) {
+        localStorage.removeItem("user");
+        return null;
+      }
+      return parsed;
+    } catch {
+      localStorage.removeItem("user");
+      return null;
+    }
   });
 
   // Función para iniciar sesión
@@ -22,6 +49,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem("user");
   };
+
+  // Si el usuario persiste en localStorage, revisamos su token cada vez que cambia
+  useEffect(() => {
+    if (user?.token && !isTokenValid(user.token)) {
+      logout();
+    }
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

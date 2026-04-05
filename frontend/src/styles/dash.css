@@ -1,39 +1,222 @@
 /* ============================================================
-   Dashboard.css — Panel de Administración
-   Basado en el diseño de Tallas
+   dash.css - estilos del dashboard principal
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
+/* variables globales de colores */
 :root {
-  /* Colores y variables reutilizados */
-  --primary:       #0E65C6;
-  --primary-dark:  #0a52a0;
-  --secondary:     #082F5A;
-  --bg-page:       #f0f4f8;
-  --bg-card:       #ffffff;
-  --border:        #e8edf2;
+  --primary:      #0E65C6;
+  --primary-dark: #0a52a0;
+  --secondary:    #082F5A;
+  --bg-page:      #f0f4f8;
+  --bg-card:      #ffffff;
+  --border:       #e8edf2;
+  --texto-main:   #1a1f36;
+  --texto-sub:    #6b7280;
 }
 
-/* ── Estructura General ── */
+/* contenedor general de toda la pagina */
 .dashboard-container {
   font-family: 'DM Sans', system-ui, sans-serif;
   background: var(--bg-page);
   min-height: 100vh;
   padding: 2.5rem 2rem;
-  color: var(--text-main);
+  color: var(--texto-main);
 }
 
-/* ── Header ── */
+/* encabezado con titulo y subtitulo */
+.dash-header {
+  display: block;
+  margin-bottom: 28px;
+}
+
 .dashboard-title {
   font-size: 1.55rem;
   font-weight: 700;
   color: var(--secondary);
+  margin: 0 0 4px 0;
   line-height: 1.2;
 }
 
 .dashboard-subtitle {
   font-size: 0.875rem;
-  color: var(--text-sub);
-  margin-top: 0.25rem;
+  color: var(--texto-sub);
+  margin: 0;
+}
+
+/* ── tarjetas de resumen (las 4 de arriba) ── */
+
+.dash-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.dash-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+/* fila superior de cada tarjeta: nombre + icono */
+.dash-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dash-card-titulo {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texto-sub);
+}
+
+/* circulo de color con el icono */
+.dash-card-icono {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.dash-icono-azul    { background-color: #dbeafe; }
+.dash-icono-verde   { background-color: #d1fae5; }
+.dash-icono-naranja { background-color: #ffedd5; }
+.dash-icono-rojo    { background-color: #fee2e2; }
+
+/* numero grande de cada tarjeta */
+.dash-card-valor {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--texto-main);
+  margin-bottom: 6px;
+}
+
+/* texto del porcentaje o estado */
+.dash-card-cambio {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dash-card-cambio.positivo { color: #10b981; }
+.dash-card-cambio.negativo { color: var(--texto-sub); }
+.dash-card-cambio.critico  { color: #ef4444; font-weight: 600; }
+
+/* ── seccion principal: grafica + top productos ── */
+
+.dash-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* caja de la grafica y caja del top comparten estilos */
+.dash-grafica-box,
+.dash-top-box {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.dash-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texto-main);
+  margin: 0 0 2px 0;
+}
+
+.dash-section-sub {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 18px 0;
+}
+
+/* ── lista del top 5 productos ── */
+
+.dash-top-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dash-top-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* circulo con el numero de posicion */
+.dash-top-pos {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* nombre del producto y stock */
+.dash-top-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-top-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto-main);
+}
+
+.dash-top-stock {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* numero de ventas alineado a la derecha */
+.dash-top-ventas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.dash-top-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto-main);
+}
+
+.dash-top-label {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── responsive para pantallas pequenas ── */
+
+@media (max-width: 1024px) {
+  .dash-tarjetas { grid-template-columns: repeat(2, 1fr); }
+  .dash-main     { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .dashboard-container { padding: 20px 16px; }
+  .dash-tarjetas { grid-template-columns: 1fr 1fr; gap: 12px; }
 }
