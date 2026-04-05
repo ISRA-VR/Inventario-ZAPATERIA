@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { login as loginAPI } from "../api/auth";
+import { forgotPassword, login as loginAPI } from "../api/auth";
+import { API_BASE_URL } from "../api/baseUrl";
 import { AuthContext } from "../context/AuthContext";
 import Captcha from "../components/Captcha";
 import "../styles/login.css";
@@ -13,6 +14,11 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [recoverEmail, setRecoverEmail] = useState("");
+  const [recoverMessage, setRecoverMessage] = useState("");
+  const [recoverError, setRecoverError] = useState("");
+  const [recoverLoading, setRecoverLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -25,11 +31,64 @@ export default function Login() {
     if (!captchaOk) return setError("Captcha inválido");
 
     try {
+      setError("");
       const res = await loginAPI(form);
       login(res.data);
       res.data.role === "admin" ? navigate("/admin") : navigate("/empleado");
     } catch (err) {
-      setError("Correo o contraseña incorrectos");
+      const isNetworkError = !err?.response;
+      setError(
+        err?.response?.data?.message ||
+          (isNetworkError
+            ? `No hay conexión con el backend (${API_BASE_URL}). Verifica que el servicio esté activo.`
+            : "No se pudo iniciar sesión. Intenta nuevamente.")
+      );
+    }
+  };
+
+  const openRecoveryModal = () => {
+    setRecoverEmail(form.email || "");
+    setRecoverMessage("");
+    setRecoverError("");
+    setShowRecoveryModal(true);
+  };
+
+  const closeRecoveryModal = () => {
+    setShowRecoveryModal(false);
+    setRecoverMessage("");
+    setRecoverError("");
+  };
+
+  const submitRecovery = async (e) => {
+    e.preventDefault();
+    const email = String(recoverEmail || "").trim();
+    const esEmailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!esEmailValido) {
+      setRecoverError("Ingresa un correo válido para continuar.");
+      setRecoverMessage("");
+      return;
+    }
+
+    try {
+      setRecoverLoading(true);
+      setRecoverError("");
+      const response = await forgotPassword(email);
+      setRecoverMessage(
+        response?.data?.message ||
+          "Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña."
+      );
+    } catch (err) {
+      setRecoverMessage("");
+      const isNetworkError = !err?.response;
+      setRecoverError(
+        err?.response?.data?.message ||
+          (isNetworkError
+            ? `No hay conexión con el backend (${API_BASE_URL}). Verifica que el servicio esté activo.`
+            : "No se pudo enviar el enlace. Intenta nuevamente.")
+      );
+    } finally {
+      setRecoverLoading(false);
     }
   };
 
@@ -97,6 +156,13 @@ export default function Login() {
                   )}
                 </button>
               </div>
+              <button
+                type="button"
+                className="forgot-password-link"
+                onClick={openRecoveryModal}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
 
             <div className="captcha-wrapper">
@@ -116,6 +182,50 @@ export default function Login() {
 
         </div>
       </div>
+
+      {showRecoveryModal && (
+        <div className="recovery-modal-overlay" onClick={closeRecoveryModal}>
+          <div className="recovery-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="recovery-modal-header">
+              <h3>Recuperar contraseña</h3>
+              <button type="button" className="recovery-modal-close" onClick={closeRecoveryModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="recovery-modal-subtitle">
+              Ingresa tu correo y te enviaremos instrucciones para restablecer tu acceso.
+            </p>
+
+            <form onSubmit={submitRecovery} className="recovery-form">
+              <label htmlFor="recovery-email">Correo electrónico</label>
+              <input
+                id="recovery-email"
+                type="email"
+                className="input-pro"
+                placeholder="ejemplo@empresa.com"
+                value={recoverEmail}
+                onChange={(e) => setRecoverEmail(e.target.value)}
+                autoFocus
+              />
+
+              {recoverError && <div className="recovery-alert recovery-alert-error">{recoverError}</div>}
+              {recoverMessage && <div className="recovery-alert recovery-alert-success">{recoverMessage}</div>}
+
+              <div className="recovery-modal-actions">
+                <button type="button" className="btn-cancel-recovery" onClick={closeRecoveryModal}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-submit-pro btn-recovery-submit" disabled={recoverLoading}>
+                  {recoverLoading ? "Enviando..." : "Enviar enlace"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
