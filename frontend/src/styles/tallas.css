@@ -1,12 +1,10 @@
 /* ============================================================
    EntradasPage.css — Tallas y Variantes (Sincronizado)
-   Basado en el diseño de Categorías
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Colores extraídos de addCategoria.css */
   --primary:       #0E65C6;
   --primary-dark:  #0a52a0;
   --secondary:     #082F5A;
@@ -15,10 +13,7 @@
   --border:        #e8edf2;
   --text-main:     #1a2332;
   --text-sub:      #64748b;
-  --text-light:    #94a3b8;
   --danger:        #dc2626;
-  
-  /* Medidas y efectos exactos */
   --shadow-card:   0 2px 12px rgba(8,47,90,0.08);
   --shadow-hover:  0 6px 24px rgba(8,47,90,0.13);
   --radius-card:   14px;
@@ -26,7 +21,6 @@
   --transition:    0.18s ease;
 }
 
-/* ── Estructura General ── */
 .ep-wrapper {
   font-family: 'DM Sans', system-ui, sans-serif;
   background: var(--bg-page);
@@ -35,7 +29,6 @@
   color: var(--text-main);
 }
 
-/* ── Header ── */
 .ep-header {
   display: flex;
   align-items: flex-start;
@@ -56,31 +49,6 @@
   margin-top: 0.25rem;
 }
 
-/* ── Botón Primario (Mismo estilo que .btn-primary) ── */
-.ep-btn-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
-  white-space: nowrap;
-}
-
-.ep-btn-new:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(14,101,198,0.30);
-}
-
-/* ── Grid y Cards ── */
 .ep-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -117,7 +85,6 @@
   color: var(--text-main);
 }
 
-/* ── Botones de Acción Internos ── */
 .ep-action-btn {
   background: transparent;
   border: none;
@@ -132,15 +99,11 @@
 .ep-action-edit { color: var(--primary); }
 .ep-action-edit:hover { background: #dbeafe; }
 
-.ep-action-delete { color: var(--danger); }
-.ep-action-delete:hover { background: #fee2e2; }
-
 .ep-card-stock {
   font-size: 0.875rem;
   color: var(--text-sub);
 }
 
-/* ── Animaciones y Responsive ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

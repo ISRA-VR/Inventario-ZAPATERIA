@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useAuth } from "../context/AuthContext";
@@ -7,11 +7,12 @@ import {
   LayoutDashboard, Users, Package, Tags,
   ArrowUpRight, ArrowDownLeft, Search,
   FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle, Store,
-  Ruler, ReceiptText
+  ReceiptText, Menu, X, User
 } from 'lucide-react';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const { logout } = useContext(AuthContext);
@@ -38,7 +39,7 @@ const Sidebar = () => {
   };
 
   const irAInventario = () => {
-    const rutaInventario = user?.role === 'admin' ? '/admin/productos' : '/empleado/entradas';
+    const rutaInventario = user?.role === 'admin' ? '/admin/inventario-detallado' : '/empleado/entradas';
     navigate(rutaInventario);
   };
 
@@ -49,9 +50,8 @@ const Sidebar = () => {
   const allMenuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
-    { icon: <Package size={20} />, label: 'Gestión de Productos', path: '/admin/productos', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
-    { icon: <Ruler size={20} />, label: 'Tallas y Variantes', path: '/admin/tallaVariante', roles: ['admin'] },
+    { icon: <Package size={20} />, label: 'Inventario Detallado', path: '/admin/inventario-detallado', roles: ['admin'] },
     {
       icon: <ArrowUpRight size={20} />,
       label: 'Entradas',
@@ -71,7 +71,6 @@ const Sidebar = () => {
       roles: ['empleado'] 
     },
     { icon: <FileText size={20} />, label: 'Reportes', path: '/admin/reportes', roles: ['admin'] },
-    { icon: <History size={20} />, label: 'Historial', path: '/admin/historial', roles: ['admin'] },
   ];
 
   const puntoVentaMenuItems = [
@@ -100,9 +99,28 @@ const Sidebar = () => {
   const menuItemsFuente = enPuntoVenta ? puntoVentaMenuItems : allMenuItems;
   const menuItems = menuItemsFuente.filter(item => item.roles.includes(user?.role));
 
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
   return (
     <>
-      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <button
+        className={`sidebar-mobile-toggle ${isMobileOpen ? 'is-open' : ''}`}
+        onClick={() => setIsMobileOpen(true)}
+        aria-label="Abrir menú"
+      >
+        <Menu size={20} />
+      </button>
+
+      {isMobileOpen && (
+        <div
+          className="sidebar-mobile-backdrop"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
 
         {/* HEADER */}
         <div className="sidebar-header">
@@ -110,6 +128,13 @@ const Sidebar = () => {
             <img src="/favicon.ico" alt="Logo" className="logo-beni-van-img" height={30} />
           </div>
           {!isCollapsed && <span className="brand-name">Beni Van Zapatería</span>}
+          <button
+            className="sidebar-mobile-close"
+            onClick={() => setIsMobileOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* NAV */}
@@ -118,6 +143,7 @@ const Sidebar = () => {
             <NavLink
               key={index}
               to={item.path}
+              onClick={() => setIsMobileOpen(false)}
               end={Boolean(item.exact)}
               className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
               title={isCollapsed ? item.label : ""}
@@ -142,7 +168,7 @@ const Sidebar = () => {
           )}
 
           <div className="user-profile">
-            <div className="user-avatar">👤</div>
+            <div className="user-avatar"><User size={18} /></div>
             {!isCollapsed && (
               <div className="user-info">
                 <span className="user-name">{user?.nombre || "Cargando..."}</span>

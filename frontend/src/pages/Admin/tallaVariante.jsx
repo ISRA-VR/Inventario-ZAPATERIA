@@ -7,7 +7,6 @@ const EntradasPage = () => {
     const [tallas, setTallas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Estados para el modal de edición
     const [modalEditar, setModalEditar] = useState(false);
     const [formEditar, setFormEditar] = useState({ id_producto: '', modelo: '', tallas: '', cantidad_inicial: '' });
 
@@ -38,12 +37,10 @@ const EntradasPage = () => {
         setModalEditar(true);
     };
 
-    // Validación estricta con Regex
     const handleChange = (e) => {
         const { name, value } = e.target;
 
         if (name === 'cantidad_inicial') {
-            // Solo acepta números enteros positivos
             if (value === '' || /^\d*$/.test(value)) {
                 setFormEditar(prev => ({ ...prev, [name]: value }));
             }
@@ -51,7 +48,6 @@ const EntradasPage = () => {
         }
 
         if (name === 'tallas') {
-            // Solo acepta números, comas, puntos y espacios (bloquea letras y signos)
             if (value === '' || /^[\d\s,.]*$/.test(value)) {
                 setFormEditar(prev => ({ ...prev, [name]: value }));
             }
@@ -61,7 +57,6 @@ const EntradasPage = () => {
         setFormEditar({ ...formEditar, [name]: value });
     };
 
-    // Bloqueo físico de teclas inválidas
     const handleKeyDown = (e) => {
         if (['e', 'E', '+', '-'].includes(e.key)) {
             e.preventDefault();
@@ -82,7 +77,7 @@ const EntradasPage = () => {
             });
             toast.success('Tallas actualizadas correctamente.');
             setModalEditar(false);
-            fetchTallas(); 
+            fetchTallas();
         } catch (error) {
             console.error(error);
             toast.error('Error al actualizar las tallas.');
@@ -91,7 +86,6 @@ const EntradasPage = () => {
 
     return (
         <div className="ep-wrapper">
-            {/* ── Header ── */}
             <div className="ep-header">
                 <div className="ep-header-text">
                     <h1 className="ep-title">Tallas y Variantes</h1>
@@ -99,7 +93,6 @@ const EntradasPage = () => {
                 </div>
             </div>
 
-            {/* ── Grid de cards ── */}
             {loading ? (
                 <p>Cargando tallas...</p>
             ) : (
@@ -114,8 +107,8 @@ const EntradasPage = () => {
                                 <div className="ep-card-top">
                                     <h2 className="ep-card-title">Mod: {item.modelo} | Tallas: {item.tallas || item.talla}</h2>
                                     <div className="ep-card-actions">
-                                        <button 
-                                            className="ep-action-btn ep-action-edit" 
+                                        <button
+                                            className="ep-action-btn ep-action-edit"
                                             title="Actualizar"
                                             onClick={() => abrirEditar(item)}
                                         >
@@ -136,7 +129,6 @@ const EntradasPage = () => {
                 </div>
             )}
 
-            {/* ── MODAL: Editar ── */}
             {modalEditar && (
                 <div className="modal-overlay" onClick={() => setModalEditar(false)}>
                     <div className="modal-box" onClick={(e) => e.stopPropagation()}>

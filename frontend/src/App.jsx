@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
+import ConfirmResetRequest from "./pages/ConfirmResetRequest";
 import AdminLayout from "./pages/AdminLayout";
 
 import { ToastContainer } from 'react-toastify';
@@ -8,12 +10,11 @@ import 'react-toastify/dist/ReactToastify.css';
 /* ADMIN */
 import DashboardPage from "./pages/Admin/Dashboard";
 import EmpleadosPage from "./pages/Admin/Empleados";
-import ProductosPage from "./pages/Admin/Productos";
 import CategoriasPage from "./pages/Admin/categorias";
 import EntradasPage from "./pages/Admin/tallaVariante";
 import BusquedaPage from "./pages/Admin/busquedas";
 import ReportesPage from "./pages/Admin/reportes";
-import HistorialPage from "./pages/Admin/historial";
+import InventarioDetalladoPage from "./pages/Admin/InventarioDetallado";
 import PuntoVentaPage from "./pages/punto-venta/puntoVenta";
 import CajaPage from "./pages/punto-venta/caja";
 import HistorialVentasPage from "./pages/punto-venta/historialVentas";
@@ -51,6 +52,24 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/confirm-reset-request"
+            element={
+              <PublicRoute>
+                <ConfirmResetRequest />
+              </PublicRoute>
+            }
+          />
+
           {/* ADMIN */}
           <Route
             path="/admin"
@@ -65,7 +84,7 @@ export default function App() {
 
             {/* Rutas normales */}
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="productos" element={<ProductosPage />} />
+            <Route path="productos" element={<Navigate to="/admin/inventario-detallado" replace />} />
             <Route path="empleados" element={<EmpleadosPage />} />
             <Route path="categorias" element={<CategoriasPage />} />
             <Route path="tallaVariante" element={<EntradasPage />} />
@@ -75,10 +94,11 @@ export default function App() {
 
             <Route path="busquedas" element={<BusquedaPage />} />
             <Route path="reportes" element={<ReportesPage />} />
-            <Route path="historial" element={<HistorialPage />} />
+            <Route path="inventario-detallado" element={<InventarioDetalladoPage />} />
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
 
           {/* EMPLEADO */}
@@ -99,6 +119,7 @@ export default function App() {
 
             {/* Opcional: redirigir si entran directo */}
             <Route index element={<Navigate to="entradas" />} />
+            <Route path="*" element={<Navigate to="/empleado/entradas" replace />} />
           </Route>
 
         </Routes>

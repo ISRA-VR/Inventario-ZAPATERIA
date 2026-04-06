@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../../styles/dash.css';
 import { getProductos } from '../../api/productos';
+import { getResumenMovimientos } from '../../api/movimientos';
 import {
   BarChart,
   Bar,
@@ -10,57 +11,87 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { Box, TrendingUp, TrendingDown, TriangleAlert } from 'lucide-react';
 
-const movimientosData = [
-  { mes: 'Ene', valor: 255 },
-  { mes: 'Feb', valor: 275 },
-  { mes: 'Mar', valor: 310 },
-  { mes: 'Abr', valor: 265 },
-  { mes: 'May', valor: 350 },
-];
+const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+const LOW_STOCK_LIMIT = 30;
 
-// los 5 productos que mas se vendieron este mes
-const topProductos = [
-  { pos: 1, nombre: 'Nike Air Max 270', stock: 145, ventas: 89 },
-  { pos: 2, nombre: 'Adidas Ultraboost', stock: 98, ventas: 76 },
-  { pos: 3, nombre: 'Puma RS-X', stock: 67, ventas: 65 },
-  { pos: 4, nombre: 'Reebok Classic', stock: 45, ventas: 52 },
-  { pos: 5, nombre: 'New Balance 574', stock: 23, ventas: 48 },
-];
+const readVariantStockMap = () => {
+  try {
+    const raw = localStorage.getItem(VARIANT_STOCK_MAP_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
 
 const DashboardPage = () => {
   const [totalProductos, setTotalProductos] = useState(0);
   const [cambioTotalProductosMes, setCambioTotalProductosMes] = useState(0);
-  const [categoriasStockBajo, setCategoriasStockBajo] = useState([]);
-  const [cambioCategoriasStockBajoMes, setCambioCategoriasStockBajoMes] = useState(0);
+  const [modelosStockBajo, setModelosStockBajo] = useState([]);
+  const [cambioModelosStockBajoMes, setCambioModelosStockBajoMes] = useState(0);
   const [entradasMes, setEntradasMes] = useState(0);
   const [cambioEntradasMes, setCambioEntradasMes] = useState(0);
+  const [salidasMes, setSalidasMes] = useState(0);
+  const [cambioSalidasMes, setCambioSalidasMes] = useState(0);
+  const [movimientosData, setMovimientosData] = useState([]);
+  const [topProductos, setTopProductos] = useState([]);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState('');
+  const [mostrarAlertaLigera, setMostrarAlertaLigera] = useState(false);
+  const [segundosRestantes, setSegundosRestantes] = useState(5);
 
   useEffect(() => {
-    const cargarTotalProductos = async () => {
+    const cargarDashboard = async () => {
       try {
-        const { data } = await getProductos();
-        const totalStock = Array.isArray(data)
-          ? data.reduce((acumulado, producto) => {
-              const stock = Number(producto?.stock) || 0;
-              return acumulado + stock;
-            }, 0)
-          : 0;
+        const [{ data }, { data: resumen }] = await Promise.all([
+          getProductos(),
+          getResumenMovimientos(),
+        ]);
 
-        const stockPorCategoria = Array.isArray(data)
-          ? data.reduce((acumulado, producto) => {
-              const nombreCategoria = producto?.nombre_categoria || 'Sin categoría';
-              const stock = Number(producto?.stock) || 0;
-              acumulado[nombreCategoria] = (acumulado[nombreCategoria] || 0) + stock;
-              return acumulado;
-            }, {})
-          : {};
+        const productos = Array.isArray(data) ? data : [];
+        const variantStockMap = readVariantStockMap();
 
-        const categoriasBajas = Object.entries(stockPorCategoria)
-          .filter(([, stock]) => stock <= 40)
-          .map(([nombre, stock]) => ({ nombre, stock }))
+        const totalStock = productos.reduce((acumulado, producto) => {
+          const stock = Number(producto?.stock) || 0;
+          return acumulado + stock;
+        }, 0);
+
+        const modelosBajos = productos
+          .flatMap((producto) => {
+            const stockProducto = Number(producto?.stock) || 0;
+            const variantes = variantStockMap?.[producto?.id_producto];
+            const entradasVariantes = variantes && typeof variantes === 'object'
+              ? Object.entries(variantes)
+              : [];
+
+            if (entradasVariantes.length > 0) {
+              const variantesBajas = entradasVariantes
+                .map(([clave, valor]) => {
+                  const stockVariante = Number(valor) || 0;
+                  if (stockVariante > LOW_STOCK_LIMIT) return null;
+                  const [talla, color] = String(clave).split('__');
+                  return {
+                    nombre: `${String(producto?.modelo || 'Modelo sin nombre')} (${talla || 'N/A'} / ${color || 'N/A'})`,
+                    stock: stockVariante,
+                  };
+                })
+                .filter(Boolean);
+
+              return variantesBajas;
+            }
+
+            if (stockProducto <= LOW_STOCK_LIMIT) {
+              return [{
+                nombre: String(producto?.modelo || 'Modelo sin nombre'),
+                stock: stockProducto,
+              }];
+            }
+
+            return [];
+          })
           .sort((a, b) => a.stock - b.stock);
-        const totalCategoriasBajas = categoriasBajas.length;
+        const totalModelosBajos = modelosBajos.length;
 
         const ahora = new Date();
         const mesActualKey = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
@@ -81,87 +112,132 @@ const DashboardPage = () => {
           variacionPorcentaje = ((totalStock - totalMesAnterior) / totalMesAnterior) * 100;
         }
 
-        const historialStockBajoRaw = localStorage.getItem('dashboard_categorias_stock_bajo_mensual');
+        const historialStockBajoRaw = localStorage.getItem('dashboard_modelos_stock_bajo_mensual');
         const historialStockBajo = historialStockBajoRaw ? JSON.parse(historialStockBajoRaw) : {};
-        historialStockBajo[mesActualKey] = totalCategoriasBajas;
-        localStorage.setItem('dashboard_categorias_stock_bajo_mensual', JSON.stringify(historialStockBajo));
+        historialStockBajo[mesActualKey] = totalModelosBajos;
+        localStorage.setItem('dashboard_modelos_stock_bajo_mensual', JSON.stringify(historialStockBajo));
 
         const totalStockBajoMesAnterior = Number(historialStockBajo[mesAnteriorKey] ?? 0);
         let variacionStockBajo = 0;
         if (totalStockBajoMesAnterior === 0) {
-          variacionStockBajo = totalCategoriasBajas > 0 ? 100 : 0;
+          variacionStockBajo = totalModelosBajos > 0 ? 100 : 0;
         } else {
-          variacionStockBajo = ((totalCategoriasBajas - totalStockBajoMesAnterior) / totalStockBajoMesAnterior) * 100;
+          variacionStockBajo = ((totalModelosBajos - totalStockBajoMesAnterior) / totalStockBajoMesAnterior) * 100;
         }
 
         setTotalProductos(totalStock);
         setCambioTotalProductosMes(variacionPorcentaje);
-        setCategoriasStockBajo(categoriasBajas);
-        setCambioCategoriasStockBajoMes(variacionStockBajo);
-      } catch (error) {
-        console.error('Error al cargar productos del dashboard:', error);
-        setTotalProductos(0);
-        setCambioTotalProductosMes(0);
-        setCategoriasStockBajo([]);
-        setCambioCategoriasStockBajoMes(0);
-      }
-    };
+        setModelosStockBajo(modelosBajos);
+        setCambioModelosStockBajoMes(variacionStockBajo);
 
-    const cargarEntradasMes = () => {
-      try {
-        const guardado = localStorage.getItem('entradas_inventario');
-        const entradas = guardado ? JSON.parse(guardado) : [];
-        const ahora = new Date();
-        const inicioMesActual = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-        const inicioMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
-        const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+        const entradasMesActual = Number(resumen?.mes?.entradasCantidad || 0);
+        const entradasMesAnterior = Number(resumen?.mesAnterior?.entradasCantidad || 0);
 
-        const totalMesActual = entradas.filter((item) => {
-          const fechaRaw = item?.fecha_creacion || item?.created_at || item?.fechaCreacion;
-          const fecha = new Date(fechaRaw);
-          if (Number.isNaN(fecha.getTime())) return false;
-          return fecha >= inicioMesActual && fecha < inicioMesSiguiente;
-        }).length;
-
-        const totalMesAnterior = entradas.filter((item) => {
-          const fechaRaw = item?.fecha_creacion || item?.created_at || item?.fechaCreacion;
-          const fecha = new Date(fechaRaw);
-          if (Number.isNaN(fecha.getTime())) return false;
-          return fecha >= inicioMesAnterior && fecha < inicioMesActual;
-        }).length;
-
-        let variacionPorcentaje = 0;
-        if (totalMesAnterior === 0) {
-          variacionPorcentaje = totalMesActual > 0 ? 100 : 0;
+        let variacionEntradas = 0;
+        if (entradasMesAnterior === 0) {
+          variacionEntradas = entradasMesActual > 0 ? 100 : 0;
         } else {
-          variacionPorcentaje = ((totalMesActual - totalMesAnterior) / totalMesAnterior) * 100;
+          variacionEntradas = ((entradasMesActual - entradasMesAnterior) / entradasMesAnterior) * 100;
         }
 
-        setEntradasMes(totalMesActual);
-        setCambioEntradasMes(variacionPorcentaje);
+        const salidasMesActual = Number(resumen?.mes?.salidasCantidad || 0);
+        const salidasMesAnterior = Number(resumen?.mesAnterior?.salidasCantidad || 0);
+
+        let variacionSalidas = 0;
+        if (salidasMesAnterior === 0) {
+          variacionSalidas = salidasMesActual > 0 ? 100 : 0;
+        } else {
+          variacionSalidas = ((salidasMesActual - salidasMesAnterior) / salidasMesAnterior) * 100;
+        }
+
+        const modelosValidos = new Set(
+          productos
+            .map((p) => String(p?.modelo || '').trim().toLowerCase())
+            .filter(Boolean)
+        );
+
+        const stockPorModelo = productos.reduce((acumulado, producto) => {
+          const clave = String(producto?.modelo || '').trim().toLowerCase();
+          if (!clave) return acumulado;
+          acumulado[clave] = Number(producto?.stock) || 0;
+          return acumulado;
+        }, {});
+
+        const topOrdenado = (Array.isArray(resumen?.topProductosMes) ? resumen.topProductosMes : [])
+          .map((item, idx) => ({
+            ...item,
+            pos: idx + 1,
+            nombre: String(item?.nombre || '').trim(),
+          }))
+          .filter((item) => {
+            const nombre = item.nombre.toLowerCase();
+            if (!nombre) return false;
+            if (!modelosValidos.has(nombre)) return false;
+            if (item.nombre.length > 80) return false;
+            if (/(.)\1{14,}/.test(item.nombre)) return false;
+            return true;
+          })
+          .map((item) => ({
+            ...item,
+            stock: stockPorModelo[item.nombre.toLowerCase()] ?? null,
+          }))
+          .slice(0, 5);
+
+        setEntradasMes(entradasMesActual);
+        setCambioEntradasMes(variacionEntradas);
+        setSalidasMes(salidasMesActual);
+        setCambioSalidasMes(variacionSalidas);
+        setMovimientosData(Array.isArray(resumen?.seriesInventario) ? resumen.seriesInventario : []);
+        setTopProductos(topOrdenado);
+        setUltimaActualizacion(new Date().toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }));
       } catch (error) {
-        console.error('Error al leer entradas del mes en dashboard:', error);
+        console.error('Error al cargar datos del dashboard:', error);
+        setTotalProductos(0);
+        setCambioTotalProductosMes(0);
+        setModelosStockBajo([]);
+        setCambioModelosStockBajoMes(0);
         setEntradasMes(0);
         setCambioEntradasMes(0);
+        setSalidasMes(0);
+        setCambioSalidasMes(0);
+        setMovimientosData([]);
+        setTopProductos([]);
+        setUltimaActualizacion('Sin datos');
       }
     };
 
-    cargarTotalProductos();
-    cargarEntradasMes();
+    const refrescarDashboard = () => cargarDashboard();
+    cargarDashboard();
+
+    window.addEventListener('storage', refrescarDashboard);
+    window.addEventListener('focus', refrescarDashboard);
+    window.addEventListener('ventas-pos-updated', refrescarDashboard);
+    window.addEventListener('inventario-updated', refrescarDashboard);
+
+    return () => {
+      window.removeEventListener('storage', refrescarDashboard);
+      window.removeEventListener('focus', refrescarDashboard);
+      window.removeEventListener('ventas-pos-updated', refrescarDashboard);
+      window.removeEventListener('inventario-updated', refrescarDashboard);
+    };
   }, []);
 
   const cambioTotalProductosFormateado = `${cambioTotalProductosMes >= 0 ? '+' : ''}${cambioTotalProductosMes.toFixed(1)}%`;
   const cambioEntradasFormateado = `${cambioEntradasMes >= 0 ? '+' : ''}${cambioEntradasMes.toFixed(1)}%`;
-  const cambioStockBajoFormateado = `${cambioCategoriasStockBajoMes >= 0 ? '+' : ''}${cambioCategoriasStockBajoMes.toFixed(1)}%`;
+  const cambioSalidasFormateado = `${cambioSalidasMes >= 0 ? '+' : ''}${cambioSalidasMes.toFixed(1)}%`;
+  const cambioStockBajoFormateado = `${cambioModelosStockBajoMes >= 0 ? '+' : ''}${cambioModelosStockBajoMes.toFixed(1)}%`;
 
   const tarjetas = useMemo(() => ([
     {
-      titulo: 'Productos Totales',
+      titulo: 'Stock Total',
       valor: totalProductos.toLocaleString('es-MX'),
       cambio: cambioTotalProductosFormateado,
       positivo: cambioTotalProductosMes >= 0,
       color: 'azul',
-      icono: '📦',
+      icono: <Box size={18} />,
     },
     {
       titulo: 'Entradas del Mes',
@@ -169,23 +245,24 @@ const DashboardPage = () => {
       cambio: cambioEntradasFormateado,
       positivo: cambioEntradasMes >= 0,
       color: 'verde',
-      icono: '📈',
+      icono: <TrendingUp size={18} />,
     },
     {
       titulo: 'Salidas del Mes',
-      valor: '289',
-      cambio: '-3.1%',
-      positivo: false,
+      valor: salidasMes.toLocaleString('es-MX'),
+      cambio: cambioSalidasFormateado,
+      positivo: cambioSalidasMes <= 0,
       color: 'naranja',
-      icono: '📉',
+      icono: <TrendingDown size={18} />,
+      critico: cambioSalidasMes > 0,
     },
     {
       titulo: 'Stock Bajo',
-      valor: categoriasStockBajo.length.toLocaleString('es-MX'),
+      valor: modelosStockBajo.length.toLocaleString('es-MX'),
       cambio: cambioStockBajoFormateado,
-      positivo: cambioCategoriasStockBajoMes <= 0,
+      positivo: cambioModelosStockBajoMes <= 0,
       color: 'rojo',
-      icono: '⚠️',
+      icono: <TriangleAlert size={18} />,
       critico: false,
     },
   ]), [
@@ -195,19 +272,102 @@ const DashboardPage = () => {
     entradasMes,
     cambioEntradasMes,
     cambioEntradasFormateado,
-    categoriasStockBajo,
-    cambioCategoriasStockBajoMes,
+    salidasMes,
+    cambioSalidasMes,
+    cambioSalidasFormateado,
+    modelosStockBajo,
+    cambioModelosStockBajoMes,
     cambioStockBajoFormateado,
   ]);
+
+  const insight = useMemo(() => {
+    const hayStockBajoCritico = modelosStockBajo.length >= 3;
+    const salidasSubiendoFuerte = cambioSalidasMes > 15;
+    const entradasDebiles = entradasMes === 0 || cambioEntradasMes < -10;
+
+    if (hayStockBajoCritico && salidasSubiendoFuerte) {
+      return {
+        tipo: 'alerta',
+        titulo: 'Ojo: hay señales de presión en inventario',
+        texto: 'Subieron las salidas y ya hay varios modelos en stock bajo. Conviene meter reposición esta semana.',
+      };
+    }
+
+    if (modelosStockBajo.length > 0) {
+      return {
+        tipo: 'warning',
+        titulo: 'Atención',
+        texto: `Tienes ${modelosStockBajo.length} modelo${modelosStockBajo.length === 1 ? '' : 's'} con stock bajo. Vale la pena revisarlos hoy.`,
+      };
+    }
+
+    if (entradasDebiles) {
+      return {
+        tipo: 'warning',
+        titulo: 'Movimiento tranquilo',
+        texto: 'No hubo muchas entradas este periodo. Si vienen ventas fuertes, podrías quedarte corto.',
+      };
+    }
+
+    return {
+      tipo: 'ok',
+      titulo: 'Todo en orden',
+      texto: 'El inventario va estable y sin alertas fuertes. Buen ritmo para seguir operando normal.',
+    };
+  }, [modelosStockBajo, cambioSalidasMes, entradasMes, cambioEntradasMes]);
+
+  useEffect(() => {
+    if (insight.tipo !== 'warning') {
+      setMostrarAlertaLigera(false);
+      return;
+    }
+
+    setMostrarAlertaLigera(true);
+    setSegundosRestantes(5);
+
+    const intervalId = setInterval(() => {
+      setSegundosRestantes((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    const timeoutId = setTimeout(() => {
+      setMostrarAlertaLigera(false);
+      clearInterval(intervalId);
+    }, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }, [insight]);
 
   return (
     <div className="dashboard-container">
 
       {/* titulo de la pagina */}
       <header className="dash-header">
-        <h1 className="dashboard-title">Dashboard</h1>
-        <p className="dashboard-subtitle">Resumen general del inventario</p>
+        <div>
+          <h1 className="dashboard-title">Panel rápido del día</h1>
+          <p className="dashboard-subtitle">Una vista clara para revisar cómo va la tienda sin complicarte.</p>
+        </div>
+        <div className="dash-update-pill">
+          Última actualización: {ultimaActualizacion || 'Cargando...'}
+        </div>
       </header>
+
+      {insight.tipo !== 'warning' && (
+        <section className={`dash-insight dash-insight-${insight.tipo}`}>
+          <h3>{insight.titulo}</h3>
+          <p>{insight.texto}</p>
+        </section>
+      )}
+
+      {mostrarAlertaLigera && insight.tipo === 'warning' && (
+        <aside className="dash-warning-float" role="status" aria-live="polite">
+          <h3>{insight.titulo}</h3>
+          <p>{insight.texto}</p>
+          <span className="dash-warning-countdown">Se cierra en {segundosRestantes}s</span>
+        </aside>
+      )}
 
       {/* las 4 tarjetas de resumen */}
       <div className="dash-tarjetas">
@@ -239,8 +399,8 @@ const DashboardPage = () => {
 
         {/* grafica de barras */}
         <div className="dash-grafica-box">
-          <h2 className="dash-section-title">Movimientos de Inventario</h2>
-          <p className="dash-section-sub">Últimos 5 meses</p>
+          <h2 className="dash-section-title">Movimiento mensual</h2>
+          <p className="dash-section-sub">Entradas y salidas de los últimos meses.</p>
 
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={movimientosData} barSize={38}>
@@ -255,8 +415,6 @@ const DashboardPage = () => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#6b7280', fontSize: 13 }}
-                domain={[0, 400]}
-                ticks={[0, 90, 180, 270, 360]}
               />
               <Tooltip
                 cursor={{ fill: 'rgba(251,191,36,0.1)' }}
@@ -266,18 +424,20 @@ const DashboardPage = () => {
                   boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
                 }}
               />
-              {/* barras en color amarillo/dorado */}
-              <Bar dataKey="valor" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="valor" fill="#b06f2a" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* lista del top 5 */}
         <div className="dash-top-box">
-          <h2 className="dash-section-title">Productos Más Vendidos</h2>
-          <p className="dash-section-sub">Top 5 del mes</p>
+          <h2 className="dash-section-title">Lo más vendido</h2>
+          <p className="dash-section-sub">Top 5 del mes según ventas reales registradas.</p>
 
           <ul className="dash-top-lista">
+            {topProductos.length === 0 && (
+              <li className="dash-top-empty">Aún no hay ventas registradas este mes.</li>
+            )}
             {topProductos.map((p) => (
               <li className="dash-top-item" key={p.pos}>
 
@@ -287,7 +447,7 @@ const DashboardPage = () => {
                 {/* nombre y stock */}
                 <div className="dash-top-info">
                   <span className="dash-top-nombre">{p.nombre}</span>
-                  <span className="dash-top-stock">Stock: {p.stock}</span>
+                  <span className="dash-top-stock">Stock: {Number.isFinite(p.stock) ? p.stock : '—'}</span>
                 </div>
 
                 {/* ventas del mes */}
@@ -302,6 +462,7 @@ const DashboardPage = () => {
         </div>
 
       </div>
+
     </div>
   );
 };

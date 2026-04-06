@@ -3,12 +3,15 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  background: #ffffff;
+  min-height: 100vh;
 }
 
 .encabezado {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  padding-bottom: 6px;
 }
 
 .encabezado-texto {
@@ -20,12 +23,12 @@
 .titulo-pagina {
   font-size: 28px;
   font-weight: 700;
-  color: #1a2540;
+  color: #22344d;
 }
 
 .subtitulo-pagina {
   font-size: 14px;
-  color: #888;
+  color: #6f7783;
 }
 
 .tarjetas-resumen {
@@ -38,7 +41,8 @@
   background-color: #fff;
   border-radius: 12px;
   padding: 22px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e0d4;
+  box-shadow: 0 12px 26px rgba(31, 42, 55, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -58,7 +62,7 @@
 .tarjeta-numero {
   font-size: 34px;
   font-weight: 700;
-  color: #1a2540;
+  color: #203047;
   line-height: 1;
 }
 
@@ -72,15 +76,17 @@
   font-size: 22px;
 }
 
-.tarjeta-icono.verde { background-color: #dcfce7; }
-.tarjeta-icono.azul  { background-color: #dbeafe; }
-.tarjeta-icono.morado { background-color: #ede9fe; }
+.tarjeta-icono.verde { background-color: #d8efe3; color: #1f7a4c; }
+.tarjeta-icono.azul  { background-color: #dce8f7; color: #2e5f93; }
+.tarjeta-icono.morado { background-color: #ebe5f6; color: #5a4f8f; }
+.tarjeta-icono.rojo-suave { background-color: #f4dfdb; color: #a13a3a; }
 
 .card-tabla {
   background-color: #fff;
   border-radius: 12px;
   padding: 24px 24px 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e0d4;
+  box-shadow: 0 12px 26px rgba(31, 42, 55, 0.08);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -114,36 +120,43 @@
   text-align: left;
   font-size: 11px;
   font-weight: 600;
-  color: #aaa;
+  color: #8d8d8d;
   padding: 10px 14px;
   letter-spacing: 0.05em;
 }
 
 .tabla tbody tr {
-  border-bottom: 1px solid #f7f7f7;
+  border-bottom: 1px solid #f0ece4;
   transition: background 0.15s;
 }
 
 .tabla tbody tr:last-child { border-bottom: none; }
-.tabla tbody tr:hover { background-color: #fafafa; }
+.tabla tbody tr:hover { background-color: #f8f5ef; }
 
 .tabla td {
   padding: 14px;
   font-size: 14px;
-  color: #444;
+  color: #3f4650;
 }
 
 .td-id    { color: #888; font-size: 13px; }
 .td-modelo { font-weight: 600; color: #1a2540; }
-.td-costo  { font-weight: 600; color: #1a2540; }
+.td-costo  { font-weight: 700; color: #2b3d54; }
 
 .badge-cantidad {
-  background-color: #dcfce7;
-  color: #16a34a;
+  background-color: #d9f2e3;
+  color: #1f7a4c;
+  border: 1px solid #b8e4cb;
   font-weight: 600;
   font-size: 13px;
   padding: 3px 10px;
   border-radius: 20px;
+}
+
+.badge-cantidad-salida {
+  background-color: #f8dddd;
+  color: #a13a3a;
+  border: 1px solid #efc1c1;
 }
 
 .celda-usuario {
@@ -155,7 +168,8 @@
 .avatar-mini {
   width: 28px;
   height: 28px;
-  background-color: #e2e8f0;
+  background-color: #ece4d8;
+  color: #6f5a3d;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -176,8 +190,8 @@
 .badge-estado.pendiente  { background-color: #f0f0f0; color: #666; }
 
 .btn-limpiar {
-  background-color: #fee2e2;
-  color: #dc2626;
+  background-color: #f3e5da;
+  color: #9f4a37;
   border: none;
   border-radius: 8px;
   padding: 10px;
@@ -188,7 +202,7 @@
   transition: background 0.2s;
 }
 
-.btn-limpiar:hover { background-color: #fecaca; }
+.btn-limpiar:hover { background-color: #edd8c9; }
 
 /* === MODAL CON CLASES ÚNICAS === */
 .entradas-modal-overlay {
@@ -255,7 +269,7 @@
 }
 
 .entradas-modal-btn {
-  background-color: #052e5a;
+  background-color: #0E65C6;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -266,7 +280,7 @@
   transition: background 0.2s;
 }
 
-.entradas-modal-btn:hover { background-color: #0b4686; }
+.entradas-modal-btn:hover { background-color: #0a52a0; }
 
 /* === MODAL CONFIRMACIÓN === */
 .entradas-confirm-overlay {
@@ -345,7 +359,7 @@
   padding: 11px;
   border-radius: 8px;
   border: none;
-  background-color: #dc2626;
+  background-color: #0E65C6;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -354,5 +368,5 @@
 }
 
 .entradas-confirm-confirmar:hover {
-  background-color: #b91c1c;
+  background-color: #0a52a0;
 }

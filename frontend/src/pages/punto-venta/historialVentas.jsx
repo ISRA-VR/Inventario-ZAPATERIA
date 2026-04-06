@@ -1,65 +1,7 @@
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import "../../styles/styles-POS/historialVentas.css";
 
-
-const ventasMock = [
-  {
-    id: "V-0041",
-    fecha: "2025-07-12",
-    hora: "14:32",
-    detalle: [
-      { nombre: "Nike Air Max 90", cantidad: 2, precio: 150 },
-      { nombre: "Vans Old Skool", cantidad: 1, precio: 200 },
-    ],
-    total: 500,
-    metodo: "Efectivo",
-  },
-  {
-    id: "V-0040",
-    fecha: "2025-07-12",
-    hora: "12:10",
-    detalle: [{ nombre: "Adidas Ultraboost", cantidad: 1, precio: 220 }],
-    total: 220,
-    metodo: "Tarjeta",
-  },
-  {
-    id: "V-0039",
-    fecha: "2025-07-11",
-    hora: "18:55",
-    detalle: [
-      { nombre: "Puma RS-X", cantidad: 1, precio: 220 },
-      { nombre: "Converse Chuck 70", cantidad: 2, precio: 180 },
-    ],
-    total: 580,
-    metodo: "Transferencia",
-  },
-  {
-    id: "V-0038",
-    fecha: "2025-07-11",
-    hora: "10:20",
-    detalle: [{ nombre: "New Balance 574", cantidad: 1, precio: 250 }],
-    total: 250,
-    metodo: "Efectivo",
-  },
-  {
-    id: "V-0037",
-    fecha: "2025-07-10",
-    hora: "16:44",
-    detalle: [
-      { nombre: "Nike Air Max 90", cantidad: 3, precio: 150 },
-    ],
-    total: 450,
-    metodo: "Tarjeta",
-  },
-  {
-    id: "V-0036",
-    fecha: "2025-07-09",
-    hora: "09:05",
-    detalle: [{ nombre: "Vans Old Skool", cantidad: 2, precio: 200 }],
-    total: 400,
-    metodo: "Efectivo",
-  },
-];
+const VENTAS_LS_KEY = "ventas_punto_venta";
 
 const METODO_COLOR = {
   Efectivo: { bg: "#dcfce7", color: "#16a34a" },
@@ -71,8 +13,35 @@ export default function HistorialVentas() {
   const [fecha, setFecha] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [expandido, setExpandido] = useState(null);
+  const [ventasBase, setVentasBase] = useState([]);
 
-  const ventas = ventasMock.filter((v) => {
+  const cargarVentas = () => {
+    try {
+      const raw = localStorage.getItem(VENTAS_LS_KEY);
+      const ventas = raw ? JSON.parse(raw) : [];
+      setVentasBase(Array.isArray(ventas) ? ventas : []);
+    } catch (error) {
+      console.error("Error leyendo historial de ventas:", error);
+      setVentasBase([]);
+    }
+  };
+
+  useEffect(() => {
+    cargarVentas();
+
+    const sincronizarVentas = () => cargarVentas();
+    window.addEventListener("storage", sincronizarVentas);
+    window.addEventListener("focus", sincronizarVentas);
+    window.addEventListener("ventas-pos-updated", sincronizarVentas);
+
+    return () => {
+      window.removeEventListener("storage", sincronizarVentas);
+      window.removeEventListener("focus", sincronizarVentas);
+      window.removeEventListener("ventas-pos-updated", sincronizarVentas);
+    };
+  }, []);
+
+  const ventas = ventasBase.filter((v) => {
     const matchFecha = fecha ? v.fecha === fecha : true;
     const matchBusq = busqueda
       ? v.detalle.some((d) => d.nombre.toLowerCase().includes(busqueda.toLowerCase()))
@@ -161,7 +130,7 @@ export default function HistorialVentas() {
               <line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
             </svg>
             <p>No se encontraron ventas</p>
-            <span>Intenta con otra fecha o término de búsqueda</span>
+            <span>Finaliza una venta en Caja para verla aquí</span>
           </div>
         ) : (
           <table className="hv-table">
@@ -176,7 +145,7 @@ export default function HistorialVentas() {
             </thead>
             <tbody>
               {ventas.map((v) => (
-                <>
+                <Fragment key={v.id || `${v.fecha}-${v.hora}`}>
                   <tr key={v.id} className={expandido === v.id ? "row-expanded" : ""}>
                     <td>
                       <p className="fecha">{v.fecha.split("-").reverse().join("/")}</p>
@@ -242,7 +211,7 @@ export default function HistorialVentas() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

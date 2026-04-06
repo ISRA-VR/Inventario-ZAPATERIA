@@ -1,6 +1,7 @@
 import axios from "axios";
+import { API_BASE_URL } from "./baseUrl";
 
-const API_URL = "http://localhost:3001/api/auth";
+const API_URL = `${API_BASE_URL}/api/auth`;
 
 // Función auxiliar para obtener el token del localStorage
 export const getAuthHeaders = () => {
@@ -15,6 +16,18 @@ export const getAuthHeaders = () => {
 
 export const login = (data) => {
   return axios.post(`${API_URL}/login`, data);
+};
+
+export const forgotPassword = (email) => {
+  return axios.post(`${API_URL}/forgot-password`, { email });
+};
+
+export const confirmResetRequest = (token) => {
+  return axios.post(`${API_URL}/confirm-reset-request`, { token });
+};
+
+export const resetPassword = (token, password) => {
+  return axios.post(`${API_URL}/reset-password`, { token, password });
 };
 
 // --- RUTAS PROTEGIDAS (Necesitan el token del admin) ---

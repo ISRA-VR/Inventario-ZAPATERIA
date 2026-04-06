@@ -1,36 +1,29 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
+import { CircleCheck, DollarSign, TrendingUp, CalendarDays } from "lucide-react";
+import { getResumenMovimientos } from "../../api/movimientos";
 import "../../styles/styles-POS/puntoVenta.css";
 
-const ventasSemana = [
-  { dia: "Lun", ventas: 1200 },
-  { dia: "Mar", ventas: 2100 },
-  { dia: "Mié", ventas: 900 },
-  { dia: "Jue", ventas: 3400 },
-  { dia: "Vie", ventas: 4200 },
-  { dia: "Sáb", ventas: 5800 },
-  { dia: "Dom", ventas: 3100 },
-];
+const EMPTY_RESUMEN = {
+  hoy: { salidasMonto: 0, gananciaNeta: 0 },
+  ayer: { salidasMonto: 0 },
+  mes: { gananciaNeta: 0 },
+  seriesVentasSemana: [],
+  seriesVentasMes: [],
+  ventasPorCategoria: [],
+  topVendidoHoy: [],
+  actividadReciente: [],
+};
 
-const ventasMes = [
-  { mes: "Ene", ventas: 18000 },
-  { mes: "Feb", ventas: 22000 },
-  { mes: "Mar", ventas: 19500 },
-  { mes: "Abr", ventas: 27000 },
-  { mes: "May", ventas: 31000 },
-  { mes: "Jun", ventas: 28500 },
-  { mes: "Jul", ventas: 24000 },
-];
-
-const ventasPorCategoria = [
-  { cat: "Deportivo", hoy: 8, ayer: 5 },
-  { cat: "Casual", hoy: 12, ayer: 9 },
-  { cat: "Formal", hoy: 4, ayer: 6 },
-  { cat: "Infantil", hoy: 6, ayer: 4 },
-];
+const nombreValido = (value) => {
+  const txt = String(value || "").trim();
+  if (!txt || txt.length > 80) return false;
+  if (/(.)\1{14,}/.test(txt)) return false;
+  return true;
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -50,6 +43,79 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function PuntoDeVenta() {
   const [periodo, setPeriodo] = useState("semana");
+  const [resumen, setResumen] = useState(EMPTY_RESUMEN);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const { data: resumenMov } = await getResumenMovimientos();
+        setResumen(resumenMov || EMPTY_RESUMEN);
+      } catch (error) {
+        console.error("Error cargando productos para punto de venta:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarDatos();
+
+    const refrescar = () => cargarDatos();
+    window.addEventListener("storage", refrescar);
+    window.addEventListener("focus", refrescar);
+    window.addEventListener("ventas-pos-updated", refrescar);
+
+    return () => {
+      window.removeEventListener("storage", refrescar);
+      window.removeEventListener("focus", refrescar);
+      window.removeEventListener("ventas-pos-updated", refrescar);
+    };
+  }, []);
+
+  const totalVentasHoy = Number(resumen?.hoy?.salidasMonto || 0);
+  const totalVentasAyer = Number(resumen?.ayer?.salidasMonto || 0);
+  const ingresosHoy = Number(resumen?.hoy?.salidasMonto || 0);
+  const ingresosMes = Number(resumen?.mes?.salidasMonto || 0);
+
+  const variacionVsAyer = totalVentasAyer === 0
+    ? (totalVentasHoy > 0 ? 100 : 0)
+    : ((totalVentasHoy - totalVentasAyer) / totalVentasAyer) * 100;
+
+  const ventasSemana = useMemo(() => (
+    Array.isArray(resumen?.seriesVentasSemana) ? resumen.seriesVentasSemana : []
+  ), [resumen]);
+
+  const ventasMes = useMemo(() => (
+    Array.isArray(resumen?.seriesVentasMes) ? resumen.seriesVentasMes : []
+  ), [resumen]);
+
+  const ventasPorCategoria = useMemo(() => {
+    const base = Array.isArray(resumen?.ventasPorCategoria) ? resumen.ventasPorCategoria : [];
+    return base.map((item) => ({
+      cat: nombreValido(item.cat) ? item.cat : "Sin categoría",
+      hoy: Number(item.hoy || 0),
+      ayer: Number(item.ayer || 0),
+    }));
+  }, [resumen]);
+
+  const topVendidoHoy = useMemo(() => {
+    const base = Array.isArray(resumen?.topVendidoHoy) ? resumen.topVendidoHoy : [];
+    return base.map((item) => ({
+      nombre: item.nombre,
+      unid: Number(item.ventas || 0),
+      total: Number(item.total || 0),
+    }))
+      .filter((item) => nombreValido(item.nombre) && item.unid > 0)
+      .slice(0, 5);
+  }, [resumen]);
+
+  const actividadReciente = useMemo(() => {
+    const base = Array.isArray(resumen?.actividadReciente) ? resumen.actividadReciente : [];
+    return base.map((item) => ({
+      ...item,
+      desc: nombreValido(item?.desc) ? item.desc : "Movimiento reciente",
+    }));
+  }, [resumen]);
 
   return (
     <div className="pventa-wrapper">
@@ -64,7 +130,7 @@ export default function PuntoDeVenta() {
           </div>
         </div>
         <div className="pventa-header-right">
-          <span className="pventa-badge">● En línea</span>
+          <span className="pventa-badge"><CircleCheck size={12} /> En línea</span>
           <span className="pventa-date">
             {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
           </span>
@@ -74,35 +140,33 @@ export default function PuntoDeVenta() {
       {/* KPIs */}
       <div className="pventa-kpis">
         <div className="kpi-card kpi-blue">
-          <div className="kpi-icon">💰</div>
+          <div className="kpi-icon"><DollarSign size={24} /></div>
           <div>
             <p className="kpi-label">Ventas hoy</p>
-            <p className="kpi-value">$4,230.00</p>
-            <p className="kpi-delta positive">↑ 18% vs ayer</p>
+            <p className="kpi-value">${totalVentasHoy.toLocaleString("es-MX")}</p>
+            <p className={`kpi-delta ${variacionVsAyer >= 0 ? "positive" : "negative"}`}>
+              {variacionVsAyer >= 0 ? "↑" : "↓"} {Math.abs(variacionVsAyer).toFixed(1)}% vs ayer
+            </p>
           </div>
         </div>
         <div className="kpi-card kpi-green">
-          <div className="kpi-icon">📈</div>
+          <div className="kpi-icon"><TrendingUp size={24} /></div>
           <div>
-            <p className="kpi-label">Ganancia actual</p>
-            <p className="kpi-value">$1,692.00</p>
-            <p className="kpi-delta positive">↑ 40% margen</p>
+            <p className="kpi-label">Ingresos hoy</p>
+            <p className="kpi-value">${ingresosHoy.toLocaleString("es-MX")}</p>
+            <p className="kpi-delta positive">
+              Basado en ventas registradas del día
+            </p>
           </div>
         </div>
         <div className="kpi-card kpi-amber">
-          <div className="kpi-icon">📅</div>
+          <div className="kpi-icon"><CalendarDays size={24} /></div>
           <div>
-            <p className="kpi-label">Ganancia del mes</p>
-            <p className="kpi-value">$28,500.00</p>
-            <p className="kpi-delta positive">↑ 12% vs mes ant.</p>
-          </div>
-        </div>
-        <div className="kpi-card kpi-purple">
-          <div className="kpi-icon">🛒</div>
-          <div>
-            <p className="kpi-label">Tickets hoy</p>
-            <p className="kpi-value">37</p>
-            <p className="kpi-delta positive">↑ 5 más que ayer</p>
+            <p className="kpi-label">Ingresos del mes</p>
+            <p className="kpi-value">${ingresosMes.toLocaleString("es-MX")}</p>
+            <p className="kpi-delta positive">
+              Basado en ventas persistidas
+            </p>
           </div>
         </div>
       </div>
@@ -204,22 +268,17 @@ export default function PuntoDeVenta() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { nombre: "Nike Air Max 90", unid: 14, total: "$8,400" },
-                { nombre: "Adidas Ultraboost", unid: 11, total: "$7,150" },
-                { nombre: "Vans Old Skool", unid: 9, total: "$4,050" },
-                { nombre: "Puma RS-X", unid: 6, total: "$3,300" },
-                { nombre: "Converse Chuck 70", unid: 4, total: "$1,800" },
-              ].map((p, i) => (
+              {topVendidoHoy.map((p, i) => (
                 <tr key={i}>
                   <td><span className="rank">{i + 1}</span></td>
                   <td>{p.nombre}</td>
                   <td><span className="unid-badge">{p.unid}</span></td>
-                  <td><strong>{p.total}</strong></td>
+                  <td><strong>${p.total.toLocaleString("es-MX")}</strong></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {topVendidoHoy.length === 0 && <p className="chart-sub">Sin ventas registradas hoy</p>}
         </div>
 
         {/* Actividad reciente */}
@@ -228,25 +287,21 @@ export default function PuntoDeVenta() {
             <h2 className="chart-title">Actividad reciente</h2>
           </div>
           <ul className="activity-list">
-            {[
-              { tipo: "venta", desc: "Nike Air Max x2", hora: "hace 3 min", monto: "+$1,200" },
-              { tipo: "venta", desc: "Vans Old Skool x1", hora: "hace 11 min", monto: "+$450" },
-              { tipo: "devolucion", desc: "Puma RS-X x1", hora: "hace 28 min", monto: "-$550" },
-              { tipo: "venta", desc: "Adidas Ultraboost x3", hora: "hace 45 min", monto: "+$1,950" },
-              { tipo: "venta", desc: "Converse Chuck x1", hora: "hace 1 hr", monto: "+$450" },
-            ].map((a, i) => (
+            {actividadReciente.map((a, i) => (
               <li key={i} className="activity-item">
-                <span className={`activity-dot ${a.tipo}`} />
+                <span className={`activity-dot ${a.tipo === "entrada" ? "entrada" : "venta"}`} />
                 <div className="activity-info">
                   <span className="activity-desc">{a.desc}</span>
                   <span className="activity-hora">{a.hora}</span>
                 </div>
-                <span className={`activity-monto ${a.tipo}`}>{a.monto}</span>
+                <span className={`activity-monto ${a.tipo === "entrada" ? "entrada" : "venta"}`}>{a.monto}</span>
               </li>
             ))}
           </ul>
+          {actividadReciente.length === 0 && <p className="chart-sub">Aún no hay actividad de ventas</p>}
         </div>
       </div>
+      {cargando && <p className="chart-sub">Cargando datos de inventario...</p>}
     </div>
   );
 }

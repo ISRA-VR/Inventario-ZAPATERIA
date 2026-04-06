@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext'; // 1. IMPORTAR useAuth
 import '../../styles/addCategoria.css';
 import { toast } from 'react-toastify';
+import { getProductos } from '../../api/productos';
+import { API_BASE_URL } from '../../api/baseUrl';
 
 /* ── Iconos (sin cambios) ── */
 const IconPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -14,11 +16,23 @@ const IconWarn = () => <svg width="44" height="44" viewBox="0 0 24 24" fill="non
 const IconFolder = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
 
 /* ── API ── */
-const API_CATEGORIAS = 'http://localhost:3001/api/categorias';
+const API_CATEGORIAS = `${API_BASE_URL}/api/categorias`;
+const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+
+const readVariantStockMap = () => {
+  try {
+    const raw = localStorage.getItem(VARIANT_STOCK_MAP_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
 
 const CategoriasPage = () => {
   const { user } = useAuth(); // 2. OBTENER DATOS DE AUTH
   const [categorias, setCategorias] = useState([]);
+  const [stockPorCategoria, setStockPorCategoria] = useState({});
 
   /* Modales */
   const [modalCrear, setModalCrear] = useState(false);
@@ -41,7 +55,52 @@ const CategoriasPage = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchCategorias(); }, [fetchCategorias]);
+  const fetchStockCategorias = useCallback(async () => {
+    if (!user?.token) return;
+    try {
+      const { data } = await getProductos();
+      const productos = Array.isArray(data) ? data : [];
+      const variantMap = readVariantStockMap();
+
+      const acumulado = productos.reduce((acc, producto) => {
+        const idCategoria = Number(producto?.id_categoria);
+        if (!idCategoria) return acc;
+
+        const variantes = variantMap?.[producto?.id_producto];
+        const stockVariantes = variantes && typeof variantes === 'object'
+          ? Object.values(variantes).reduce((sum, val) => sum + (Number(val) || 0), 0)
+          : null;
+
+        const stockFinal = stockVariantes != null ? stockVariantes : (Number(producto?.stock) || 0);
+        acc[idCategoria] = (acc[idCategoria] || 0) + stockFinal;
+        return acc;
+      }, {});
+
+      setStockPorCategoria(acumulado);
+    } catch (err) {
+      console.error('Error al calcular stock por categoría:', err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchCategorias();
+    fetchStockCategorias();
+
+    const refrescar = () => {
+      fetchCategorias();
+      fetchStockCategorias();
+    };
+
+    window.addEventListener('storage', refrescar);
+    window.addEventListener('focus', refrescar);
+    window.addEventListener('inventario-updated', refrescar);
+
+    return () => {
+      window.removeEventListener('storage', refrescar);
+      window.removeEventListener('focus', refrescar);
+      window.removeEventListener('inventario-updated', refrescar);
+    };
+  }, [fetchCategorias, fetchStockCategorias]);
 
   /* ── OPERACIONES CRUD (CON TOKEN) ── */
 
@@ -142,7 +201,7 @@ const CategoriasPage = () => {
             <tr>
               <th>Nombre</th>
               <th>Descripción</th>
-              <th className="col-productos">Productos</th>
+              <th className="col-productos">Stock Total</th>
               <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
@@ -162,7 +221,7 @@ const CategoriasPage = () => {
                   <td className="td-nombre">{cat.nombre_categoria}</td>
                   <td className="td-desc">{cat.descripcion || '—'}</td>
                   <td className="col-productos">
-                    <span className="badge-productos">{cat.cantidad_productos ?? 0}</span>
+                    <span className="badge-productos">{stockPorCategoria[Number(cat.id_categoria)] ?? 0}</span>
                   </td>
                   <td className="col-acciones">
                     <div className="acciones-cell">
@@ -264,9 +323,6 @@ const CategoriasPage = () => {
           </div>
         </div>
       )}
-
-      {toast && <div className="toast">{toast}</div>}
-{toast && <div className="toast">{toast}</div>}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { Box, CalendarDays, BarChart3, User, TriangleAlert } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 import "../../styles/entradas.css"
 
@@ -23,6 +24,27 @@ function Entradas() {
   useEffect(() => {
     localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(entradas))
   }, [entradas])
+
+  useEffect(() => {
+    const recargarEntradas = () => {
+      try {
+        const guardado = localStorage.getItem(ENTRADAS_LS_KEY)
+        setEntradas(guardado ? JSON.parse(guardado) : [])
+      } catch (error) {
+        console.error("Error recargando entradas en localStorage:", error)
+      }
+    }
+
+    window.addEventListener("storage", recargarEntradas)
+    window.addEventListener("focus", recargarEntradas)
+    window.addEventListener("entradas-updated", recargarEntradas)
+
+    return () => {
+      window.removeEventListener("storage", recargarEntradas)
+      window.removeEventListener("focus", recargarEntradas)
+      window.removeEventListener("entradas-updated", recargarEntradas)
+    }
+  }, [])
 
   const obtenerFechaRegistro = (item) => {
     if (!item) return null
@@ -142,7 +164,7 @@ function Entradas() {
       <div className="encabezado">
         <div className="encabezado-texto">
           <h1 className="titulo-pagina">Entradas de Inventario</h1>
-          <p className="subtitulo-pagina">Registra y gestiona las entradas de productos</p>
+          <p className="subtitulo-pagina">Consulta y gestiona los ingresos de productos al inventario</p>
         </div>
       </div>
 
@@ -152,7 +174,7 @@ function Entradas() {
             <span className="tarjeta-titulo">Entradas Hoy</span>
             <span className="tarjeta-numero">{entradasHoy}</span>
           </div>
-          <div className="tarjeta-icono verde">📦</div>
+          <div className="tarjeta-icono verde"><Box size={18} /></div>
         </div>
 
         <div className="tarjeta">
@@ -160,7 +182,7 @@ function Entradas() {
             <span className="tarjeta-titulo">Esta Semana</span>
             <span className="tarjeta-numero">{entradasSemana}</span>
           </div>
-          <div className="tarjeta-icono azul">📅</div>
+          <div className="tarjeta-icono azul"><CalendarDays size={18} /></div>
         </div>
 
         <div className="tarjeta">
@@ -168,7 +190,7 @@ function Entradas() {
             <span className="tarjeta-titulo">Total Mes</span>
             <span className="tarjeta-numero">{entradasMes}</span>
           </div>
-          <div className="tarjeta-icono morado">📊</div>
+          <div className="tarjeta-icono morado"><BarChart3 size={18} /></div>
         </div>
       </div>
 
@@ -188,6 +210,8 @@ function Entradas() {
               <tr>
                 <th>FECHA / HORA</th>
                 <th>MODELO</th>
+                <th>TALLA</th>
+                <th>COLOR</th>
                 <th>CANTIDAD</th>
                 <th>REGISTRADO POR</th>
                 <th>COSTO TOTAL</th>
@@ -196,7 +220,7 @@ function Entradas() {
             <tbody>
               {baseDatosEntradas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
                     No hay entradas registradas
                   </td>
                 </tr>
@@ -205,12 +229,14 @@ function Entradas() {
                   <tr key={p.registroId || p.id_producto}>
                     <td>{formatFecha(obtenerFechaRegistro(p))}</td>
                     <td className="td-modelo">{p.modelo}</td>
+                    <td>{p.talla || "N/A"}</td>
+                    <td>{p.color || "N/A"}</td>
                     <td>
                       <span className="badge-cantidad">+{p.cantidad ?? p.stock}</span>
                     </td>
                     <td>
                       <div className="celda-usuario">
-                        <div className="avatar-mini">👤</div>
+                        <div className="avatar-mini"><User size={14} /></div>
                         <span>{p.registrado_por || user?.nombre || user?.email || "—"}</span>
                       </div>
                     </td>
@@ -260,7 +286,7 @@ function Entradas() {
       {modalConfirmar && createPortal(
         <div className="entradas-confirm-overlay" onClick={cancelarConfirmacion}>
           <div className="entradas-confirm-box" onClick={(e) => e.stopPropagation()}>
-            <div className="entradas-confirm-icono">⚠️</div>
+            <div className="entradas-confirm-icono"><TriangleAlert size={18} /></div>
             <h3 className="entradas-confirm-titulo">¿Estás seguro?</h3>
             <p className="entradas-confirm-texto">
               Se eliminarán todas las entradas de <strong>{periodoSeleccionado}</strong>. Esta acción no se puede deshacer.

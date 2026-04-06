@@ -343,7 +343,7 @@ body, .categorias-page {
 }
 
 .btn-danger {
-  background: var(--danger);
+  background: var(--primary);
   color: #fff;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -355,7 +355,7 @@ body, .categorias-page {
   transition: background var(--transition);
 }
 
-.btn-danger:hover { background: #b91c1c; }
+.btn-danger:hover { background: var(--primary-dark); }
 
 /* ── Toast ── */
 .toast {

@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getAuthHeaders } from "./auth";
+import { API_BASE_URL } from "./baseUrl";
 
-const API_URL = "http://localhost:3001/api";
+const API_URL = `${API_BASE_URL}/api`;
 
 export const getProductos = () => {
   return axios.get(`${API_URL}/productos`, getAuthHeaders());
@@ -24,10 +25,9 @@ export const getCategorias = () => {
 };
 
 export const getTallas = () => {
-    return axios.get(`${API_URL}/tallas`, getAuthHeaders());
+  return axios.get(`${API_URL}/tallas`, getAuthHeaders());
 };
 
-// Nueva función agregada para actualizar las tallas
 export const updateTalla = (id, data) => {
-    return axios.put(`${API_URL}/tallas/${id}`, data, getAuthHeaders());
+  return axios.put(`${API_URL}/tallas/${id}`, data, getAuthHeaders());
 };

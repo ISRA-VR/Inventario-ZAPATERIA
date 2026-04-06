@@ -387,3 +387,112 @@ html, body {
 .btn-confirm:hover {
   background-color: #dc2626;
 }
+
+.sidebar-mobile-toggle,
+.sidebar-mobile-close,
+.sidebar-mobile-backdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .admin-content {
+    padding: 16px;
+    padding-top: 16px;
+  }
+
+  .sidebar-mobile-toggle {
+    display: inline-flex;
+    position: fixed;
+    top: 10px;
+    right: 12px;
+    z-index: 1201;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 36, 59, 0.82);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  }
+
+  .sidebar-mobile-toggle.is-open {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1198;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: min(82vw, 300px);
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    z-index: 1200;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-mobile-close {
+    display: inline-flex;
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .sidebar-mobile-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .sidebar.collapsed {
+    width: min(82vw, 300px);
+  }
+
+  .sidebar.collapsed .sidebar-header {
+    justify-content: flex-start;
+    padding: 0 20px;
+  }
+
+  .sidebar.collapsed .logo-circle {
+    margin-right: 12px;
+  }
+
+  .sidebar.collapsed .nav-link {
+    justify-content: flex-start !important;
+    padding: 12px 16px !important;
+  }
+
+  .sidebar.collapsed .nav-icon {
+    margin-right: 12px !important;
+  }
+
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .brand-name {
+    display: block;
+  }
+
+  .collapse-btn {
+    display: none;
+  }
+}

@@ -2,24 +2,27 @@
    dash.css - estilos del dashboard principal
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 /* variables globales de colores */
 :root {
-  --primary:      #0E65C6;
-  --primary-dark: #0a52a0;
-  --secondary:    #082F5A;
-  --bg-page:      #f0f4f8;
+  --primary:      #15803d;
+  --primary-dark: #166534;
+  --secondary:    #1f2937;
+  --bg-page:      #f7f7f5;
   --bg-card:      #ffffff;
-  --border:       #e8edf2;
+  --border:       #e8e6de;
   --texto-main:   #1a1f36;
   --texto-sub:    #6b7280;
 }
 
 /* contenedor general de toda la pagina */
 .dashboard-container {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--bg-page);
+  font-family: 'Nunito', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 0% 0%, #fff8dc 0, transparent 35%),
+    radial-gradient(circle at 100% 0%, #ecfeff 0, transparent 28%),
+    var(--bg-page);
   min-height: 100vh;
   padding: 2.5rem 2rem;
   color: var(--texto-main);
@@ -27,8 +30,22 @@
 
 /* encabezado con titulo y subtitulo */
 .dash-header {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 28px;
+}
+
+.dash-update-pill {
+  background: #eefbf2;
+  color: #166534;
+  border: 1px solid #b8e2c4;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .dashboard-title {
@@ -45,6 +62,78 @@
   margin: 0;
 }
 
+.dash-insight {
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border: 1px solid transparent;
+}
+
+.dash-insight h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.dash-insight p {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  color: #374151;
+}
+
+.dash-insight-ok {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+}
+
+.dash-insight-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.dash-insight-alerta {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.dash-warning-float {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: min(360px, calc(100vw - 24px));
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.15);
+  z-index: 1000;
+}
+
+.dash-warning-float h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.dash-warning-float p {
+  margin: 6px 0 10px;
+  font-size: 0.84rem;
+  color: #78350f;
+}
+
+.dash-warning-countdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 10px;
+}
+
 /* ── tarjetas de resumen (las 4 de arriba) ── */
 
 .dash-tarjetas {
@@ -56,9 +145,10 @@
 
 .dash-card {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px 22px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* fila superior de cada tarjeta: nombre + icono */
@@ -121,9 +211,10 @@
 .dash-grafica-box,
 .dash-top-box {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 22px 24px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .dash-section-title {
@@ -154,6 +245,12 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f3f8;
+}
+
+.dash-top-item:last-child {
+  border-bottom: none;
 }
 
 /* circulo con el numero de posicion */
@@ -209,9 +306,23 @@
   color: #9ca3af;
 }
 
+.dash-top-empty {
+  font-size: 13px;
+  color: #8b8b8b;
+  padding: 10px 0;
+}
+
 /* ── responsive para pantallas pequenas ── */
 
 @media (max-width: 1024px) {
+  .dash-header {
+    flex-direction: column;
+  }
+
+  .dash-update-pill {
+    align-self: flex-start;
+  }
+
   .dash-tarjetas { grid-template-columns: repeat(2, 1fr); }
   .dash-main     { grid-template-columns: 1fr; }
 }
@@ -219,4 +330,19 @@
 @media (max-width: 600px) {
   .dashboard-container { padding: 20px 16px; }
   .dash-tarjetas { grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .dash-insight {
+    padding: 12px;
+  }
+
+  .dash-update-pill {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dash-warning-float {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
 }
