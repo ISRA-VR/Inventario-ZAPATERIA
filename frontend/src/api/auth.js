@@ -2,8 +2,6 @@ import axios from "axios";
 import { API_BASE_URL } from "./baseUrl";
 
 const API_URL = `${API_BASE_URL}/api/auth`;
-
-// Función auxiliar para obtener el token del localStorage
 export const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user?.token) return {};
@@ -29,8 +27,6 @@ export const confirmResetRequest = (token) => {
 export const resetPassword = (token, password) => {
   return axios.post(`${API_URL}/reset-password`, { token, password });
 };
-
-// --- RUTAS PROTEGIDAS (Necesitan el token del admin) ---
 
 export const register = (data) => {
   return axios.post(`${API_URL}/register`, data, getAuthHeaders());

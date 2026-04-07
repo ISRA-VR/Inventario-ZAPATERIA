@@ -25,7 +25,7 @@ export const getProductoById = async (req, res) => {
 // Crear un nuevo producto — toma el nombre del usuario logueado desde req.user
 export const createProducto = async (req, res) => {
   try {
-    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = req.body;
+    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, colores } = req.body;
 
     if (!modelo) {
       return res.status(400).json({ message: 'El campo modelo es obligatorio' });
@@ -42,7 +42,8 @@ export const createProducto = async (req, res) => {
       estado,
       tallas,
       cantidad_inicial,
-      registrado_por
+      registrado_por,
+      colores // Se incluye colores en el objeto
     });
 
     res.status(201).json(savedProducto);

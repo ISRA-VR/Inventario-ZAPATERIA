@@ -5,11 +5,10 @@ import {
   updateCategoria,
   deleteCategoria,
 } from '../controllers/categoriaController.js';
-import { protect } from '../middleware/authMiddleware.js'; // Asumiendo que tienes un middleware de autenticación
+import { protect } from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
 
-// Rutas para CRUD de Categorías
 router.route('/')
   .get(getCategorias)
   .post(protect, createCategoria);

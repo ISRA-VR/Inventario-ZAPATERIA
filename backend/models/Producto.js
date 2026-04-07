@@ -1,7 +1,6 @@
 import pool from '../config/db.js';
 
 const Producto = {
-  // 1. Obtener todos los productos (Modelos)
   async findAll() {
     try {
       const sql = `
@@ -15,7 +14,6 @@ const Producto = {
     }
   },
 
-  // 2. Obtener un producto por ID
   async findByPk(id) {
     try {
       const sql = `
@@ -30,9 +28,8 @@ const Producto = {
     }
   },
 
-  // 3. Crear un nuevo producto — ahora guarda registrado_por
   async create(producto) {
-    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por } = producto;
+    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por, colores } = producto;
     
     const valPrecio = Number(precio) || 0;
     const valTallas = tallas || 'N/A';
@@ -48,8 +45,8 @@ const Producto = {
 
     const sql = `
       INSERT INTO productos 
-      (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por, colores) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       
     const [result] = await pool.query(sql, [
       modelo, 
@@ -59,7 +56,8 @@ const Producto = {
       estado || 'activo', 
       valTallas, 
       valCantidadInicial,
-      registrado_por || null
+      registrado_por || null,
+      colores || null 
     ]);
     
     return { 
@@ -71,9 +69,8 @@ const Producto = {
     };
   },
 
-  // 4. Actualizar producto
   async update(id, producto) {
-    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = producto;
+    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, colores } = producto;
     
     const valCantidadInicial = Math.max(0, Math.round(Number(cantidad_inicial) || 0));
     const valPrecio = Number(precio) || 0;
@@ -88,7 +85,7 @@ const Producto = {
 
     const sql = `
       UPDATE productos 
-      SET modelo = ?, id_categoria = ?, stock = ?, precio = ?, estado = ?, tallas = ?, cantidad_inicial = ? 
+      SET modelo = ?, id_categoria = ?, stock = ?, precio = ?, estado = ?, tallas = ?, cantidad_inicial = ?, colores = ? 
       WHERE id_producto = ?`;
       
     await pool.query(sql, [
@@ -99,13 +96,13 @@ const Producto = {
       estado, 
       tallas, 
       valCantidadInicial, 
+      colores || null, 
       id
     ]);
     
     return this.findByPk(id); 
   },
 
-  // 5. Eliminar producto
   async destroy(id) {
     const sql = 'DELETE FROM productos WHERE id_producto = ?';
     const [result] = await pool.query(sql, [id]);

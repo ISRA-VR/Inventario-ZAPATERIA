@@ -50,5 +50,3 @@ app.listen(port, async () => {
     console.error("Error conectando a MySQL:", err.message);
   }
 });
-
-//npm install express-async-handler

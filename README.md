@@ -1,146 +1,48 @@
-# Inventario Zapatería – Guía de instalación y ejecución
-## Requisitos
-- Node.js 18+ (recomendado LTS)
-- npm (incluido con Node)
-- MySQL/MariaDB en local (por ejemplo, Laragon/XAMPP/WAMP). Por defecto el proyecto usa:
-  - Host: `localhost`
-  - Puerto: `3306`
-  - Usuario: `root`
-  - Password: vacío
-  - Base de datos: `zapateria_login`
+# 📦 StockFlow - Sistema de Gestión de Inventario
 
-## 1) Configurar Backend
-1. Instalar dependencias del backend:
-   ```bash
-   cd backend
-   npm install
-   ```
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
 
-2. Crear base de datos (si no existe):
-   - Conéctate a MySQL y ejecuta:
-     ```sql
-     CREATE DATABASE IF NOT EXISTS zapateria_login CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-     ```
+StockFlow es una plataforma integral de gestión de inventarios diseñada para tiendas de calzado. Permite la administración eficiente de productos, control de modelos, seguimiento de tallas y gestión de usuarios (empleados/administradores) bajo un entorno seguro y responsivo.
 
-3. Cargar datos de prueba (seed):
-   ```bash
-   node scripts/seed.js
-   ```
-   Esto creará la tabla `usuarios` (si no existe) y dos cuentas:
-   - Admin: `admin@demo.com` / `123456`
-   - Empleado: `empleado@demo.com` / `123456`
+## 🚀 Funcionalidades Principales
 
-4. Iniciar el backend:
-   ```bash
-   node index.js
-   ```
-   - URL: http://localhost:3001
-   - Endpoint de login: `POST /api/auth/login` con body JSON: `{ "email": "...", "password": "..." }`
+* **Gestión de Productos:** Registro, actualización y eliminación de modelos de calzado con sus respectivas categorías y precios.
+* **Control de Variantes y Tallas:** Administración dinámica del stock inicial por cada talla específica vinculada a un modelo.
+* **Gestión de Empleados:** Sistema de autenticación con roles (Admin/Empleado) y control de acceso.
+* **Validación Estricta:** Formularios protegidos contra ingresos inválidos (solo números positivos en campos financieros y de stock).
+* **Interfaz Reactiva:** Diseño moderno, retroalimentación inmediata (Toastify) y modales interactivos para una experiencia de usuario fluida.
 
-> Nota importante JWT: actualmente `authController.js` firma el token con `process.env.JWT_SECRET` (o `SECRET_KEY` por defecto), mientras que `middleware/authMiddleware.js` usa un `SECRET` hardcodeado distinto. Para evitar inconsistencias cuando empieces a proteger rutas, cambia el middleware para que use el mismo `JWT_SECRET` del `.env`.
+## 🛠️ Stack Tecnológico
 
-### Recuperación de contraseña con Gmail (Google)
-Para enviar correos reales de recuperación, crea/actualiza el archivo `backend/.env` con lo siguiente:
+El proyecto está construido bajo una arquitectura Cliente-Servidor (Frontend y Backend separados).
 
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=zapateria_login
-DB_PORT=3306
+**Frontend:**
 
-JWT_SECRET=tu_jwt_secret
-JWT_RESET_SECRET=tu_jwt_reset_secret
+* [React.js](https://reactjs.org/) (Vite)
+* [Axios](https://axios-http.com/) para el consumo de la API REST.
+* [Lucide React](https://lucide.dev/) para la iconografía.
+* [React Toastify](https://fkhadra.github.io/react-toastify/) para notificaciones.
 
-GMAIL_USER=tu_correo@gmail.com
-GMAIL_APP_PASSWORD=tu_app_password_de_google
-FRONTEND_URL=http://localhost:5173
-```
+**Backend:**
 
-Pasos en Google:
-1. Activa verificación en dos pasos en tu cuenta.
-2. Crea una "Contraseña de aplicación" para "Correo".
-3. Usa esa contraseña en `GMAIL_APP_PASSWORD` (no tu contraseña normal).
+* [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/)
+* [MySQL2](https://www.npmjs.com/package/mysql2) con *Connection Pools* para manejo de base de datos.
+* JWT (JSON Web Tokens) para autenticación y protección de rutas.
 
-Endpoints disponibles:
-- `POST /api/auth/forgot-password` con body `{ "email": "correo@dominio.com" }`
-- `POST /api/auth/reset-password` con body `{ "token": "...", "password": "nuevaPassword" }`
+## ⚙️ Requisitos Previos
 
-El enlace enviado por correo abre:
-- `FRONTEND_URL/reset-password?token=...`
+Asegúrate de tener instalado en tu máquina local:
 
-## 2) Configurar Frontend
-1. Instalar dependencias del frontend:
-   ```bash
-   cd frontend
-   npm install
-   ```
+* [Node.js](https://nodejs.org/) (v16 o superior)
+* [MySQL](https://www.mysql.com/) (o un servidor local como XAMPP/Laragon)
 
-2. Ejecutar el entorno de desarrollo:
-   ```bash
-   npm run dev
-   ```
-   - Vite mostrará la URL (p.ej. http://localhost:5173). Asegúrate que el backend siga activo en `http://localhost:3001`.
+## 💻 Instalación y Configuración
 
-## Flujo de ejecución sugerido (dos terminales)
-- Terminal 1 (backend):
-  ```bash
-  cd backend
-  npm install
-  node scripts/seed.js
-  npm index.js
-  ```
-- Terminal 2 (frontend):
-  ```bash
-  cd frontend
-  npm install lucide-react react-router-dom
-  npm install
-  npm run dev
-  ```
-  - lucide-react es una libreria para los iconos,
-  - (Opcional pero recomendado) Verificar que se instaló:
-  - Abre el archivo frontend/package.json y busca en "dependencies". Deberían aparecer ahí.
+### 1. Clonar el repositorio
 
-## Stack
-- Backend: Node.js, Express 5, mysql2, bcryptjs, jsonwebtoken, dotenv, cors
-- Frontend: React 19, Vite 7, React Router 7, Axios, Bootstrap 5
-
-## Compartir Un Link De Prueba (Frontend + Backend)
-Si quieres que otra persona pruebe tu app desde su celular/computadora, la forma mas directa es:
-
-1. Subir backend en Render (o Railway)
-2. Subir frontend en Vercel
-3. Conectar el frontend al backend con variable `VITE_API_BASE_URL`
-
-### Backend En Render
-1. Sube este repo a GitHub.
-2. En Render, crea un `Web Service` apuntando a la carpeta `backend`.
-3. Build command:
-   - `npm install`
-4. Start command:
-   - `node index.js`
-5. Variables de entorno minimas:
-   - `PORT=3001` (Render puede inyectar su propio puerto)
-   - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
-   - `JWT_SECRET`, `JWT_RESET_SECRET`
-   - `FRONTEND_URL=https://TU_FRONTEND.vercel.app`
-6. Guarda la URL publica del backend, por ejemplo:
-   - `https://tu-backend.onrender.com`
-
-### Frontend En Vercel
-1. En Vercel, importa el mismo repo y selecciona carpeta `frontend`.
-2. Framework: Vite.
-3. Agrega variable de entorno:
-   - `VITE_API_BASE_URL=https://tu-backend.onrender.com`
-4. Deploy.
-
-Con eso ya tendras un link publico para compartir.
-
-### Prueba Local Con Variables
-En local puedes seguir usando `localhost` con:
-
-1. Copia `frontend/.env.example` a `frontend/.env`.
-2. Ajusta:
-   - `VITE_API_BASE_URL=http://localhost:3001`
-3. Corre frontend:
-   - `npm run dev`
+```bash
+git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/tu-usuario/tu-repositorio.git)
+cd tu-repositorio
