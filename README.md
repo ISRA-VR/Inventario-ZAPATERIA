@@ -39,10 +39,16 @@ Asegúrate de tener instalado en tu máquina local:
 * [Node.js](https://nodejs.org/) (v16 o superior)
 * [MySQL](https://www.mysql.com/) (o un servidor local como XAMPP/Laragon)
 
-## 💻 Instalación y Configuración
+## 🔐 Seguridad Implementada
+**Rutas Protegidas:**
+* Middlewares en Node.js que verifican tokens JWT antes de realizar operaciones CRUD.
+  
+**Validación de Passwords:**
+* Expresiones regulares que exigen contraseñas robustas (mayúsculas, minúsculas, números y caracteres especiales).
+  
+**Sanitización de Inputs:**
+* Restricción de caracteres inválidos (e, -, +) en campos numéricos directamente desde el DOM en React.
 
-### 1. Clonar el repositorio
-
-```bash
-git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/tu-usuario/tu-repositorio.git)
-cd tu-repositorio
+## 🤝 Contribución
+Si deseas contribuir, por favor haz un fork del repositorio, crea una nueva rama para tus características (git checkout -b feature/NuevaCaracteristica) y envía un Pull Request.
+**Desarrollado con ❤️ para la eficiencia operativa.**
