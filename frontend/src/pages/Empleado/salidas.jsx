@@ -5,13 +5,72 @@ import { useAuth } from "../../context/AuthContext";
 import "../../styles/entradas.css";
 
 const VENTAS_LS_KEY = "ventas_punto_venta";
+const SALIDAS_RESUMEN_LS_KEY = "salidas_resumen";
+
+const toSafeIntOrNull = (value) => {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return null;
+	return Math.max(0, Math.round(parsed));
+};
+
+const normalizeDetalleStock = (detalle = []) => {
+	let changed = false;
+	const normalized = (Array.isArray(detalle) ? detalle : []).map((item) => {
+		const cantidad = Math.max(0, Math.round(Number(item?.cantidad) || 0));
+		const stockAnterior = toSafeIntOrNull(item?.stock_anterior);
+		const stockNuevo = toSafeIntOrNull(item?.stock_nuevo);
+
+		let nextAnterior = stockAnterior;
+		let nextNuevo = stockNuevo;
+
+		if (nextAnterior == null && nextNuevo == null) {
+			nextAnterior = cantidad;
+			nextNuevo = 0;
+			changed = true;
+		} else if (nextAnterior == null) {
+			nextAnterior = Math.max(0, nextNuevo + cantidad);
+			changed = true;
+		} else if (nextNuevo == null) {
+			nextNuevo = Math.max(0, nextAnterior - cantidad);
+			changed = true;
+		}
+
+		return {
+			...item,
+			stock_anterior: nextAnterior,
+			stock_nuevo: nextNuevo,
+		};
+	});
+
+	return { normalized, changed };
+};
+
+const normalizeVentasStock = (ventas = []) => {
+	let changed = false;
+	const normalizedVentas = (Array.isArray(ventas) ? ventas : []).map((venta) => {
+		const { normalized, changed: changedDetalle } = normalizeDetalleStock(venta?.detalle);
+		if (changedDetalle) changed = true;
+
+		return {
+			...venta,
+			detalle: normalized,
+		};
+	});
+
+	return { normalizedVentas, changed };
+};
 
 const SalidasPage = () => {
 	const { user } = useAuth();
 	const [ventas, setVentas] = useState(() => {
 		try {
 			const guardado = localStorage.getItem(VENTAS_LS_KEY);
-			return guardado ? JSON.parse(guardado) : [];
+			const parsed = guardado ? JSON.parse(guardado) : [];
+			const { normalizedVentas, changed } = normalizeVentasStock(parsed);
+			if (changed) {
+				localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(normalizedVentas));
+			}
+			return normalizedVentas;
 		} catch (error) {
 			console.error("Error parseando salidas en localStorage:", error);
 			return [];
@@ -23,6 +82,11 @@ const SalidasPage = () => {
 	const [accionPendiente, setAccionPendiente] = useState(null);
 	const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
 
+	const persistVentas = (list = []) => {
+		localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(list));
+		window.dispatchEvent(new Event("ventas-pos-updated"));
+	};
+
 	useEffect(() => {
 		localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(ventas));
 	}, [ventas]);
@@ -31,7 +95,12 @@ const SalidasPage = () => {
 		const recargarVentas = () => {
 			try {
 				const guardado = localStorage.getItem(VENTAS_LS_KEY);
-				setVentas(guardado ? JSON.parse(guardado) : []);
+				const parsed = guardado ? JSON.parse(guardado) : [];
+				const { normalizedVentas, changed } = normalizeVentasStock(parsed);
+				if (changed) {
+					localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(normalizedVentas));
+				}
+				setVentas(normalizedVentas);
 			} catch (error) {
 				console.error("Error recargando salidas en localStorage:", error);
 			}
@@ -49,8 +118,61 @@ const SalidasPage = () => {
 	}, []);
 
 	const parseFecha = (fecha) => {
-		const date = new Date(fecha);
-		return Number.isNaN(date.getTime()) ? null : date;
+		if (!fecha) return null;
+
+		if (fecha instanceof Date) {
+			return Number.isNaN(fecha.getTime()) ? null : fecha;
+		}
+
+		if (typeof fecha === "number") {
+			const dateFromNumber = new Date(fecha);
+			return Number.isNaN(dateFromNumber.getTime()) ? null : dateFromNumber;
+		}
+
+		const txt = String(fecha).trim();
+		if (!txt) return null;
+
+		const direct = new Date(txt);
+		if (!Number.isNaN(direct.getTime())) return direct;
+
+		const match = txt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+		if (match) {
+			const [, dd, mm, yyyy, hh = "0", min = "0", ss = "0"] = match;
+			const date = new Date(
+				Number(yyyy),
+				Number(mm) - 1,
+				Number(dd),
+				Number(hh),
+				Number(min),
+				Number(ss)
+			);
+			return Number.isNaN(date.getTime()) ? null : date;
+		}
+
+		return null;
+	};
+
+	const getFechaVenta = (venta) => {
+		const fechaBase = venta?.fecha || (venta?.created_at ? String(venta.created_at).slice(0, 10) : null);
+		const horaBase = venta?.hora || (venta?.created_at
+			? new Date(venta.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })
+			: "");
+		const fechaCompuesta = fechaBase
+			? `${fechaBase}${horaBase ? `T${horaBase}:00` : "T00:00:00"}`
+			: venta?.created_at;
+
+		return parseFecha(fechaCompuesta);
+	};
+
+	const getRangoSemanaActual = () => {
+		const now = new Date();
+		const inicio = new Date(now);
+		inicio.setDate(now.getDate() - now.getDay());
+		inicio.setHours(0, 0, 0, 0);
+
+		const fin = new Date(inicio);
+		fin.setDate(inicio.getDate() + 7);
+		return { inicio, fin };
 	};
 
 	const esHoy = (fecha) => {
@@ -65,13 +187,10 @@ const SalidasPage = () => {
 	};
 
 	const estaEnEstaSemana = (fecha) => {
-		const ahora = new Date();
 		const f = parseFecha(fecha);
 		if (!f) return false;
-		const inicioSemana = new Date(ahora);
-		inicioSemana.setDate(ahora.getDate() - ahora.getDay());
-		inicioSemana.setHours(0, 0, 0, 0);
-		return f >= inicioSemana;
+		const { inicio, fin } = getRangoSemanaActual();
+		return f >= inicio && f < fin;
 	};
 
 	const estaEnEsteMes = (fecha) => {
@@ -83,15 +202,11 @@ const SalidasPage = () => {
 
 	const salidasDetalle = useMemo(() => {
 		return ventas.flatMap((venta) => {
-			const fechaBase = venta.fecha || (venta.created_at ? String(venta.created_at).slice(0, 10) : null);
-			const horaBase = venta.hora || (venta.created_at ? new Date(venta.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false }) : "");
-			const fechaHora = fechaBase
-				? `${fechaBase}${horaBase ? `T${horaBase}:00` : "T00:00:00"}`
-				: venta.created_at;
+			const fechaVenta = getFechaVenta(venta);
 
 			return (venta.detalle || []).map((item, idx) => ({
 				id: `${venta.id || "venta"}-${idx}`,
-				fecha_creacion: fechaHora,
+				fecha_creacion: fechaVenta,
 				modelo: item.nombre,
 				talla: item.talla || "N/A",
 				color: item.color || "N/A",
@@ -140,6 +255,16 @@ const SalidasPage = () => {
 		.filter((s) => estaEnEsteMes(s.fecha_creacion))
 		.reduce((acc, s) => acc + getSalida(s), 0);
 
+	useEffect(() => {
+		const resumen = {
+			hoy: salidasHoy,
+			semana: salidasSemana,
+			mes: salidasMes,
+			updatedAt: new Date().toISOString(),
+		};
+		localStorage.setItem(SALIDAS_RESUMEN_LS_KEY, JSON.stringify(resumen));
+	}, [salidasHoy, salidasSemana, salidasMes]);
+
 	const formatFecha = (fecha) => {
 		if (!fecha) return "—";
 		const parsed = parseFecha(fecha);
@@ -180,15 +305,15 @@ const SalidasPage = () => {
 	};
 
 	const eliminarPorPeriodo = (validador) => {
-		setVentas((prev) => prev.filter((venta) => {
-			const fechaBase = venta.fecha || (venta.created_at ? String(venta.created_at).slice(0, 10) : null);
-			const horaBase = venta.hora || (venta.created_at ? new Date(venta.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false }) : "");
-			const fecha = fechaBase
-				? `${fechaBase}${horaBase ? `T${horaBase}:00` : "T00:00:00"}`
-				: venta.created_at;
-			if (!parseFecha(fecha)) return false;
-			return !validador(fecha);
-		}));
+		setVentas((prev) => {
+			const next = prev.filter((venta) => {
+				const fechaVenta = getFechaVenta(venta);
+				if (!fechaVenta) return true;
+				return !validador(fechaVenta);
+			});
+			persistVentas(next);
+			return next;
+		});
 	};
 
 	return (

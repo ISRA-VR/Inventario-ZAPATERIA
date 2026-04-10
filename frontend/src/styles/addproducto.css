@@ -341,6 +341,22 @@ body, .productos-page {
 
 .form-grid .span-2 { grid-column: span 2; }
 
+.form-producto {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-producto .span-2 { grid-column: span 2; }
+
+.form-producto .form-group-tallas {
+  grid-column: 1 / -1;
+}
+
+.form-producto .form-group-colores {
+  grid-column: 1 / -1;
+}
+
 .form-group { display: flex; flex-direction: column; }
 
 .form-group label {

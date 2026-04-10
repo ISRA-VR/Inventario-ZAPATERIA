@@ -115,6 +115,7 @@ export default function App() {
             <Route path="entradas" element={<EntradasEmpleado />} />
             <Route path="salidas" element={<SalidasEmpleado />} />
             <Route path="busquedas" element={<BusquedasEmpleado />} />
+            <Route path="categorias" element={<CategoriasPage />} />
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />

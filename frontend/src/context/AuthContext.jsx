@@ -37,19 +37,36 @@ export const AuthContext = createContext();
 
 // 2. Definimos el proveedor
 export const AuthProvider = ({ children }) => {
+  const readStoredUser = () => {
+    const fromSession = sessionStorage.getItem("user");
+    if (fromSession) return fromSession;
+
+    // Backward compatibility: migrate old sessions saved in localStorage.
+    const fromLocal = localStorage.getItem("user");
+    if (fromLocal) {
+      sessionStorage.setItem("user", fromLocal);
+      localStorage.removeItem("user");
+      return fromLocal;
+    }
+
+    return null;
+  };
+
   // Inicializamos el estado con lo que haya en localStorage
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
+    const savedUser = readStoredUser();
     if (!savedUser) return null;
 
     try {
       const parsed = JSON.parse(savedUser);
       if (!parsed.token || !isTokenValid(parsed.token)) {
+        sessionStorage.removeItem("user");
         localStorage.removeItem("user");
         return null;
       }
       return parsed;
     } catch {
+      sessionStorage.removeItem("user");
       localStorage.removeItem("user");
       return null;
     }
@@ -105,7 +122,9 @@ export const AuthProvider = ({ children }) => {
     }
 
     setUser(data);
-    localStorage.setItem("user", JSON.stringify(data));
+    sessionStorage.setItem("user", JSON.stringify(data));
+    // Clean possible stale shared session from previous versions.
+    localStorage.removeItem("user");
   };
 
   // Función para cerrar sesión
@@ -120,6 +139,7 @@ export const AuthProvider = ({ children }) => {
       // Keep logout flow resilient even if presence update fails.
     } finally {
       setUser(null);
+      sessionStorage.removeItem("user");
       localStorage.removeItem("user");
     }
   };

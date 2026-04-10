@@ -21,7 +21,10 @@ const parseCsvList = (value) =>
   String(value || "")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter((item) => {
+      const normalized = String(item || "").toLowerCase();
+      return Boolean(item) && normalized !== "null" && normalized !== "undefined";
+    });
 
 const readColorMap = () => {
   try {
@@ -502,6 +505,7 @@ export default function NuevaVenta() {
           precio: Number(raw.precio) || 0,
           estado: raw.estado || "activo",
           tallas: raw.tallas || "",
+          colores: raw.colores || productoActual.coloresDisponibles?.join(", ") || "",
           cantidad_inicial: Number(raw.cantidad_inicial) || 0,
         });
       }

@@ -51,6 +51,7 @@ const Sidebar = () => {
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
+    { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/empleado/categorias', roles: ['empleado'] },
     { icon: <Package size={20} />, label: 'Inventario Detallado', path: '/admin/inventario-detallado', roles: ['admin'] },
     { icon: <FileText size={20} />, label: 'Liquidaciones', path: '/admin/liquidaciones', roles: ['admin'] },
     {

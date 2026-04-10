@@ -31,6 +31,46 @@
   color: #6f7783;
 }
 
+.entradas-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #0f4da8;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.entradas-primary-btn:hover {
+  background: #0b3f8a;
+}
+
+.form-producto {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-producto .span-2 {
+  grid-column: span 2;
+}
+
+.form-producto .form-group-tallas {
+  grid-column: 1 / -1;
+}
+
+.form-producto .form-group-colores {
+  grid-column: 1 / -1;
+}
+
 .tarjetas-resumen {
   display: flex;
   gap: 18px;

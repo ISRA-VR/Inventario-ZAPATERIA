@@ -1,15 +1,208 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createPortal } from "react-dom"
-import { Box, CalendarDays, BarChart3, User, TriangleAlert } from "lucide-react"
+import { Box, CalendarDays, BarChart3, User, TriangleAlert, Plus } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
+import { createProducto, getCategorias } from "../../api/productos"
+import { registrarMovimientoEntrada } from "../../api/movimientos"
+import { toast } from "react-toastify"
 import "../../styles/entradas.css"
+import "../../styles/addproducto.css"
+
+const COLOR_MAP_KEY = "inventario_colores_map"
+const VARIANT_STOCK_MAP_KEY = "inventario_stock_variantes_map"
+const ENTRADAS_LS_KEY = "entradas_inventario"
+const ENTRADAS_RESUMEN_LS_KEY = "entradas_resumen"
+const TALLAS_OPCIONES = Array.from({ length: 21 }, (_, i) => String(i + 20))
+const COLORES_OPCIONES = ["Negro", "Blanco", "Cafe", "Azul", "Rojo", "Verde", "Gris", "Beige", "Rosa", "Vino"]
+
+const FORM_EMPTY = {
+  modelo: "",
+  id_categoria: "",
+  precio: "",
+  tallas: "",
+  colores: "",
+  stock_variantes: {},
+  estado: "activo",
+}
+
+const parseCsv = (value = "") =>
+  String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+const parseTallas = (value = "") => {
+  const lista = parseCsv(value)
+  return lista.length ? lista : ["Sin talla"]
+}
+
+const parseColores = (value = "") => {
+  const lista = parseCsv(value).filter((color) => {
+    const normalizado = String(color || "").toLowerCase()
+    return normalizado !== "sin color" && normalizado !== "sin colores"
+  })
+  return lista.length ? lista : []
+}
+
+const toCsv = (arr = []) => arr.join(", ")
+
+const toggleValueInCsv = (csv, value) => {
+  const current = parseCsv(csv)
+  const exists = current.includes(value)
+  const next = exists ? current.filter((x) => x !== value) : [...current, value]
+  return toCsv(next)
+}
+
+const buildVariantPairs = (tallas = [], colores = []) =>
+  tallas.flatMap((talla) => colores.map((color) => ({
+    key: `${talla}__${color}`,
+    talla,
+    color,
+  })))
+
+const normalizeVariantStocks = (pairs, currentStocks = {}) => {
+  const out = {}
+
+  pairs.forEach((pair) => {
+    const raw = Number(currentStocks[pair.key])
+    out[pair.key] = Number.isFinite(raw) ? Math.max(0, Math.round(raw)) : 0
+  })
+
+  return out
+}
+
+const sumVariantStocks = (variantStocks = {}) =>
+  Object.values(variantStocks).reduce((acc, n) => acc + (Number(n) || 0), 0)
+
+const getSessionUserName = () => {
+  try {
+    const raw = sessionStorage.getItem("user") || localStorage.getItem("user")
+    const parsed = raw ? JSON.parse(raw) : null
+    return parsed?.nombre || parsed?.email || "Empleado"
+  } catch {
+    return "Empleado"
+  }
+}
+
+const readMap = (key) => {
+  try {
+    const raw = localStorage.getItem(key)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === "object" ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const toSafeIntOrNull = (value) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return null
+  return Math.max(0, Math.round(parsed))
+}
+
+const normalizeEntradaStock = (item = {}) => {
+  const cantidad = Math.max(0, Math.round(Number(item?.cantidad) || 0))
+  const stockAnterior = toSafeIntOrNull(item?.stock_anterior)
+  const stockNuevo = toSafeIntOrNull(item?.stock_nuevo ?? item?.stock)
+
+  let nextAnterior = stockAnterior
+  let nextNuevo = stockNuevo
+
+  if (nextAnterior == null && nextNuevo == null) {
+    nextAnterior = 0
+    nextNuevo = cantidad
+  } else if (nextAnterior == null) {
+    nextAnterior = Math.max(0, nextNuevo - cantidad)
+  } else if (nextNuevo == null) {
+    nextNuevo = Math.max(0, nextAnterior + cantidad)
+  }
+
+  return {
+    ...item,
+    stock_anterior: nextAnterior,
+    stock_nuevo: nextNuevo,
+    stock: nextNuevo,
+  }
+}
+
+const normalizeEntradasStockList = (list = []) => {
+  let changed = false
+  const normalized = (Array.isArray(list) ? list : []).map((item) => {
+    const next = normalizeEntradaStock(item)
+    if (
+      Number(item?.stock_anterior) !== Number(next.stock_anterior) ||
+      Number(item?.stock_nuevo) !== Number(next.stock_nuevo)
+    ) {
+      changed = true
+    }
+    return next
+  })
+
+  return { normalized, changed }
+}
+
+const pushEntradasToStorage = (entradasNuevas = []) => {
+  if (!entradasNuevas.length) return
+
+  try {
+    const raw = localStorage.getItem(ENTRADAS_LS_KEY)
+    const prev = raw ? JSON.parse(raw) : []
+    const prevList = Array.isArray(prev) ? prev : []
+    const merged = [...entradasNuevas, ...prevList]
+    const { normalized } = normalizeEntradasStockList(merged)
+    localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(normalized))
+    window.dispatchEvent(new Event("entradas-updated"))
+  } catch (error) {
+    console.error("No se pudo sincronizar entradas en localStorage:", error)
+  }
+}
+
+const buildEntradaRecord = ({
+  idProducto,
+  modelo,
+  idCategoria,
+  nombreCategoria,
+  precio,
+  cantidad,
+  talla,
+  color,
+  registradoPor,
+  stockAnterior,
+  stockNuevo,
+}) => {
+  const nowIso = new Date().toISOString()
+  const cantidadNormalizada = Math.max(0, Math.round(Number(cantidad) || 0))
+  const stockAnteriorNormalizado = Math.max(0, Math.round(Number(stockAnterior) || 0))
+  const stockNuevoNormalizado = Math.max(0, Math.round(Number(stockNuevo ?? cantidadNormalizada) || 0))
+
+  return {
+    id_producto: idProducto,
+    modelo,
+    id_categoria: idCategoria,
+    nombre_categoria: nombreCategoria || null,
+    precio: Number(precio) || 0,
+    cantidad: cantidadNormalizada,
+    stock: stockNuevoNormalizado,
+    stock_anterior: stockAnteriorNormalizado,
+    stock_nuevo: stockNuevoNormalizado,
+    talla: talla || "N/A",
+    color: color || "N/A",
+    registroId: `${idProducto || "producto"}-${talla || "na"}-${color || "na"}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    fecha_creacion: nowIso,
+    registrado_por: registradoPor || "Empleado",
+  }
+}
 
 function Entradas() {
-  const ENTRADAS_LS_KEY = "entradas_inventario"
   const [entradas, setEntradas] = useState(() => {
     try {
       const guardado = localStorage.getItem(ENTRADAS_LS_KEY)
-      return guardado ? JSON.parse(guardado) : []
+      const parsed = guardado ? JSON.parse(guardado) : []
+      const { normalized, changed } = normalizeEntradasStockList(parsed)
+      if (changed) {
+        localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(normalized))
+      }
+      return normalized
     } catch (error) {
       console.error("Error parseando entradas en localStorage:", error)
       return []
@@ -20,6 +213,27 @@ function Entradas() {
   const [modalConfirmar, setModalConfirmar] = useState(false)
   const [accionPendiente, setAccionPendiente] = useState(null)
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("")
+  const [modalRegistrarModelo, setModalRegistrarModelo] = useState(false)
+  const [categorias, setCategorias] = useState([])
+  const [formCrear, setFormCrear] = useState(FORM_EMPTY)
+
+  const persistEntradas = (list = []) => {
+    localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(list))
+    window.dispatchEvent(new Event("entradas-updated"))
+  }
+
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      try {
+        const { data } = await getCategorias()
+        setCategorias(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error("Error cargando categorías:", error)
+      }
+    }
+
+    cargarCategorias()
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(entradas))
@@ -29,7 +243,12 @@ function Entradas() {
     const recargarEntradas = () => {
       try {
         const guardado = localStorage.getItem(ENTRADAS_LS_KEY)
-        setEntradas(guardado ? JSON.parse(guardado) : [])
+        const parsed = guardado ? JSON.parse(guardado) : []
+        const { normalized, changed } = normalizeEntradasStockList(parsed)
+        if (changed) {
+          localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(normalized))
+        }
+        setEntradas(normalized)
       } catch (error) {
         console.error("Error recargando entradas en localStorage:", error)
       }
@@ -52,8 +271,49 @@ function Entradas() {
   }
 
   const parseFecha = (fecha) => {
-    const date = new Date(fecha)
-    return Number.isNaN(date.getTime()) ? null : date
+    if (!fecha) return null
+
+    if (fecha instanceof Date) {
+      return Number.isNaN(fecha.getTime()) ? null : fecha
+    }
+
+    if (typeof fecha === "number") {
+      const dateFromNumber = new Date(fecha)
+      return Number.isNaN(dateFromNumber.getTime()) ? null : dateFromNumber
+    }
+
+    const txt = String(fecha).trim()
+    if (!txt) return null
+
+    const direct = new Date(txt)
+    if (!Number.isNaN(direct.getTime())) return direct
+
+    const match = txt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/)
+    if (match) {
+      const [, dd, mm, yyyy, hh = "0", min = "0", ss = "0"] = match
+      const date = new Date(
+        Number(yyyy),
+        Number(mm) - 1,
+        Number(dd),
+        Number(hh),
+        Number(min),
+        Number(ss)
+      )
+      return Number.isNaN(date.getTime()) ? null : date
+    }
+
+    return null
+  }
+
+  const getRangoSemanaActual = () => {
+    const now = new Date()
+    const inicio = new Date(now)
+    inicio.setDate(now.getDate() - now.getDay())
+    inicio.setHours(0, 0, 0, 0)
+
+    const fin = new Date(inicio)
+    fin.setDate(inicio.getDate() + 7)
+    return { inicio, fin }
   }
 
   const esHoy = (fecha) => {
@@ -68,13 +328,10 @@ function Entradas() {
   }
 
   const estaEnEstaSemana = (fecha) => {
-    const ahora = new Date()
     const f = parseFecha(fecha)
     if (!f) return false
-    const inicioSemana = new Date(ahora)
-    inicioSemana.setDate(ahora.getDate() - ahora.getDay())
-    inicioSemana.setHours(0, 0, 0, 0)
-    return f >= inicioSemana
+    const { inicio, fin } = getRangoSemanaActual()
+    return f >= inicio && f < fin
   }
 
   const estaEnEsteMes = (fecha) => {
@@ -106,31 +363,43 @@ function Entradas() {
 
   const eliminarEntradasHoy = () => {
     setEntradas((prev) =>
-      prev.filter((e) => {
+      {
+        const next = prev.filter((e) => {
         const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return false
+        if (!parseFecha(fecha)) return true
         return !esHoy(fecha)
-      })
+        })
+        persistEntradas(next)
+        return next
+      }
     )
   }
 
   const eliminarEntradasSemana = () => {
     setEntradas((prev) =>
-      prev.filter((e) => {
+      {
+        const next = prev.filter((e) => {
         const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return false
+        if (!parseFecha(fecha)) return true
         return !estaEnEstaSemana(fecha)
-      })
+        })
+        persistEntradas(next)
+        return next
+      }
     )
   }
 
   const eliminarEntradasMes = () => {
     setEntradas((prev) =>
-      prev.filter((e) => {
+      {
+        const next = prev.filter((e) => {
         const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return false
+        if (!parseFecha(fecha)) return true
         return !estaEnEsteMes(fecha)
-      })
+        })
+        persistEntradas(next)
+        return next
+      }
     )
   }
 
@@ -138,6 +407,16 @@ function Entradas() {
   const entradasHoy = baseDatosEntradas.filter((p) => esHoy(obtenerFechaRegistro(p))).length
   const entradasSemana = baseDatosEntradas.filter((p) => estaEnEstaSemana(obtenerFechaRegistro(p))).length
   const entradasMes = baseDatosEntradas.filter((p) => estaEnEsteMes(obtenerFechaRegistro(p))).length
+
+  useEffect(() => {
+    const resumen = {
+      hoy: entradasHoy,
+      semana: entradasSemana,
+      mes: entradasMes,
+      updatedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(ENTRADAS_RESUMEN_LS_KEY, JSON.stringify(resumen))
+  }, [entradasHoy, entradasSemana, entradasMes])
 
   const formatFecha = (fecha) => {
     if (!fecha) return "—"
@@ -187,6 +466,100 @@ function Entradas() {
     return null
   }
 
+  const validarFormulario = (form) => {
+    const camposRequeridos = {
+      modelo: "Modelo",
+      id_categoria: "Categoría",
+      precio: "Precio",
+      tallas: "Tallas",
+      colores: "Color",
+    }
+
+    for (const [key, label] of Object.entries(camposRequeridos)) {
+      if (!String(form[key] ?? "").trim()) {
+        toast.warn(`El campo "${label}" no puede estar vacío.`)
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const handleRegistrarModelo = async () => {
+    if (!validarFormulario(formCrear)) return
+
+    try {
+      const pairs = buildVariantPairs(parseTallas(formCrear.tallas), parseColores(formCrear.colores))
+      if (!pairs.length) {
+        toast.warn("Debes seleccionar al menos una combinación de talla y color")
+        return
+      }
+
+      const stockVariantes = normalizeVariantStocks(pairs, formCrear.stock_variantes)
+      const payload = {
+        ...formCrear,
+        stock: sumVariantStocks(stockVariantes),
+        precio: Number(formCrear.precio) || 0,
+        stock_variantes: stockVariantes,
+      }
+
+      const { data: productoCreado } = await createProducto(payload)
+      const registradoPor = user?.nombre || user?.email || getSessionUserName()
+      const categoriaNombre = categorias.find(
+        (cat) => Number(cat.id_categoria) === Number(payload.id_categoria)
+      )?.nombre_categoria || null
+
+      const entradasNuevas = pairs
+        .map((pair) => ({ pair, cantidad: Number(stockVariantes[pair.key] || 0) }))
+        .filter((item) => item.cantidad > 0)
+        .map((item) =>
+          buildEntradaRecord({
+            idProducto: productoCreado?.id_producto,
+            modelo: payload.modelo,
+            idCategoria: payload.id_categoria,
+            nombreCategoria: categoriaNombre,
+            precio: payload.precio,
+            cantidad: item.cantidad,
+            talla: item.pair.talla,
+            color: item.pair.color,
+            registradoPor,
+            stockAnterior: 0,
+            stockNuevo: item.cantidad,
+          })
+        )
+
+      pushEntradasToStorage(entradasNuevas)
+
+      if (entradasNuevas.length) {
+        const resultados = await Promise.allSettled(
+          entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
+        )
+        const fallidos = resultados.filter((r) => r.status === "rejected").length
+        if (fallidos > 0) {
+          toast.warning("Algunas entradas no se reflejaron en reportes en tiempo real.")
+        }
+      }
+
+      if (productoCreado?.id_producto) {
+        const colorMap = readMap(COLOR_MAP_KEY)
+        colorMap[productoCreado.id_producto] = parseColores(payload.colores)
+        localStorage.setItem(COLOR_MAP_KEY, JSON.stringify(colorMap))
+
+        const variantMap = readMap(VARIANT_STOCK_MAP_KEY)
+        variantMap[productoCreado.id_producto] = stockVariantes
+        localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(variantMap))
+      }
+
+      toast.success("Modelo registrado con éxito")
+      setFormCrear(FORM_EMPTY)
+      setModalRegistrarModelo(false)
+      window.dispatchEvent(new Event("inventario-updated"))
+    } catch (error) {
+      const msg = error.response?.data?.message || "No se pudo registrar el modelo"
+      toast.error(msg)
+    }
+  }
+
   return (
     <div className="entradas-page">
       <div className="encabezado">
@@ -194,6 +567,16 @@ function Entradas() {
           <h1 className="titulo-pagina">Entradas de Inventario</h1>
           <p className="subtitulo-pagina">Consulta y gestiona los ingresos de productos al inventario</p>
         </div>
+        {user?.role === "empleado" && (
+          <button
+            type="button"
+            className="entradas-primary-btn"
+            onClick={() => setModalRegistrarModelo(true)}
+          >
+            <Plus size={15} />
+            Registrar modelo
+          </button>
+        )}
       </div>
 
       <div className="tarjetas-resumen">
@@ -347,7 +730,220 @@ function Entradas() {
         </div>,
         document.body
       )}
+
+      {modalRegistrarModelo && createPortal(
+        <div className="modal-overlay" onClick={() => setModalRegistrarModelo(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Registrar Modelo</h2>
+              <button className="modal-close" onClick={() => setModalRegistrarModelo(false)}>x</button>
+            </div>
+            <div className="modal-body">
+              <FormularioRegistroModelo
+                form={formCrear}
+                setForm={setFormCrear}
+                categorias={categorias}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setModalRegistrarModelo(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleRegistrarModelo}>Registrar</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
+  )
+}
+
+const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
+  const tallasSeleccionadas = useMemo(() => parseTallas(form.tallas), [form.tallas])
+  const coloresSeleccionados = useMemo(() => parseColores(form.colores), [form.colores])
+  const combinaciones = useMemo(
+    () => buildVariantPairs(tallasSeleccionadas, coloresSeleccionados),
+    [tallasSeleccionadas, coloresSeleccionados]
+  )
+  const stockVariantes = useMemo(
+    () => normalizeVariantStocks(combinaciones, form.stock_variantes),
+    [combinaciones, form.stock_variantes]
+  )
+  const stockTotalCalculado = useMemo(() => sumVariantStocks(stockVariantes), [stockVariantes])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+
+    if (name === "modelo") {
+      if (value === "" || /^\d*$/.test(value)) {
+        setForm((prev) => ({ ...prev, [name]: value }))
+      }
+      return
+    }
+
+    if (name === "precio") {
+      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+        setForm((prev) => ({ ...prev, [name]: value }))
+      }
+      return
+    }
+
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const toggleTalla = (talla) => {
+    setForm((prev) => ({ ...prev, tallas: toggleValueInCsv(prev.tallas, talla) }))
+  }
+
+  const toggleColor = (color) => {
+    setForm((prev) => ({ ...prev, colores: toggleValueInCsv(prev.colores, color) }))
+  }
+
+  const setStockVariante = (key, value) => {
+    if (value !== "" && !/^\d*$/.test(value)) return
+    setForm((prev) => ({
+      ...prev,
+      stock_variantes: {
+        ...(prev.stock_variantes || {}),
+        [key]: value,
+      },
+    }))
+  }
+
+  const handleStockFocus = (key) => {
+    const raw = form.stock_variantes?.[key]
+    const current = raw === "" ? "" : Number(raw ?? stockVariantes[key] ?? 0)
+    if (current !== 0) return
+
+    setForm((prev) => ({
+      ...prev,
+      stock_variantes: {
+        ...(prev.stock_variantes || {}),
+        [key]: "",
+      },
+    }))
+  }
+
+  const handleKeyDown = (e) => {
+    if (["e", "E", "+", "-"].includes(e.key)) {
+      e.preventDefault()
+    }
+  }
+
+  return (
+    <form className="form-producto">
+      <div className="form-group span-2">
+        <label>Modelo *</label>
+        <input
+          type="text"
+          name="modelo"
+          value={form.modelo}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Ej. 1100"
+          autoFocus
+        />
+      </div>
+
+      <div className="form-group span-2">
+        <label>Categoría *</label>
+        <select
+          name="id_categoria"
+          value={form.id_categoria}
+          onChange={handleChange}
+        >
+          <option value="">Seleccionar...</option>
+          {categorias.map((cat) => (
+            <option key={cat.id_categoria} value={cat.id_categoria}>
+              {cat.nombre_categoria}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group span-2">
+        <label>Precio Unitario *</label>
+        <input
+          type="number"
+          name="precio"
+          min="0"
+          step="0.01"
+          value={form.precio}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onWheel={(e) => e.target.blur()}
+          placeholder="0.00"
+        />
+      </div>
+
+      <div className="form-group form-group-tallas">
+        <label>Tallas disponibles *</label>
+        <div className="selector-grid">
+          {TALLAS_OPCIONES.map((talla) => {
+            return (
+              <button
+                key={talla}
+                type="button"
+                className={`selector-chip ${tallasSeleccionadas.includes(talla) ? "active" : ""}`}
+                onClick={() => toggleTalla(talla)}
+              >
+                {talla}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="form-group span-2 form-group-colores">
+        <label>Color *</label>
+        <div className="selector-grid selector-grid-colores">
+          {COLORES_OPCIONES.map((color) => {
+            return (
+              <button
+                key={color}
+                type="button"
+                className={`selector-chip ${coloresSeleccionados.includes(color) ? "active" : ""}`}
+                onClick={() => toggleColor(color)}
+              >
+                {color}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="form-group span-2">
+        <label>Stock por talla y color *</label>
+        {combinaciones.length === 0 ? (
+          <p className="selector-empty">Selecciona al menos una talla y un color.</p>
+        ) : (
+          <div className="stock-variantes-list">
+            {combinaciones.map((pair) => (
+              <div key={pair.key} className="stock-variante-item">
+                <span>{pair.talla} / {pair.color}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.stock_variantes?.[pair.key] === "" ? "" : (stockVariantes[pair.key] ?? 0)}
+                  onChange={(e) => setStockVariante(pair.key, e.target.value)}
+                  onFocus={() => handleStockFocus(pair.key)}
+                  onKeyDown={handleKeyDown}
+                  onWheel={(e) => e.target.blur()}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="form-group span-2">
+        <label>Estado en Inventario</label>
+        <select name="estado" value={form.estado} onChange={handleChange}>
+          <option value="activo">Activo (En exhibición/bodega)</option>
+          <option value="inactivo">Inactivo (Descontinuado)</option>
+        </select>
+      </div>
+    </form>
   )
 }
 

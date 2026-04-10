@@ -3,7 +3,8 @@ import { API_BASE_URL } from "./baseUrl";
 
 const API_URL = `${API_BASE_URL}/api/auth`;
 export const getAuthHeaders = () => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const stored = sessionStorage.getItem("user") || localStorage.getItem("user");
+  const user = stored ? JSON.parse(stored) : null;
   if (!user?.token) return {};
   return {
     headers: {

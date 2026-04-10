@@ -56,7 +56,7 @@ export const createProducto = async (req, res) => {
 // Actualizar un producto
 export const updateProducto = async (req, res) => {
   try {
-    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial } = req.body;
+    const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, colores } = req.body;
     const { id } = req.params;
 
     if (!modelo) {
@@ -75,7 +75,8 @@ export const updateProducto = async (req, res) => {
       precio,
       estado,
       tallas,
-      cantidad_inicial
+      cantidad_inicial,
+      colores
     });
 
     res.json(updatedProducto);

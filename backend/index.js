@@ -26,6 +26,22 @@ const hasConfiguredEnvValue = (value) => {
   return normalized.length > 0 && !normalized.includes("PEGA_AQUI");
 };
 
+const ensureProductosColoresColumn = async () => {
+  const sqlCheck = `
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'productos'
+      AND COLUMN_NAME = 'colores'
+    LIMIT 1`;
+
+  const [rows] = await pool.query(sqlCheck);
+  if (rows.length > 0) return;
+
+  await pool.query("ALTER TABLE productos ADD COLUMN colores VARCHAR(255) NULL");
+  console.log("Migración aplicada: columna productos.colores creada.");
+};
+
 app.listen(port, async () => {
   console.log(`Backend corriendo en http://localhost:${port}`);
 
@@ -46,6 +62,12 @@ app.listen(port, async () => {
     const conn = await pool.getConnection();
     conn.release();
     console.log("Conexión a MySQL exitosa (zapateria_login)");
+
+    try {
+      await ensureProductosColoresColumn();
+    } catch (migrationError) {
+      console.error("No se pudo validar/migrar productos.colores:", migrationError.message);
+    }
   } catch (err) {
     console.error("Error conectando a MySQL:", err.message);
   }

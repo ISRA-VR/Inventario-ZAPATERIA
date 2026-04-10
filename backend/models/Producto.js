@@ -1,5 +1,23 @@
 import pool from '../config/db.js';
 
+let hasColoresColumnCache = null;
+
+const hasColoresColumn = async () => {
+  if (hasColoresColumnCache !== null) return hasColoresColumnCache;
+
+  const sql = `
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'productos'
+      AND COLUMN_NAME = 'colores'
+    LIMIT 1`;
+
+  const [rows] = await pool.query(sql);
+  hasColoresColumnCache = rows.length > 0;
+  return hasColoresColumnCache;
+};
+
 const Producto = {
   async findAll() {
     try {
@@ -43,22 +61,41 @@ const Producto = {
       console.warn(`Ajustando cantidad_inicial a entero seguro: recibido=${cantidad_inicial}, guardado=${valCantidadInicial}`);
     }
 
-    const sql = `
+    const includeColores = await hasColoresColumn();
+    const sql = includeColores
+      ? `
       INSERT INTO productos 
       (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por, colores) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      
-    const [result] = await pool.query(sql, [
-      modelo, 
-      id_categoria, 
-      valStock, 
-      valPrecio, 
-      estado || 'activo', 
-      valTallas, 
-      valCantidadInicial,
-      registrado_por || null,
-      colores || null 
-    ]);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      : `
+      INSERT INTO productos 
+      (modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, registrado_por) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const params = includeColores
+      ? [
+          modelo,
+          id_categoria,
+          valStock,
+          valPrecio,
+          estado || 'activo',
+          valTallas,
+          valCantidadInicial,
+          registrado_por || null,
+          colores || null,
+        ]
+      : [
+          modelo,
+          id_categoria,
+          valStock,
+          valPrecio,
+          estado || 'activo',
+          valTallas,
+          valCantidadInicial,
+          registrado_por || null,
+        ];
+
+    const [result] = await pool.query(sql, params);
     
     return { 
       id_producto: result.insertId, 
@@ -83,22 +120,41 @@ const Producto = {
       console.warn(`Ajustando cantidad_inicial a entero seguro (UPDATE): recibido=${cantidad_inicial}, guardado=${valCantidadInicial}`);
     }
 
-    const sql = `
+    const includeColores = await hasColoresColumn();
+    const sql = includeColores
+      ? `
       UPDATE productos 
       SET modelo = ?, id_categoria = ?, stock = ?, precio = ?, estado = ?, tallas = ?, cantidad_inicial = ?, colores = ? 
+      WHERE id_producto = ?`
+      : `
+      UPDATE productos 
+      SET modelo = ?, id_categoria = ?, stock = ?, precio = ?, estado = ?, tallas = ?, cantidad_inicial = ? 
       WHERE id_producto = ?`;
-      
-    await pool.query(sql, [
-      modelo, 
-      id_categoria, 
-      valStock, 
-      valPrecio, 
-      estado, 
-      tallas, 
-      valCantidadInicial, 
-      colores || null, 
-      id
-    ]);
+
+    const params = includeColores
+      ? [
+          modelo,
+          id_categoria,
+          valStock,
+          valPrecio,
+          estado,
+          tallas,
+          valCantidadInicial,
+          colores || null,
+          id,
+        ]
+      : [
+          modelo,
+          id_categoria,
+          valStock,
+          valPrecio,
+          estado,
+          tallas,
+          valCantidadInicial,
+          id,
+        ];
+
+    await pool.query(sql, params);
     
     return this.findByPk(id); 
   },

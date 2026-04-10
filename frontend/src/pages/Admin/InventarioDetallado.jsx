@@ -55,7 +55,13 @@ const parseColores = (texto = "") => {
     .map((t) => t.trim())
     .filter((t) => {
       const valor = String(t || "").trim();
-      return Boolean(valor) && !isPlaceholderColor(valor);
+      const normalizado = valor.toLowerCase();
+      return (
+        Boolean(valor)
+        && !isPlaceholderColor(valor)
+        && normalizado !== "null"
+        && normalizado !== "undefined"
+      );
     });
 
   return lista.length ? lista : [];
@@ -986,7 +992,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group span-2">
         <label>Categoría *</label>
         <select name="id_categoria" value={form.id_categoria} onChange={handleChange}>
           <option value="">Seleccionar...</option>
@@ -998,7 +1004,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
         </select>
       </div>
 
-      <div className="form-group">
+      <div className="form-group span-2">
         <label>Precio Unitario *</label>
         <input
           type="number"
@@ -1013,7 +1019,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group form-group-tallas">
         <label>Tallas disponibles *</label>
         <div className="selector-grid">
           {TALLAS_OPCIONES.map((talla) => (
@@ -1029,7 +1035,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
         </div>
       </div>
 
-      <div className="form-group">
+      <div className="form-group span-2 form-group-colores">
         <label>Color *</label>
         <div className="selector-grid selector-grid-colores">
           {COLORES_OPCIONES.map((color) => (
