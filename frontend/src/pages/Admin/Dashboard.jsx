@@ -14,6 +14,8 @@ import {
 import { Box, TrendingUp, TrendingDown, TriangleAlert } from 'lucide-react';
 
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+const ENTRADAS_LS_KEY = 'entradas_inventario';
+const VENTAS_LS_KEY = 'ventas_punto_venta';
 const LOW_STOCK_LIMIT = 30;
 
 const readVariantStockMap = () => {
@@ -24,6 +26,100 @@ const readVariantStockMap = () => {
   } catch {
     return {};
   }
+};
+
+const readEntradasStorage = () => {
+  try {
+    const raw = localStorage.getItem(ENTRADAS_LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const readVentasStorage = () => {
+  try {
+    const raw = localStorage.getItem(VENTAS_LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseDateSafe = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getEntradaUnidad = (item) => {
+  const antes = Number(item?.stock_anterior);
+  const despues = Number(item?.stock_nuevo);
+  if (Number.isFinite(antes) && Number.isFinite(despues)) {
+    return Math.abs(Math.round(despues) - Math.round(antes));
+  }
+
+  const cantidad = Number(item?.cantidad);
+  if (Number.isFinite(cantidad)) return Math.abs(Math.round(cantidad));
+
+  const stock = Number(item?.stock);
+  if (Number.isFinite(stock)) return Math.abs(Math.round(stock));
+
+  return 0;
+};
+
+const getSalidaUnidad = (detalleItem) => {
+  const antes = Number(detalleItem?.stock_anterior);
+  const despues = Number(detalleItem?.stock_nuevo);
+  if (Number.isFinite(antes) && Number.isFinite(despues)) {
+    return Math.abs(Math.round(despues) - Math.round(antes));
+  }
+
+  const cantidad = Number(detalleItem?.cantidad);
+  if (Number.isFinite(cantidad)) return Math.abs(Math.round(cantidad));
+
+  return 0;
+};
+
+const sumarEntradasPorRango = (entradas = [], inicio, finExclusivo) => {
+  return entradas.reduce((acc, item) => {
+    const fecha = parseDateSafe(item?.fecha_creacion || item?.created_at || item?.fechaCreacion);
+    if (!fecha) return acc;
+    if (fecha < inicio || fecha >= finExclusivo) return acc;
+    return acc + getEntradaUnidad(item);
+  }, 0);
+};
+
+const parseVentaFecha = (venta) => {
+  const fechaBase = venta?.fecha || (venta?.created_at ? String(venta.created_at).slice(0, 10) : null);
+  const horaBase = venta?.hora || (venta?.created_at
+    ? new Date(venta.created_at).toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    : '00:00');
+
+  const fecha = fechaBase ? `${fechaBase}T${horaBase}:00` : venta?.created_at;
+  return parseDateSafe(fecha);
+};
+
+const sumarSalidasPorRango = (ventas = [], inicio, finExclusivo) => {
+  let total = 0;
+
+  ventas.forEach((venta) => {
+    const fechaVenta = parseVentaFecha(venta);
+    if (!fechaVenta) return;
+    if (fechaVenta < inicio || fechaVenta >= finExclusivo) return;
+
+    const detalle = Array.isArray(venta?.detalle) ? venta.detalle : [];
+    detalle.forEach((item) => {
+      total += getSalidaUnidad(item);
+    });
+  });
+
+  return total;
 };
 
 const DashboardPage = () => {
@@ -130,8 +226,21 @@ const DashboardPage = () => {
         setModelosStockBajo(modelosBajos);
         setCambioModelosStockBajoMes(variacionStockBajo);
 
-        const entradasMesActual = Number(resumen?.mes?.entradasCantidad || 0);
-        const entradasMesAnterior = Number(resumen?.mesAnterior?.entradasCantidad || 0);
+        const entradasStorage = readEntradasStorage();
+        const inicioMesActual = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+        const inicioSiguienteMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+        const inicioMesPrevio = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+
+        const entradasMesActualStorage = sumarEntradasPorRango(entradasStorage, inicioMesActual, inicioSiguienteMes);
+        const entradasMesAnteriorStorage = sumarEntradasPorRango(entradasStorage, inicioMesPrevio, inicioMesActual);
+
+        const usarEntradasStorage = entradasStorage.length > 0;
+        const entradasMesActual = usarEntradasStorage
+          ? entradasMesActualStorage
+          : Number(resumen?.mes?.entradasCantidad || 0);
+        const entradasMesAnterior = usarEntradasStorage
+          ? entradasMesAnteriorStorage
+          : Number(resumen?.mesAnterior?.entradasCantidad || 0);
 
         let variacionEntradas = 0;
         if (entradasMesAnterior === 0) {
@@ -140,8 +249,17 @@ const DashboardPage = () => {
           variacionEntradas = ((entradasMesActual - entradasMesAnterior) / entradasMesAnterior) * 100;
         }
 
-        const salidasMesActual = Number(resumen?.mes?.salidasCantidad || 0);
-        const salidasMesAnterior = Number(resumen?.mesAnterior?.salidasCantidad || 0);
+        const ventasStorage = readVentasStorage();
+        const salidasMesActualStorage = sumarSalidasPorRango(ventasStorage, inicioMesActual, inicioSiguienteMes);
+        const salidasMesAnteriorStorage = sumarSalidasPorRango(ventasStorage, inicioMesPrevio, inicioMesActual);
+
+        const usarSalidasStorage = ventasStorage.length > 0;
+        const salidasMesActual = usarSalidasStorage
+          ? salidasMesActualStorage
+          : Number(resumen?.mes?.salidasCantidad || 0);
+        const salidasMesAnterior = usarSalidasStorage
+          ? salidasMesAnteriorStorage
+          : Number(resumen?.mesAnterior?.salidasCantidad || 0);
 
         let variacionSalidas = 0;
         if (salidasMesAnterior === 0) {
@@ -216,12 +334,14 @@ const DashboardPage = () => {
     window.addEventListener('focus', refrescarDashboard);
     window.addEventListener('ventas-pos-updated', refrescarDashboard);
     window.addEventListener('inventario-updated', refrescarDashboard);
+    window.addEventListener('entradas-updated', refrescarDashboard);
 
     return () => {
       window.removeEventListener('storage', refrescarDashboard);
       window.removeEventListener('focus', refrescarDashboard);
       window.removeEventListener('ventas-pos-updated', refrescarDashboard);
       window.removeEventListener('inventario-updated', refrescarDashboard);
+      window.removeEventListener('entradas-updated', refrescarDashboard);
     };
   }, []);
 

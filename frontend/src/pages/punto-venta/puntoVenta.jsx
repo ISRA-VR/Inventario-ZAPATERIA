@@ -7,6 +7,8 @@ import { CircleCheck, DollarSign, TrendingUp, CalendarDays } from "lucide-react"
 import { getResumenMovimientos } from "../../api/movimientos";
 import "../../styles/styles-POS/puntoVenta.css";
 
+const VENTAS_LS_KEY = "ventas_punto_venta";
+
 const EMPTY_RESUMEN = {
   hoy: { salidasMonto: 0, gananciaNeta: 0 },
   ayer: { salidasMonto: 0 },
@@ -23,6 +25,141 @@ const nombreValido = (value) => {
   if (!txt || txt.length > 80) return false;
   if (/(.)\1{14,}/.test(txt)) return false;
   return true;
+};
+
+const readVentasStorage = () => {
+  try {
+    const raw = localStorage.getItem(VENTAS_LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseDateSafe = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const parseVentaFecha = (venta) => {
+  const fechaBase = venta?.fecha || (venta?.created_at ? String(venta.created_at).slice(0, 10) : null);
+  const horaBase = venta?.hora || (venta?.created_at
+    ? new Date(venta.created_at).toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    : "00:00");
+
+  const fecha = fechaBase ? `${fechaBase}T${horaBase}:00` : venta?.created_at;
+  return parseDateSafe(fecha);
+};
+
+const esMismoDia = (date, target) => (
+  date.getFullYear() === target.getFullYear()
+  && date.getMonth() === target.getMonth()
+  && date.getDate() === target.getDate()
+);
+
+const construirResumenLocalVentas = (ventas = []) => {
+  const hoy = new Date();
+  const ayer = new Date(hoy);
+  ayer.setDate(hoy.getDate() - 1);
+
+  const categoriaMap = new Map();
+  const topHoyMap = new Map();
+
+  ventas.forEach((venta) => {
+    const fechaVenta = parseVentaFecha(venta);
+    if (!fechaVenta) return;
+
+    const esHoyVenta = esMismoDia(fechaVenta, hoy);
+    const esAyerVenta = esMismoDia(fechaVenta, ayer);
+    if (!esHoyVenta && !esAyerVenta) return;
+
+    const detalle = Array.isArray(venta?.detalle) ? venta.detalle : [];
+    detalle.forEach((item) => {
+      const cantidad = Math.max(0, Number(item?.cantidad) || 0);
+      const precio = Number(item?.precio) || 0;
+      const categoria = nombreValido(item?.marca) ? String(item.marca).trim() : "Sin categoría";
+      const producto = String(item?.nombre || "Producto").trim() || "Producto";
+
+      if (!categoriaMap.has(categoria)) {
+        categoriaMap.set(categoria, { cat: categoria, hoy: 0, ayer: 0 });
+      }
+      const filaCategoria = categoriaMap.get(categoria);
+      if (esHoyVenta) filaCategoria.hoy += cantidad;
+      if (esAyerVenta) filaCategoria.ayer += cantidad;
+
+      if (esHoyVenta) {
+        const key = producto.toLowerCase();
+        if (!topHoyMap.has(key)) {
+          topHoyMap.set(key, { nombre: producto, unid: 0, total: 0 });
+        }
+        const filaTop = topHoyMap.get(key);
+        filaTop.unid += cantidad;
+        filaTop.total += cantidad * precio;
+      }
+    });
+  });
+
+  const ventasPorCategoria = Array.from(categoriaMap.values())
+    .map((row) => ({
+      cat: row.cat,
+      hoy: Number(row.hoy || 0),
+      ayer: Number(row.ayer || 0),
+    }))
+    .sort((a, b) => (b.hoy + b.ayer) - (a.hoy + a.ayer));
+
+  const topVendidoHoy = Array.from(topHoyMap.values())
+    .filter((row) => nombreValido(row.nombre) && row.unid > 0)
+    .sort((a, b) => b.unid - a.unid)
+    .slice(0, 5)
+    .map((row) => ({
+      nombre: row.nombre,
+      unid: Number(row.unid || 0),
+      total: Number(row.total || 0),
+    }));
+
+  return { ventasPorCategoria, topVendidoHoy };
+};
+
+const construirActividadLocalVentas = (ventas = []) => {
+  const items = [];
+
+  ventas.forEach((venta) => {
+    const fechaVenta = parseVentaFecha(venta);
+    if (!fechaVenta) return;
+
+    const hora = fechaVenta.toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    const detalle = Array.isArray(venta?.detalle) ? venta.detalle : [];
+    detalle.forEach((item, idx) => {
+      const cantidad = Math.max(0, Number(item?.cantidad) || 0);
+      const precio = Number(item?.precio) || 0;
+      const total = cantidad * precio;
+      const nombre = nombreValido(item?.nombre) ? String(item.nombre).trim() : "Venta registrada";
+
+      items.push({
+        id: `${venta?.id || "venta"}-${idx}`,
+        ts: fechaVenta.getTime(),
+        tipo: "venta",
+        desc: `${nombre} x${cantidad}`,
+        hora,
+        monto: `+$${total.toLocaleString("es-MX")}`,
+      });
+    });
+  });
+
+  return items
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 8)
+    .map(({ ts, ...rest }) => rest);
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -45,12 +182,14 @@ export default function PuntoDeVenta() {
   const [periodo, setPeriodo] = useState("semana");
   const [resumen, setResumen] = useState(EMPTY_RESUMEN);
   const [cargando, setCargando] = useState(true);
+  const [ventasLocales, setVentasLocales] = useState(() => readVentasStorage());
 
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         const { data: resumenMov } = await getResumenMovimientos();
         setResumen(resumenMov || EMPTY_RESUMEN);
+        setVentasLocales(readVentasStorage());
       } catch (error) {
         console.error("Error cargando productos para punto de venta:", error);
       } finally {
@@ -90,15 +229,25 @@ export default function PuntoDeVenta() {
   ), [resumen]);
 
   const ventasPorCategoria = useMemo(() => {
+    const local = construirResumenLocalVentas(ventasLocales);
+    if (local.ventasPorCategoria.length > 0) {
+      return local.ventasPorCategoria;
+    }
+
     const base = Array.isArray(resumen?.ventasPorCategoria) ? resumen.ventasPorCategoria : [];
     return base.map((item) => ({
       cat: nombreValido(item.cat) ? item.cat : "Sin categoría",
       hoy: Number(item.hoy || 0),
       ayer: Number(item.ayer || 0),
     }));
-  }, [resumen]);
+  }, [resumen, ventasLocales]);
 
   const topVendidoHoy = useMemo(() => {
+    const local = construirResumenLocalVentas(ventasLocales);
+    if (local.topVendidoHoy.length > 0) {
+      return local.topVendidoHoy;
+    }
+
     const base = Array.isArray(resumen?.topVendidoHoy) ? resumen.topVendidoHoy : [];
     return base.map((item) => ({
       nombre: item.nombre,
@@ -107,15 +256,20 @@ export default function PuntoDeVenta() {
     }))
       .filter((item) => nombreValido(item.nombre) && item.unid > 0)
       .slice(0, 5);
-  }, [resumen]);
+  }, [resumen, ventasLocales]);
 
   const actividadReciente = useMemo(() => {
+    const actividadLocal = construirActividadLocalVentas(ventasLocales);
+    if (actividadLocal.length > 0) {
+      return actividadLocal;
+    }
+
     const base = Array.isArray(resumen?.actividadReciente) ? resumen.actividadReciente : [];
     return base.map((item) => ({
       ...item,
       desc: nombreValido(item?.desc) ? item.desc : "Movimiento reciente",
     }));
-  }, [resumen]);
+  }, [resumen, ventasLocales]);
 
   return (
     <div className="pventa-wrapper">

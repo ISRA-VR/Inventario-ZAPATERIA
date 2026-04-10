@@ -119,8 +119,69 @@ const hashPassword = async (plainPassword) => {
   return bcrypt.hash(plainPassword, salt);
 };
 
+let presenceColumnsReady = false;
+
+const ensurePresenceColumns = async () => {
+  if (presenceColumnsReady) return;
+
+  const [rows] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'usuarios'
+       AND COLUMN_NAME IN ('last_seen_at', 'last_login_at', 'last_logout_at', 'activo')`
+  );
+
+  const existing = new Set(rows.map((r) => r.COLUMN_NAME));
+
+  if (!existing.has('last_seen_at')) {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN last_seen_at DATETIME NULL');
+  }
+
+  if (!existing.has('last_login_at')) {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN last_login_at DATETIME NULL');
+  }
+
+  if (!existing.has('last_logout_at')) {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN last_logout_at DATETIME NULL');
+  }
+
+  if (!existing.has('activo')) {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1');
+  }
+
+  presenceColumnsReady = true;
+};
+
+const touchUserPresence = async (userId, { login = false } = {}) => {
+  await ensurePresenceColumns();
+
+  if (login) {
+    await pool.query('UPDATE usuarios SET last_seen_at = NOW(), last_login_at = NOW(), last_logout_at = NULL WHERE id = ?', [userId]);
+    return;
+  }
+
+  await pool.query(
+    `UPDATE usuarios
+     SET last_seen_at = NOW()
+     WHERE id = ?
+       AND (
+         last_logout_at IS NULL
+         OR TIMESTAMPDIFF(SECOND, last_logout_at, NOW()) > 5
+       )`,
+    [userId]
+  );
+};
+
+const markUserLogout = async (userId) => {
+  await ensurePresenceColumns();
+  await pool.query('UPDATE usuarios SET last_seen_at = NOW(), last_logout_at = NOW() WHERE id = ?', [userId]);
+};
+
 export const login = async (req, res) => {
   try {
+    await ensurePresenceColumns();
+
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
 
@@ -139,6 +200,10 @@ export const login = async (req, res) => {
 
     const user = rows[0];
 
+    if (Number(user?.activo) === 0) {
+      return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta al administrador." });
+    }
+
     const match = await verifyPassword(password, user.password);
     if (!match) {
       return res.status(401).json({ message: "Credenciales inválidas" });
@@ -148,6 +213,8 @@ export const login = async (req, res) => {
       const migratedPasswordHash = await hashPassword(password);
       await pool.query("UPDATE usuarios SET password = ? WHERE id = ?", [migratedPasswordHash, user.id]);
     }
+
+    await touchUserPresence(user.id, { login: true });
 
     const token = jwt.sign(
       { id: user.id, role: user.role, nombre: user.nombre },
@@ -170,6 +237,8 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
+    await ensurePresenceColumns();
+
     const nombre = String(req.body?.nombre || "").trim();
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
@@ -187,7 +256,7 @@ export const register = async (req, res) => {
     const hashedPassword = await hashPassword(password);
 
     const [result] = await pool.query(
-      "INSERT INTO usuarios (nombre, email, password, role) VALUES (?, ?, ?, ?)",
+      "INSERT INTO usuarios (nombre, email, password, role, activo) VALUES (?, ?, ?, ?, 1)",
       [nombre, email, hashedPassword, rol || 'empleado']
     );
 
@@ -205,11 +274,66 @@ export const register = async (req, res) => {
 
 export const getEmpleados = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT id, nombre, email, role, created_at FROM usuarios");
+    await ensurePresenceColumns();
+    if (req.user?.id) {
+      await touchUserPresence(req.user.id, { login: false });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT
+        id,
+        nombre,
+        email,
+        role,
+        activo,
+        created_at,
+        last_login_at,
+        last_seen_at,
+        last_logout_at,
+        CASE
+          WHEN last_seen_at IS NOT NULL
+            AND activo = 1
+            AND TIMESTAMPDIFF(SECOND, last_seen_at, NOW()) <= 120
+            AND (last_logout_at IS NULL OR last_seen_at > last_logout_at)
+          THEN 1
+          ELSE 0
+        END AS en_linea
+      FROM usuarios`
+    );
     res.json(rows);
   } catch (err) {
     console.error("Error en getEmpleados:", err.message);
     res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+export const pingPresence = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
+    await touchUserPresence(userId, { login: false });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Error en pingPresence:', err.message);
+    return res.status(500).json({ message: 'No se pudo actualizar presencia' });
+  }
+};
+
+export const logoutPresence = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
+    await markUserLogout(userId);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Error en logoutPresence:', err.message);
+    return res.status(500).json({ message: 'No se pudo registrar la ultima conexion' });
   }
 };
 
@@ -479,6 +603,45 @@ export const resetPassword = async (req, res) => {
     }
 
     console.error("Error en resetPassword:", err.message);
+    return res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+export const updateEmpleadoEstado = async (req, res) => {
+  try {
+    await ensurePresenceColumns();
+
+    const { id } = req.params;
+    const { activo } = req.body || {};
+    const activoNum = Number(activo) === 1 ? 1 : 0;
+
+    if (!id) {
+      return res.status(400).json({ message: "ID de empleado inválido." });
+    }
+
+    if (Number(req.user?.id) === Number(id) && activoNum === 0) {
+      return res.status(400).json({ message: "No puedes desactivar tu propia cuenta." });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE usuarios
+       SET activo = ?,
+           last_seen_at = CASE WHEN ? = 0 THEN NOW() ELSE last_seen_at END,
+           last_logout_at = CASE WHEN ? = 0 THEN NOW() ELSE last_logout_at END
+       WHERE id = ?`,
+      [activoNum, activoNum, activoNum, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Empleado no encontrado." });
+    }
+
+    return res.json({
+      message: activoNum === 1 ? "Empleado activado correctamente." : "Empleado desactivado correctamente.",
+      activo: activoNum,
+    });
+  } catch (err) {
+    console.error("Error en updateEmpleadoEstado:", err.message);
     return res.status(500).json({ message: "Error del servidor" });
   }
 };

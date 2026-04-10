@@ -2,6 +2,7 @@ import Producto from '../models/Producto.js';
 import pool from '../config/db.js';
 
 let movimientosTableReady = false;
+const VARIANT_LOW_STOCK_LIMIT = 30;
 
 const normalizarTexto = (texto = '') =>
   texto
@@ -205,11 +206,81 @@ const extraerRangoDesdePregunta = (pregunta = '') => {
   return null;
 };
 
-const construirResumenInventario = (productos = []) => {
+const isPlainObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
+
+const parseCsvList = (value = '') =>
+  String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const isPlaceholderVariant = (talla, color) => {
+  const t = String(talla || '').trim().toUpperCase();
+  const c = String(color || '').trim().toUpperCase();
+  return (!t || t === 'N/A') && (!c || c === 'N/A');
+};
+
+const construirResumenInventario = (productos = [], clientContext = {}) => {
+  const snapshot = clientContext?.systemSnapshot || {};
+  const variantStockMap = isPlainObject(snapshot?.stockVariantesMap) ? snapshot.stockVariantesMap : {};
+  const colorMap = isPlainObject(snapshot?.coloresMap) ? snapshot.coloresMap : {};
+
   const stockTotal = productos.reduce((acc, p) => acc + (Number(p?.stock) || 0), 0);
   const stockBajo = productos
     .filter((p) => (Number(p?.stock) || 0) > 0 && (Number(p?.stock) || 0) <= 15)
     .sort((a, b) => (Number(a?.stock) || 0) - (Number(b?.stock) || 0));
+
+  const stockBajoVariantes = [];
+
+  productos.forEach((p) => {
+    const idProducto = Number(p?.id_producto);
+    const categoria = p?.nombre_categoria || 'Sin categoría';
+    const modelo = p?.modelo || 'Modelo sin nombre';
+    const tallas = parseCsvList(p?.tallas);
+    const colores = Array.isArray(colorMap?.[idProducto]) ? colorMap[idProducto] : [];
+    const varianteMapRaw = variantStockMap?.[idProducto] || variantStockMap?.[String(idProducto)];
+    const varianteMap = isPlainObject(varianteMapRaw) ? varianteMapRaw : {};
+    const keys = Object.keys(varianteMap);
+
+    if (keys.length > 0) {
+      keys.forEach((key) => {
+        const [talla = 'N/A', color = 'N/A'] = String(key).split('__');
+        if (isPlaceholderVariant(talla, color)) return;
+
+        const stock = Math.max(0, Number(varianteMap[key]) || 0);
+        if (stock > VARIANT_LOW_STOCK_LIMIT) return;
+
+        stockBajoVariantes.push({
+          id_producto: idProducto,
+          modelo,
+          categoria,
+          talla,
+          color,
+          stock,
+          agotado: stock === 0,
+        });
+      });
+      return;
+    }
+
+    const stockModelo = Math.max(0, Number(p?.stock) || 0);
+    if (stockModelo <= VARIANT_LOW_STOCK_LIMIT) {
+      stockBajoVariantes.push({
+        id_producto: idProducto,
+        modelo,
+        categoria,
+        talla: tallas[0] || 'N/A',
+        color: colores[0] || 'N/A',
+        stock: stockModelo,
+        agotado: stockModelo === 0,
+      });
+    }
+  });
+
+  stockBajoVariantes.sort((a, b) => {
+    if (a.stock !== b.stock) return a.stock - b.stock;
+    return String(a.modelo).localeCompare(String(b.modelo), 'es', { sensitivity: 'base' });
+  });
 
   const porCategoria = productos.reduce((acc, p) => {
     const nombre = p?.nombre_categoria || 'Sin categoría';
@@ -225,6 +296,7 @@ const construirResumenInventario = (productos = []) => {
     stockTotal,
     totalModelos: productos.length,
     stockBajo,
+    stockBajoVariantes,
     categoriasOrdenadas,
   };
 };
@@ -246,9 +318,51 @@ const construirResumenSistema = ({ categorias = [], usuarios = [] }) => {
   };
 };
 
-const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, metricasBD, userRole }) => {
+const construirResumenOperativo = ({ productos = [], clientContext = {} }) => {
+  const totalActivos = productos.filter((p) => String(p?.estado || 'activo').toLowerCase() === 'activo').length;
+  const totalInactivos = productos.length - totalActivos;
+  const modelosConTallas = productos.filter((p) => {
+    const tallas = String(p?.tallas || '').trim();
+    return tallas && tallas.toUpperCase() !== 'N/A';
+  }).length;
+
+  const liquidaciones = Array.isArray(clientContext?.systemSnapshot?.liquidaciones)
+    ? clientContext.systemSnapshot.liquidaciones
+    : [];
+
+  const descuentos = clientContext?.systemSnapshot?.descuentosLiquidacion || {};
+  const promedioDescuento = liquidaciones.length
+    ? (liquidaciones.reduce((acc, id) => acc + (Number(descuentos[id] || 0) || 0), 0) / liquidaciones.length)
+    : 0;
+
+  return {
+    totalActivos,
+    totalInactivos,
+    modelosConTallas,
+    modelosEnLiquidacion: liquidaciones.length,
+    descuentoPromedioLiquidacion: promedioDescuento,
+    totalVariantesRegistradas: Number(clientContext?.systemSnapshot?.totalVariantesRegistradas || 0),
+    totalMapeosColor: Number(clientContext?.systemSnapshot?.totalMapeosColor || 0),
+  };
+};
+
+const responderAsistente = ({ pregunta, inventario, sistema, operativo, metricasCliente, metricasBD, userRole }) => {
   const q = normalizarTexto(pregunta);
   const esAdmin = userRole === 'admin';
+
+  const entradasHoy = Number(metricasBD?.hoy?.entradasCantidad ?? metricasCliente?.entradasHoy ?? 0);
+  const salidasHoy = Number(metricasBD?.hoy?.salidasCantidad ?? metricasCliente?.salidasHoy ?? 0);
+  const ventasHoyMonto = Number(metricasBD?.hoy?.salidasMonto ?? metricasCliente?.ventasHoyMonto ?? 0);
+  const entradasHoyMonto = Number(metricasBD?.hoy?.entradasMonto ?? 0);
+
+  const construirReporteDelDia = () => ([
+    'Reporte del día:',
+    `- Stock total actual: ${formatearNumero(inventario.stockTotal)}`,
+    `- Entradas de hoy: ${formatearNumero(entradasHoy)} unidades (${formatearMoneda(entradasHoyMonto)})`,
+    `- Salidas de hoy: ${formatearNumero(salidasHoy)} unidades (${formatearMoneda(ventasHoyMonto)})`,
+    `- Balance de unidades hoy (entradas - salidas): ${formatearNumero(entradasHoy - salidasHoy)}`,
+    `- Modelos en liquidación activos: ${formatearNumero(operativo.modelosEnLiquidacion)}`,
+  ].join('\n'));
 
   const sugerenciasBase = [
     'Muéstrame productos con stock bajo',
@@ -268,20 +382,52 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
   const topCategoria = inventario.categoriasOrdenadas[0];
   const topStockBajo = inventario.stockBajo.slice(0, 5);
 
+  if (
+    q.includes('reporte del dia')
+    || q.includes('reporte de hoy')
+    || q.includes('corte del dia')
+    || q.includes('corte de hoy')
+  ) {
+    return {
+      answer: construirReporteDelDia(),
+      suggestions: ['Muéstrame productos con stock bajo', 'Resumen del sistema'],
+    };
+  }
+
   if (q.includes('stock bajo') || q.includes('bajo inventario') || q.includes('bajo')) {
-    if (topStockBajo.length === 0) {
+    if (inventario.stockBajoVariantes.length === 0) {
       return {
-        answer: 'Buen estado: no detecté modelos con stock bajo (<= 15).',
+        answer: `Todo bien por ahora: no hay variantes (talla/color) con stock bajo o agotado (umbral <= ${VARIANT_LOW_STOCK_LIMIT}).`,
         suggestions: ['Resumen del día', '¿Qué categoría tiene más stock?'],
       };
     }
 
-    const lista = topStockBajo
-      .map((p) => `- ${p.modelo}: ${formatearNumero(p.stock)} en stock`)
+    const totalVariantesBajas = inventario.stockBajoVariantes.length;
+    const totalAgotadas = inventario.stockBajoVariantes.filter((v) => v.agotado).length;
+    const titulo = totalVariantesBajas === 1
+      ? 'Encontré 1 variante con stock bajo:'
+      : `Encontré ${formatearNumero(totalVariantesBajas)} variantes con stock bajo:`;
+
+    const lista = inventario.stockBajoVariantes
+      .slice(0, 12)
+      .map((v) => [
+        `- Producto: ${v.modelo}`,
+        `  Categoria: ${v.categoria}`,
+        `  Variante: Talla ${v.talla} / Color ${v.color}`,
+        `  Stock actual: ${formatearNumero(v.stock)}${v.agotado ? ' (agotado)' : ''}`,
+      ].join('\n'))
       .join('\n');
 
+    const resumen = [
+      titulo,
+      `- Agotadas: ${formatearNumero(totalAgotadas)}`,
+      `- Stock bajo (pero con existencia): ${formatearNumero(totalVariantesBajas - totalAgotadas)}`,
+      '',
+      lista,
+    ].join('\n');
+
     return {
-      answer: `Detecté ${formatearNumero(inventario.stockBajo.length)} modelos con stock bajo.\n${lista}`,
+      answer: resumen,
       suggestions: ['¿Qué categoría tiene más stock?', '¿Cuánto salió este mes?'],
     };
   }
@@ -333,18 +479,8 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
   }
 
   if (q.includes('resumen') || q.includes('hoy') || q.includes('dia')) {
-    const entradasHoy = Number(metricasBD?.hoy?.entradasCantidad ?? metricasCliente?.entradasHoy ?? 0);
-    const salidasHoy = Number(metricasBD?.hoy?.salidasCantidad ?? metricasCliente?.salidasHoy ?? 0);
-    const ventasHoyMonto = Number(metricasBD?.hoy?.salidasMonto ?? metricasCliente?.ventasHoyMonto ?? 0);
-
     return {
-      answer: [
-        'Resumen de hoy:',
-        `- Stock total: ${formatearNumero(inventario.stockTotal)}`,
-        `- Entradas hoy: ${formatearNumero(entradasHoy)}`,
-        `- Salidas hoy: ${formatearNumero(salidasHoy)}`,
-        `- Venta estimada hoy: ${formatearMoneda(ventasHoyMonto)}`,
-      ].join('\n'),
+      answer: construirReporteDelDia(),
       suggestions: ['Muéstrame productos con stock bajo', '¿Cuánto salió este mes?'],
     };
   }
@@ -367,7 +503,11 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
   if (q.includes('rango') || q.includes('periodo') || q.includes('historial') || q.includes('reporte')) {
     if (!metricasBD?.rango) {
       return {
-        answer: 'Para consultar por rango, escribe algo como: "reporte del 2026-04-01 al 2026-04-05" o "historial del 01/04/2026 al 05/04/2026".',
+        answer: [
+          construirReporteDelDia(),
+          '',
+          'Si quieres un rango específico, escribe algo como: "reporte del 2026-04-01 al 2026-04-05" o "historial del 01/04/2026 al 05/04/2026".',
+        ].join('\n'),
         suggestions: ['Resumen del día', 'Salidas del mes'],
       };
     }
@@ -387,9 +527,14 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
     const base = [
       'Resumen del sistema:',
       `- Modelos en inventario: ${formatearNumero(inventario.totalModelos)}`,
+      `- Modelos activos: ${formatearNumero(operativo.totalActivos)}`,
+      `- Modelos inactivos: ${formatearNumero(operativo.totalInactivos)}`,
       `- Stock total: ${formatearNumero(inventario.stockTotal)}`,
       `- Categorías registradas: ${formatearNumero(sistema.totalCategorias)}`,
       `- Modelos con stock bajo: ${formatearNumero(inventario.stockBajo.length)}`,
+      `- Modelos con tallas configuradas: ${formatearNumero(operativo.modelosConTallas)}`,
+      `- Modelos en liquidación: ${formatearNumero(operativo.modelosEnLiquidacion)}`,
+      `- Variantes talla/color registradas: ${formatearNumero(operativo.totalVariantesRegistradas)}`,
       `- Entradas del mes: ${formatearNumero(metricasBD?.mes?.entradasCantidad ?? metricasCliente?.entradasMes ?? 0)}`,
       `- Salidas del mes: ${formatearNumero(metricasBD?.mes?.salidasCantidad ?? metricasCliente?.salidasMes ?? 0)}`,
     ];
@@ -401,6 +546,34 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
     return {
       answer: base.join('\n'),
       suggestions: ['Muéstrame productos con stock bajo', '¿Qué categoría tiene más stock?'],
+    };
+  }
+
+  if (q.includes('liquidacion') || q.includes('descuento') || q.includes('rebaja') || q.includes('oferta')) {
+    return {
+      answer: [
+        'Estado de liquidaciones:',
+        `- Modelos en liquidación: ${formatearNumero(operativo.modelosEnLiquidacion)}`,
+        `- Descuento promedio aplicado: ${Number(operativo.descuentoPromedioLiquidacion || 0).toFixed(1)}%`,
+      ].join('\n'),
+      suggestions: ['Resumen del sistema', 'Resumen del día'],
+    };
+  }
+
+  if (q.includes('caja') || q.includes('venta') || q.includes('punto de venta')) {
+    const salidasHoy = Number(metricasBD?.hoy?.salidasCantidad ?? metricasCliente?.salidasHoy ?? 0);
+    const ventasHoyMonto = Number(metricasBD?.hoy?.salidasMonto ?? metricasCliente?.ventasHoyMonto ?? 0);
+    const salidasMes = Number(metricasBD?.mes?.salidasCantidad ?? metricasCliente?.salidasMes ?? 0);
+
+    return {
+      answer: [
+        'Resumen de caja / punto de venta:',
+        `- Unidades vendidas hoy: ${formatearNumero(salidasHoy)}`,
+        `- Venta acumulada hoy: ${formatearMoneda(ventasHoyMonto)}`,
+        `- Unidades vendidas en el mes: ${formatearNumero(salidasMes)}`,
+        `- Modelos en liquidación activos: ${formatearNumero(operativo.modelosEnLiquidacion)}`,
+      ].join('\n'),
+      suggestions: ['Resumen del sistema', '¿Cuánto salió este mes?'],
     };
   }
 
@@ -416,7 +589,7 @@ const responderAsistente = ({ pregunta, inventario, sistema, metricasCliente, me
 
 export const chatAsistente = async (req, res) => {
   try {
-    const { question, clientMetrics, clientEvents } = req.body || {};
+    const { question, clientMetrics, clientEvents, clientContext } = req.body || {};
     const role = req.user?.role || 'empleado';
 
     await ensureMovimientosTable();
@@ -450,13 +623,18 @@ export const chatAsistente = async (req, res) => {
         : Promise.resolve(null),
     ]);
 
-    const inventario = construirResumenInventario(Array.isArray(productos) ? productos : []);
+    const inventario = construirResumenInventario(Array.isArray(productos) ? productos : [], clientContext || {});
     const sistema = construirResumenSistema({ categorias, usuarios });
+    const operativo = construirResumenOperativo({
+      productos: Array.isArray(productos) ? productos : [],
+      clientContext: clientContext || {},
+    });
 
     const respuesta = responderAsistente({
       pregunta: question || '',
       inventario,
       sistema,
+      operativo,
       metricasCliente: clientMetrics || {},
       metricasBD: {
         hoy: hoyBD,

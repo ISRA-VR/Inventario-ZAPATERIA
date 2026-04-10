@@ -19,12 +19,41 @@ export default function Login() {
   const [recoverMessage, setRecoverMessage] = useState("");
   const [recoverError, setRecoverError] = useState("");
   const [recoverLoading, setRecoverLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 640px)").matches;
+  });
 
   useEffect(() => {
     if (user) {
       user.role === "admin" ? navigate("/admin") : navigate("/empleado");
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 640px)");
+    const onChange = (event) => setIsMobile(event.matches);
+
+    setIsMobile(mediaQuery.matches);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", onChange);
+      return () => mediaQuery.removeEventListener("change", onChange);
+    }
+
+    mediaQuery.addListener(onChange);
+    return () => mediaQuery.removeListener(onChange);
+  }, []);
+
+  const legalText = (
+    <>
+      © 2026 Beni Van Zapatería.
+      <br />
+      Todos los derechos son reservados.
+    </>
+  );
 
   const submit = async (e) => {
     e.preventDefault();
@@ -33,7 +62,7 @@ export default function Login() {
     try {
       setError("");
       const res = await loginAPI(form);
-      login(res.data);
+      await login(res.data);
       res.data.role === "admin" ? navigate("/admin") : navigate("/empleado");
     } catch (err) {
       const isNetworkError = !err?.response;
@@ -101,7 +130,7 @@ export default function Login() {
           <img src="/logo-Beni_Van-sin-fondo.png" alt="Logo" className="brand-logo" />
           <h1>Control de<br />Inventario</h1>
           <p>Accede a tu panel de control para administrar tus recursos de forma eficiente.</p>
-          <p className="brand-footer">© 2026 Beni Van Zapatería. <br />Todos los derechos son reservados.</p>
+          {!isMobile && <p className="brand-footer">{legalText}</p>}
         </div>
       </div>
 
@@ -179,6 +208,8 @@ export default function Login() {
             <a href="/terminos.html" target="_blank" rel="noopener noreferrer">Términos</a>
             <a href="/soporte.html" target="_blank" rel="noopener noreferrer">Soporte</a>
           </div>
+
+          {isMobile && <p className="form-mobile-legal">{legalText}</p>}
 
         </div>
       </div>

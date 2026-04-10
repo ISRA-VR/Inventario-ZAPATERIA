@@ -76,6 +76,23 @@
   text-transform: capitalize;
 }
 
+.pventa-btn-devolucion {
+  border: none;
+  background: #0f766e;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pventa-btn-devolucion:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.28);
+}
+
 /* KPIs */
 .pventa-kpis {
   display: grid;
@@ -469,3 +486,90 @@
 
 .activity-monto.venta { color: #10b981; }
 .activity-monto.devolucion { color: #ef4444; }
+
+.pventa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 1200;
+}
+
+.pventa-modal-box {
+  width: min(520px, calc(100vw - 24px));
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+}
+
+.pventa-modal-box h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.pventa-modal-box p {
+  margin: 4px 0 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.pventa-modal-form {
+  display: grid;
+  gap: 10px;
+}
+
+.pventa-modal-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pventa-modal-form input,
+.pventa-modal-form textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pventa-modal-form input:focus,
+.pventa-modal-form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.pventa-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pventa-modal-cancel,
+.pventa-modal-save {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pventa-modal-cancel {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.pventa-modal-save {
+  background: #0f766e;
+  color: #fff;
+}

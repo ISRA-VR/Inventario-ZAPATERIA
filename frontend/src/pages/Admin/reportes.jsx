@@ -21,11 +21,139 @@ import autoTable from "jspdf-autotable";
 import '../../styles/reportes.css';
 
 const COLORES = ["#29b6f6", "#26a69a", "#ffa726", "#ab47bc", "#ef5350", "#8d6e63"];
+const REPORTE_SNAPSHOTS_KEY = "reportes_periodos_snapshots";
+const ENTRADAS_LS_KEY = "entradas_inventario";
+const VENTAS_LS_KEY = "ventas_punto_venta";
 
 const money = (value) => `$${Number(value || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 })}`;
 
 const toSignedAmount = (tipo, montoNumero) =>
   (tipo === "entrada" ? -1 : 1) * Number(montoNumero || 0);
+
+const readEntradasStorage = () => {
+  try {
+    const raw = localStorage.getItem(ENTRADAS_LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const readVentasStorage = () => {
+  try {
+    const raw = localStorage.getItem(VENTAS_LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseDateSafe = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getEntradaUnidad = (item) => {
+  const antes = Number(item?.stock_anterior);
+  const despues = Number(item?.stock_nuevo);
+
+  if (Number.isFinite(antes) && Number.isFinite(despues)) {
+    return Math.abs(Math.round(despues) - Math.round(antes));
+  }
+
+  const cantidad = Number(item?.cantidad);
+  if (Number.isFinite(cantidad)) return Math.abs(Math.round(cantidad));
+
+  const stock = Number(item?.stock);
+  if (Number.isFinite(stock)) return Math.abs(Math.round(stock));
+
+  return 0;
+};
+
+const getEntradaMonto = (item) => getEntradaUnidad(item) * (Number(item?.precio) || 0);
+
+const getSalidaUnidad = (detalleItem) => {
+  const antes = Number(detalleItem?.stock_anterior);
+  const despues = Number(detalleItem?.stock_nuevo);
+  if (Number.isFinite(antes) && Number.isFinite(despues)) {
+    return Math.abs(Math.round(despues) - Math.round(antes));
+  }
+
+  const cantidad = Number(detalleItem?.cantidad);
+  if (Number.isFinite(cantidad)) return Math.abs(Math.round(cantidad));
+
+  return 0;
+};
+
+const getSalidaMonto = (detalleItem) => getSalidaUnidad(detalleItem) * (Number(detalleItem?.precio) || 0);
+
+const parseVentaFecha = (venta) => {
+  const fechaBase = venta?.fecha || (venta?.created_at ? String(venta.created_at).slice(0, 10) : null);
+  const horaBase = venta?.hora || (venta?.created_at
+    ? new Date(venta.created_at).toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    : "00:00");
+
+  const fecha = fechaBase ? `${fechaBase}T${horaBase}:00` : venta?.created_at;
+  return parseDateSafe(fecha);
+};
+
+const getRangoPeriodo = (periodoActivo, filtros) => {
+  if (!filtros?.desde) return null;
+
+  const desde = parseDateSafe(`${filtros.desde}T00:00:00`);
+  if (!desde) return null;
+
+  const hastaBase = periodoActivo === "dia"
+    ? parseDateSafe(`${filtros.desde}T00:00:00`)
+    : parseDateSafe(`${(filtros.hasta || filtros.desde)}T00:00:00`);
+
+  if (!hastaBase) return null;
+
+  const finExclusivo = new Date(hastaBase);
+  finExclusivo.setDate(finExclusivo.getDate() + 1);
+
+  return {
+    inicio: desde,
+    finExclusivo,
+  };
+};
+
+const readSnapshots = () => {
+  try {
+    const raw = localStorage.getItem(REPORTE_SNAPSHOTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveSnapshot = ({ periodo, desde, hasta, resumenData }) => {
+  if (!resumenData) return;
+
+  const top = Array.isArray(resumenData?.topProductosMes) ? resumenData.topProductosMes : [];
+  const key = `${periodo}|${desde}|${hasta}`;
+  const snap = {
+    periodo,
+    desde,
+    hasta,
+    ventasMonto: Number(resumenData?.mes?.salidasMonto || 0),
+    entradasCantidad: Number(resumenData?.mes?.entradasCantidad || 0),
+    topProducto: top[0]?.nombre || null,
+    topVentas: Number(top[0]?.ventas || 0),
+    createdAt: new Date().toISOString(),
+  };
+
+  const current = readSnapshots();
+  current[key] = snap;
+  localStorage.setItem(REPORTE_SNAPSHOTS_KEY, JSON.stringify(current));
+};
 
 export default function Reportes() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
@@ -37,6 +165,8 @@ export default function Reportes() {
   const [cargando, setCargando] = useState(false);
   const [exportandoExcel, setExportandoExcel] = useState(false);
   const [exportandoPdf, setExportandoPdf] = useState(false);
+  const [mostrarModalPeriodo, setMostrarModalPeriodo] = useState(false);
+  const [periodoActivo, setPeriodoActivo] = useState("mes");
   const [resumen, setResumen] = useState(null);
   const [productos, setProductos] = useState([]);
   const [filtros, setFiltros] = useState({
@@ -44,7 +174,7 @@ export default function Reportes() {
     hasta: fechaHoy,
   });
 
-  const cargar = async (filtroActual) => {
+  const cargar = async (filtroActual, periodo = "mes") => {
     try {
       setCargando(true);
       const params = {};
@@ -57,16 +187,28 @@ export default function Reportes() {
       ]);
       setResumen(resumenData || null);
       setProductos(Array.isArray(productosData) ? productosData : []);
+
+      if (filtroActual?.desde && filtroActual?.hasta) {
+        saveSnapshot({
+          periodo,
+          desde: filtroActual.desde,
+          hasta: filtroActual.hasta,
+          resumenData,
+        });
+      }
+
+      return resumenData;
     } catch (error) {
       console.error("Error cargando reportes:", error);
       toast.error("No se pudieron cargar los datos del reporte.");
+      return null;
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
-    cargar(filtros);
+    cargar(filtros, "mes");
   }, []);
 
   useEffect(() => {
@@ -81,19 +223,98 @@ export default function Reportes() {
       return;
     }
 
-    if (new Date(filtros.desde) > new Date(filtros.hasta)) {
+    const filtrosEfectivos =
+      periodoActivo === "dia"
+        ? { ...filtros, hasta: filtros.desde }
+        : filtros;
+
+    if (periodoActivo === "dia" && filtros.hasta !== filtros.desde) {
+      setFiltros((prev) => ({ ...prev, hasta: prev.desde }));
+    }
+
+    const hoy = new Date();
+    const hoyLimite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+    const fechaDesde = new Date(`${filtrosEfectivos.desde}T00:00:00`);
+    const fechaHasta = new Date(`${filtrosEfectivos.hasta}T00:00:00`);
+
+    if (fechaDesde > hoyLimite || fechaHasta > hoyLimite) {
+      toast.warn("No se puede generar reporte con fechas futuras.");
+      return;
+    }
+
+    if (new Date(filtrosEfectivos.desde) > new Date(filtrosEfectivos.hasta)) {
       toast.warn("La fecha inicial no puede ser mayor a la fecha final.");
       return;
     }
 
-    await cargar(filtros);
+    const periodoPersistente = ["dia", "semana", "mes"].includes(periodoActivo)
+      ? periodoActivo
+      : "personalizado";
+
+    await cargar(filtrosEfectivos, periodoPersistente);
+    setPeriodoActivo(periodoPersistente);
     toast.success("Filtros aplicados correctamente.");
   };
 
   const limpiarFiltros = async () => {
     const base = { desde: fechaInicioMes, hasta: fechaHoy };
     setFiltros(base);
-    await cargar(base);
+    await cargar(base, "mes");
+    setPeriodoActivo("mes");
+  };
+
+  const etiquetaPeriodo = useMemo(() => {
+    if (periodoActivo === "dia") return "del Dia";
+    if (periodoActivo === "semana") return "de la Semana";
+    if (periodoActivo === "mes") return "del Mes";
+    return "del Periodo";
+  }, [periodoActivo]);
+
+  const etiquetaPeriodoLarga = useMemo(() => {
+    if (periodoActivo === "dia") return "Dia";
+    if (periodoActivo === "semana") return "Semana";
+    if (periodoActivo === "mes") return "Mes";
+    return "Personalizado";
+  }, [periodoActivo]);
+
+  const toDateInput = (date) => {
+    const anio = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, "0");
+    const dia = String(date.getDate()).padStart(2, "0");
+    return `${anio}-${mes}-${dia}`;
+  };
+
+  const aplicarPeriodo = async (tipo) => {
+    const hoy = new Date();
+    let hasta = new Date(hoy);
+    let desde = new Date(hoy);
+
+    if (tipo === "semana") {
+      const diaSemana = (hoy.getDay() + 6) % 7;
+      desde.setDate(hoy.getDate() - diaSemana);
+      hasta = new Date(desde);
+      hasta.setDate(desde.getDate() + 6);
+    } else if (tipo === "mes") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    }
+
+    const hoyLimite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+    if (hasta > hoyLimite) {
+      hasta = new Date(hoyLimite);
+    }
+
+    if (desde > hoyLimite) {
+      toast.warn("No se puede generar reporte con fechas futuras.");
+      return;
+    }
+
+    const base = { desde: toDateInput(desde), hasta: toDateInput(hasta) };
+    setFiltros(base);
+    await cargar(base, tipo);
+    setPeriodoActivo(tipo);
+    setMostrarModalPeriodo(false);
+    toast.success("Periodo aplicado correctamente.");
   };
 
   const ventasPorMes = useMemo(() => {
@@ -130,23 +351,106 @@ export default function Reportes() {
       .sort((a, b) => b.value - a.value);
   }, [productos]);
 
+  const entradasPeriodo = useMemo(() => {
+    const entradas = readEntradasStorage();
+    const rango = getRangoPeriodo(periodoActivo, filtros);
+
+    if (!rango) {
+      return {
+        hayDatosLocales: entradas.length > 0,
+        cantidad: 0,
+        monto: 0,
+      };
+    }
+
+    const cantidad = entradas.reduce((acc, item) => {
+      const fecha = parseDateSafe(item?.fecha_creacion || item?.created_at || item?.fechaCreacion);
+      if (!fecha) return acc;
+      if (fecha < rango.inicio || fecha >= rango.finExclusivo) return acc;
+      return acc + getEntradaUnidad(item);
+    }, 0);
+
+    const monto = entradas.reduce((acc, item) => {
+      const fecha = parseDateSafe(item?.fecha_creacion || item?.created_at || item?.fechaCreacion);
+      if (!fecha) return acc;
+      if (fecha < rango.inicio || fecha >= rango.finExclusivo) return acc;
+      return acc + getEntradaMonto(item);
+    }, 0);
+
+    return {
+      hayDatosLocales: entradas.length > 0,
+      cantidad,
+      monto,
+    };
+  }, [periodoActivo, filtros]);
+
+  const entradasCantidadPeriodo = entradasPeriodo.hayDatosLocales
+    ? Number(entradasPeriodo.cantidad || 0)
+    : Number(resumen?.mes?.entradasCantidad || 0);
+
+  const entradasMontoPeriodo = entradasPeriodo.hayDatosLocales
+    ? Number(entradasPeriodo.monto || 0)
+    : Number(resumen?.mes?.entradasMonto || 0);
+
+  const salidasPeriodo = useMemo(() => {
+    const ventas = readVentasStorage();
+    const rango = getRangoPeriodo(periodoActivo, filtros);
+
+    if (!rango) {
+      return {
+        hayDatosLocales: ventas.length > 0,
+        cantidad: 0,
+        monto: 0,
+      };
+    }
+
+    let cantidad = 0;
+    let monto = 0;
+
+    ventas.forEach((venta) => {
+      const fechaVenta = parseVentaFecha(venta);
+      if (!fechaVenta) return;
+      if (fechaVenta < rango.inicio || fechaVenta >= rango.finExclusivo) return;
+
+      const detalle = Array.isArray(venta?.detalle) ? venta.detalle : [];
+      detalle.forEach((item) => {
+        cantidad += getSalidaUnidad(item);
+        monto += getSalidaMonto(item);
+      });
+    });
+
+    return {
+      hayDatosLocales: ventas.length > 0,
+      cantidad,
+      monto,
+    };
+  }, [periodoActivo, filtros]);
+
+  const salidasCantidadPeriodo = salidasPeriodo.hayDatosLocales
+    ? Number(salidasPeriodo.cantidad || 0)
+    : Number(resumen?.mes?.salidasCantidad || 0);
+
+  const salidasMontoPeriodo = salidasPeriodo.hayDatosLocales
+    ? Number(salidasPeriodo.monto || 0)
+    : Number(resumen?.mes?.salidasMonto || 0);
+
   const tarjetas = useMemo(() => {
     const top = Array.isArray(resumen?.topProductosMes) ? resumen.topProductosMes : [];
     return [
       {
-        titulo: "Ventas del Mes",
-        desc: money(resumen?.mes?.salidasMonto),
+        titulo: `Ventas ${etiquetaPeriodo}`,
+        desc: money(salidasMontoPeriodo),
       },
       {
-        titulo: "Entradas del Mes",
-        desc: `${Number(resumen?.mes?.entradasCantidad || 0).toLocaleString("es-MX")} unidades`,
+        titulo: `Entradas ${etiquetaPeriodo}`,
+        desc: `${entradasCantidadPeriodo.toLocaleString("es-MX")} unidades`,
       },
       {
-        titulo: "Top Producto",
+        titulo: `Top Producto ${etiquetaPeriodo}`,
         desc: top[0]?.nombre ? `${top[0].nombre} (${top[0].ventas} ventas)` : "Sin ventas registradas",
       },
     ];
-  }, [resumen]);
+  }, [resumen, etiquetaPeriodo, entradasCantidadPeriodo, salidasMontoPeriodo]);
 
   const exportarExcel = () => {
     if (!resumen) return;
@@ -156,13 +460,12 @@ export default function Reportes() {
       const wb = XLSX.utils.book_new();
 
       const resumenRows = [
-        { metrica: "Entradas hoy (cantidad)", valor: Number(resumen?.hoy?.entradasCantidad || 0) },
-        { metrica: "Salidas hoy (cantidad)", valor: Number(resumen?.hoy?.salidasCantidad || 0) },
-        { metrica: "Entradas hoy (monto)", valor: Number(resumen?.hoy?.entradasMonto || 0) },
-        { metrica: "Salidas hoy (monto)", valor: Number(resumen?.hoy?.salidasMonto || 0) },
-        { metrica: "Ventas del mes", valor: Number(resumen?.mes?.salidasMonto || 0) },
-        { metrica: "Entradas del mes", valor: Number(resumen?.mes?.entradasMonto || 0) },
-        { metrica: "Ganancia neta mes", valor: Number(resumen?.mes?.gananciaNeta || 0) },
+        { metrica: `Entradas ${etiquetaPeriodo.toLowerCase()} (cantidad)`, valor: entradasCantidadPeriodo },
+        { metrica: `Salidas ${etiquetaPeriodo.toLowerCase()} (cantidad)`, valor: salidasCantidadPeriodo },
+        { metrica: `Entradas ${etiquetaPeriodo.toLowerCase()} (monto)`, valor: entradasMontoPeriodo },
+        { metrica: `Salidas ${etiquetaPeriodo.toLowerCase()} (monto)`, valor: salidasMontoPeriodo },
+        { metrica: `Ventas ${etiquetaPeriodo.toLowerCase()}`, valor: salidasMontoPeriodo },
+        { metrica: `Entradas ${etiquetaPeriodo.toLowerCase()}`, valor: entradasMontoPeriodo },
       ];
 
       const topRows = (resumen?.topProductosMes || []).map((item) => ({
@@ -219,11 +522,10 @@ export default function Reportes() {
         startY: 28,
         head: [["Indicador", "Valor"]],
         body: [
-          ["Ventas del mes", money(resumen?.mes?.salidasMonto)],
-          ["Entradas del mes", money(resumen?.mes?.entradasMonto)],
-          ["Ganancia neta del mes", money(resumen?.mes?.gananciaNeta)],
-          ["Salidas hoy", `${Number(resumen?.hoy?.salidasCantidad || 0)} unidades`],
-          ["Entradas hoy", `${Number(resumen?.hoy?.entradasCantidad || 0)} unidades`],
+          [`Ventas ${etiquetaPeriodo.toLowerCase()}`, money(salidasMontoPeriodo)],
+          [`Entradas ${etiquetaPeriodo.toLowerCase()}`, money(entradasMontoPeriodo)],
+          [`Salidas ${etiquetaPeriodo.toLowerCase()}`, `${salidasCantidadPeriodo} unidades`],
+          [`Entradas ${etiquetaPeriodo.toLowerCase()}`, `${entradasCantidadPeriodo} unidades`],
         ],
       });
 
@@ -283,12 +585,26 @@ export default function Reportes() {
       </div>
 
       <div className="rep-filtros">
+        <button
+          className="rep-filtro-btn rep-filtro-btn-periodo"
+          onClick={() => setMostrarModalPeriodo(true)}
+          disabled={cargando}
+        >
+          Elegir periodo
+        </button>
         <div className="rep-filtro-item">
           <label>Desde</label>
           <input
             type="date"
             value={filtros.desde}
-            onChange={(e) => setFiltros((prev) => ({ ...prev, desde: e.target.value }))}
+            max={fechaHoy}
+            onChange={(e) =>
+              setFiltros((prev) => ({
+                ...prev,
+                desde: e.target.value,
+                hasta: periodoActivo === "dia" ? e.target.value : prev.hasta,
+              }))
+            }
           />
         </div>
         <div className="rep-filtro-item">
@@ -296,6 +612,7 @@ export default function Reportes() {
           <input
             type="date"
             value={filtros.hasta}
+            max={fechaHoy}
             onChange={(e) => setFiltros((prev) => ({ ...prev, hasta: e.target.value }))}
           />
         </div>
@@ -306,6 +623,37 @@ export default function Reportes() {
           Reiniciar
         </button>
       </div>
+
+      <p className="rep-loading">Periodo actual: {etiquetaPeriodoLarga}</p>
+
+      {mostrarModalPeriodo && (
+        <div className="rep-modal-overlay" onClick={() => setMostrarModalPeriodo(false)}>
+          <div className="rep-modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>Seleccionar periodo</h3>
+            <p>Quieres el reporte por dia, semana o mes?</p>
+
+            <div className="rep-modal-actions">
+              <button className="rep-modal-btn" onClick={() => aplicarPeriodo("dia")} disabled={cargando}>
+                Dia
+              </button>
+              <button className="rep-modal-btn" onClick={() => aplicarPeriodo("semana")} disabled={cargando}>
+                Semana
+              </button>
+              <button className="rep-modal-btn" onClick={() => aplicarPeriodo("mes")} disabled={cargando}>
+                Mes
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="rep-modal-close"
+              onClick={() => setMostrarModalPeriodo(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="rep-cards">
         {tarjetas.map((t, i) => (
@@ -322,8 +670,8 @@ export default function Reportes() {
 
       <div className="rep-graficos">
         <div className="grafico-card">
-          <h2>Ventas por Mes</h2>
-          <p>Evolución de ventas en los últimos 12 meses</p>
+          <h2>Ventas {etiquetaPeriodo}</h2>
+          <p>Comportamiento de ventas en el periodo seleccionado</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart
               data={ventasPorMes}

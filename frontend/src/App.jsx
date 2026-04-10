@@ -15,6 +15,7 @@ import EntradasPage from "./pages/Admin/tallaVariante";
 import BusquedaPage from "./pages/Admin/busquedas";
 import ReportesPage from "./pages/Admin/reportes";
 import InventarioDetalladoPage from "./pages/Admin/InventarioDetallado";
+import LiquidacionesPage from "./pages/Admin/liquidaciones";
 import PuntoVentaPage from "./pages/punto-venta/puntoVenta";
 import CajaPage from "./pages/punto-venta/caja";
 import HistorialVentasPage from "./pages/punto-venta/historialVentas";
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="busquedas" element={<BusquedaPage />} />
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="inventario-detallado" element={<InventarioDetalladoPage />} />
+            <Route path="liquidaciones" element={<LiquidacionesPage />} />
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />

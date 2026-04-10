@@ -40,6 +40,18 @@ export const updateEmpleado = (id, data) => {
   return axios.put(`${API_URL}/empleados/${id}`, data, getAuthHeaders());
 };
 
+export const updateEmpleadoEstado = (id, activo) => {
+  return axios.patch(`${API_URL}/empleados/${id}/estado`, { activo }, getAuthHeaders());
+};
+
 export const deleteEmpleado = (id) => {
   return axios.delete(`${API_URL}/empleados/${id}`, getAuthHeaders());
+};
+
+export const pingPresence = () => {
+  return axios.post(`${API_URL}/presence/ping`, {}, getAuthHeaders());
+};
+
+export const logoutPresence = () => {
+  return axios.post(`${API_URL}/presence/logout`, {}, getAuthHeaders());
 };

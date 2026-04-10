@@ -159,6 +159,34 @@ function Entradas() {
     return `$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}`
   }
 
+  const getStockAntes = (item) => {
+    const raw = item?.stock_anterior
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : null
+  }
+
+  const getStockDespues = (item) => {
+    const candidatos = [item?.stock_nuevo, item?.stock, item?.cantidad]
+    for (const valor of candidatos) {
+      const parsed = Number(valor)
+      if (Number.isFinite(parsed)) return Math.max(0, Math.round(parsed))
+    }
+    return null
+  }
+
+  const getEntrada = (item) => {
+    const antes = getStockAntes(item)
+    const despues = getStockDespues(item)
+
+    if (antes != null && despues != null) {
+      return Math.abs(despues - antes)
+    }
+
+    const fallback = Number(item?.cantidad)
+    if (Number.isFinite(fallback)) return Math.abs(Math.round(fallback))
+    return null
+  }
+
   return (
     <div className="entradas-page">
       <div className="encabezado">
@@ -212,7 +240,9 @@ function Entradas() {
                 <th>MODELO</th>
                 <th>TALLA</th>
                 <th>COLOR</th>
-                <th>CANTIDAD</th>
+                <th>STOCK ANTES</th>
+                <th>STOCK DESPUES</th>
+                <th>ENTRADA</th>
                 <th>REGISTRADO POR</th>
                 <th>COSTO TOTAL</th>
               </tr>
@@ -220,7 +250,7 @@ function Entradas() {
             <tbody>
               {baseDatosEntradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
                     No hay entradas registradas
                   </td>
                 </tr>
@@ -232,7 +262,21 @@ function Entradas() {
                     <td>{p.talla || "N/A"}</td>
                     <td>{p.color || "N/A"}</td>
                     <td>
-                      <span className="badge-cantidad">+{p.cantidad ?? p.stock}</span>
+                      <span className="badge-cantidad">{getStockAntes(p) ?? "—"}</span>
+                    </td>
+                    <td>
+                      <span className="badge-cantidad">{getStockDespues(p) ?? "—"}</span>
+                    </td>
+                    <td>
+                      {(() => {
+                        const entrada = getEntrada(p)
+                        if (entrada == null) return "—"
+                        return (
+                          <span className="badge-cantidad">
+                            +{entrada}
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td>
                       <div className="celda-usuario">

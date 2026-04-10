@@ -9,6 +9,8 @@ import "../../styles/styles-POS/caja.css";
 const VENTAS_LS_KEY = "ventas_punto_venta";
 const COLOR_MAP_KEY = "inventario_colores_map";
 const VARIANT_STOCK_MAP_KEY = "inventario_stock_variantes_map";
+const LIQUIDACIONES_STORAGE_KEY = "inventario_liquidaciones_ids";
+const LIQUIDACIONES_DISCOUNT_KEY = "inventario_liquidaciones_descuentos";
 
 const COLOR_KEYWORDS = [
   "negro", "negra", "blanco", "blanca", "azul", "rojo", "roja", "verde", "amarillo", "amarilla",
@@ -31,10 +33,39 @@ const readColorMap = () => {
   }
 };
 
+const readLiquidacionesIds = () => {
+  try {
+    const raw = localStorage.getItem(LIQUIDACIONES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((id) => Number(id)).filter((id) => Number.isFinite(id));
+  } catch {
+    return [];
+  }
+};
+
+const readLiquidacionesDescuentos = () => {
+  try {
+    const raw = localStorage.getItem(LIQUIDACIONES_DISCOUNT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object") return {};
+
+    return Object.entries(parsed).reduce((acc, [id, d]) => {
+      const idNum = Number(id);
+      const discountNum = Number(d);
+      if (!Number.isFinite(idNum) || !Number.isFinite(discountNum)) return acc;
+      acc[idNum] = Math.max(0, Math.min(90, Math.round(discountNum)));
+      return acc;
+    }, {});
+  } catch {
+    return {};
+  }
+};
+
 const detectColor = (modelo = "") => {
   const limpio = String(modelo).toLowerCase();
   const encontrado = COLOR_KEYWORDS.find((c) => limpio.includes(c));
-  return encontrado ? encontrado[0].toUpperCase() + encontrado.slice(1) : "Sin color";
+  return encontrado ? encontrado[0].toUpperCase() + encontrado.slice(1) : "";
 };
 
 const getFirstOrNA = (list = []) => (Array.isArray(list) && list.length ? list[0] : "N/A");
@@ -229,18 +260,27 @@ export default function NuevaVenta() {
       const variantMapRaw = localStorage.getItem(VARIANT_STOCK_MAP_KEY);
       const variantMapParsed = variantMapRaw ? JSON.parse(variantMapRaw) : {};
       const variantMap = variantMapParsed && typeof variantMapParsed === "object" ? variantMapParsed : {};
+      const liquidacionesSet = new Set(readLiquidacionesIds());
+      const descuentosMap = readLiquidacionesDescuentos();
       const normalizados = (Array.isArray(data) ? data : []).map((p) => {
         const coloresBackend = parseCsvList(p.colores);
         const coloresMap = Array.isArray(colorMap[p.id_producto]) ? colorMap[p.id_producto] : [];
         const colorDetectado = detectColor(p.modelo);
         const coloresDisponibles = coloresBackend.length
           ? coloresBackend
-          : (coloresMap.length ? coloresMap : (colorDetectado === "Sin color" ? [] : [colorDetectado]));
+          : (coloresMap.length ? coloresMap : (colorDetectado ? [colorDetectado] : []));
+        const precioBase = Number(p.precio) || 0;
+        const enLiquidacion = liquidacionesSet.has(Number(p.id_producto));
+        const descuentoLiquidacion = enLiquidacion ? Number(descuentosMap[Number(p.id_producto)] || 0) : 0;
+        const precioFinal = precioBase * (1 - (descuentoLiquidacion / 100));
 
         return {
         id: p.id_producto,
         nombre: p.modelo,
-        precio: Number(p.precio) || 0,
+        precio: Number(precioFinal.toFixed(2)),
+        precioBase,
+        enLiquidacion,
+        descuentoLiquidacion,
         stock: Number(p.stock) || 0,
         marca: p.nombre_categoria || "Sin categoría",
         tallasDisponibles: parseCsvList(p.tallas),
@@ -262,6 +302,16 @@ export default function NuevaVenta() {
   };
   useEffect(() => {
     cargarProductos();
+    const refrescar = () => cargarProductos();
+    window.addEventListener("storage", refrescar);
+    window.addEventListener("focus", refrescar);
+    window.addEventListener("liquidaciones-updated", refrescar);
+
+    return () => {
+      window.removeEventListener("storage", refrescar);
+      window.removeEventListener("focus", refrescar);
+      window.removeEventListener("liquidaciones-updated", refrescar);
+    };
   }, []);
 
   const sugerencias = useMemo(() => {
@@ -297,11 +347,18 @@ export default function NuevaVenta() {
           p.id === prod.id ? { ...p, cantidad: p.cantidad + 1 } : p
         );
       }
-      const draft = {
+      const inicial = {
         ...prod,
         tallaSeleccionada: getFirstOrNA(prod.tallasDisponibles),
         colorSeleccionado: getFirstOrNA(prod.coloresDisponibles),
       };
+      const auto = resolveBestVariant(inicial);
+      const draft = {
+        ...inicial,
+        tallaSeleccionada: auto.talla,
+        colorSeleccionado: auto.color,
+      };
+
       const disponibleInicial = getVariantAvailableStock(draft);
       if (disponibleInicial <= 0) {
         toast.warn(`La variante seleccionada de ${prod.nombre} está agotada.`);
@@ -407,9 +464,32 @@ export default function NuevaVenta() {
         return;
       }
 
+      const detalleVenta = carrito.map((p) => {
+        const productoActual = productosDisponibles.find((item) => item.id === p.id);
+        const talla = p.tallaSeleccionada || getFirstOrNA(p.tallasDisponibles);
+        const color = p.colorSeleccionado || getFirstOrNA(p.coloresDisponibles) || "N/A";
+        const stockAnterior = productoActual
+          ? getAvailableStockForPair(productoActual, talla, color)
+          : 0;
+        const cantidadSalida = Math.max(0, Number(p.cantidad) || 0);
+        const stockNuevo = Math.max(0, stockAnterior - cantidadSalida);
+
+        return {
+          id_producto: p.id,
+          nombre: p.nombre,
+          talla,
+          color,
+          cantidad: cantidadSalida,
+          precio: p.precio,
+          marca: p.marca,
+          stock_anterior: stockAnterior,
+          stock_nuevo: stockNuevo,
+        };
+      });
+
       // Actualiza stock en inventario por cada producto vendido
-      for (const item of carrito) {
-        const productoActual = productosDisponibles.find((p) => p.id === item.id);
+      for (const item of detalleVenta) {
+        const productoActual = productosDisponibles.find((p) => p.id === item.id_producto);
         if (!productoActual || !productoActual.raw) continue;
 
         const stockRestante = Math.max(0, (Number(productoActual.stock) || 0) - item.cantidad);
@@ -433,15 +513,7 @@ export default function NuevaVenta() {
         id: `V-${Date.now()}`,
         fecha,
         hora,
-        detalle: carrito.map((p) => ({
-          id_producto: p.id,
-          nombre: p.nombre,
-          talla: p.tallaSeleccionada || getFirstOrNA(p.tallasDisponibles),
-          color: p.colorSeleccionado || getFirstOrNA(p.coloresDisponibles),
-          cantidad: p.cantidad,
-          precio: p.precio,
-          marca: p.marca,
-        })),
+        detalle: detalleVenta,
         total: subtotal,
         metodo: metodoPago.charAt(0).toUpperCase() + metodoPago.slice(1),
         registrado_por: user?.nombre || user?.email || "Usuario",
@@ -510,7 +582,10 @@ export default function NuevaVenta() {
                     <li key={s.id} onClick={() => agregarProducto(s)}>
                       <span className="sug-nombre">{s.nombre}</span>
                       <span className="sug-info">{s.marca} · Stock: {s.stock}</span>
-                      <span className="sug-precio">${s.precio.toLocaleString("es-MX")}</span>
+                      <span className="sug-precio">
+                        ${s.precio.toLocaleString("es-MX")}
+                        {s.enLiquidacion ? ` (${s.descuentoLiquidacion}% off)` : ""}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -544,7 +619,9 @@ export default function NuevaVenta() {
                     const tallasFiltradas = getAvailableTallasForColor(p, p.colorSeleccionado);
                     const coloresFiltrados = getAvailableColorsForTalla(p, p.tallaSeleccionada);
                     const tallasRender = tallasFiltradas.length ? tallasFiltradas : p.tallasDisponibles;
-                    const coloresRender = coloresFiltrados.length ? coloresFiltrados : p.coloresDisponibles;
+                    const coloresRender = coloresFiltrados;
+                    const coloresAgotadosParaTalla =
+                      p.coloresDisponibles?.length > 0 && coloresRender.length === 0;
 
                     return (
                     <tr key={p.id}>
@@ -576,14 +653,23 @@ export default function NuevaVenta() {
                         {p.coloresDisponibles?.length ? (
                           <select
                             className="nv-variant-select"
-                            value={p.colorSeleccionado || getFirstOrNA(p.coloresDisponibles)}
-                            onChange={(e) => cambiarColor(p.id, e.target.value)}
+                            value={
+                              coloresRender.includes(p.colorSeleccionado)
+                                ? p.colorSeleccionado
+                                : (coloresRender[0] || "N/A")
+                            }
+                            onChange={(e) => cambiarColor(p.id, e.target.value || "N/A")}
+                            disabled={coloresAgotadosParaTalla}
                           >
-                            {coloresRender.map((color) => (
-                              <option key={`${p.id}-c-${color}`} value={color}>
-                                {color}
-                              </option>
-                            ))}
+                            {coloresAgotadosParaTalla ? (
+                              <option value="N/A">No disponible</option>
+                            ) : (
+                              coloresRender.map((color) => (
+                                <option key={`${p.id}-c-${color}`} value={color}>
+                                  {color}
+                                </option>
+                              ))
+                            )}
                           </select>
                         ) : (
                           <span className="nv-variant-na">N/A</span>

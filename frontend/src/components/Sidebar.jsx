@@ -24,8 +24,8 @@ const Sidebar = () => {
     setShowModal(true);
   };
 
-  const confirmarCierre = () => {
-    logout();
+  const confirmarCierre = async () => {
+    await logout();
     navigate("/");
   };
 
@@ -52,6 +52,7 @@ const Sidebar = () => {
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
     { icon: <Package size={20} />, label: 'Inventario Detallado', path: '/admin/inventario-detallado', roles: ['admin'] },
+    { icon: <FileText size={20} />, label: 'Liquidaciones', path: '/admin/liquidaciones', roles: ['admin'] },
     {
       icon: <ArrowUpRight size={20} />,
       label: 'Entradas',

@@ -27,6 +27,27 @@ const SalidasPage = () => {
 		localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(ventas));
 	}, [ventas]);
 
+	useEffect(() => {
+		const recargarVentas = () => {
+			try {
+				const guardado = localStorage.getItem(VENTAS_LS_KEY);
+				setVentas(guardado ? JSON.parse(guardado) : []);
+			} catch (error) {
+				console.error("Error recargando salidas en localStorage:", error);
+			}
+		};
+
+		window.addEventListener("storage", recargarVentas);
+		window.addEventListener("focus", recargarVentas);
+		window.addEventListener("ventas-pos-updated", recargarVentas);
+
+		return () => {
+			window.removeEventListener("storage", recargarVentas);
+			window.removeEventListener("focus", recargarVentas);
+			window.removeEventListener("ventas-pos-updated", recargarVentas);
+		};
+	}, []);
+
 	const parseFecha = (fecha) => {
 		const date = new Date(fecha);
 		return Number.isNaN(date.getTime()) ? null : date;
@@ -75,15 +96,49 @@ const SalidasPage = () => {
 				talla: item.talla || "N/A",
 				color: item.color || "N/A",
 				cantidad: Number(item.cantidad) || 0,
+				stock_anterior: Number(item.stock_anterior),
+				stock_nuevo: Number(item.stock_nuevo),
 				precio: Number(item.precio) || 0,
 				registrado_por: venta.registrado_por,
 			}));
 		});
 	}, [ventas]);
 
-	const salidasHoy = salidasDetalle.filter((s) => esHoy(s.fecha_creacion)).length;
-	const salidasSemana = salidasDetalle.filter((s) => estaEnEstaSemana(s.fecha_creacion)).length;
-	const salidasMes = salidasDetalle.filter((s) => estaEnEsteMes(s.fecha_creacion)).length;
+	const getStockAntes = (item) => {
+		const parsed = Number(item?.stock_anterior);
+		return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : null;
+	};
+
+	const getStockDespues = (item) => {
+		const parsed = Number(item?.stock_nuevo);
+		if (Number.isFinite(parsed)) return Math.max(0, Math.round(parsed));
+
+		const antes = getStockAntes(item);
+		if (antes == null) return null;
+		return Math.max(0, antes - (Number(item?.cantidad) || 0));
+	};
+
+	const getSalida = (item) => {
+		const antes = getStockAntes(item);
+		const despues = getStockDespues(item);
+		if (antes != null && despues != null) {
+			return Math.abs(despues - antes);
+		}
+
+		const fallback = Number(item?.cantidad);
+		if (Number.isFinite(fallback)) return Math.abs(Math.round(fallback));
+		return 0;
+	};
+
+	const salidasHoy = salidasDetalle
+		.filter((s) => esHoy(s.fecha_creacion))
+		.reduce((acc, s) => acc + getSalida(s), 0);
+	const salidasSemana = salidasDetalle
+		.filter((s) => estaEnEstaSemana(s.fecha_creacion))
+		.reduce((acc, s) => acc + getSalida(s), 0);
+	const salidasMes = salidasDetalle
+		.filter((s) => estaEnEsteMes(s.fecha_creacion))
+		.reduce((acc, s) => acc + getSalida(s), 0);
 
 	const formatFecha = (fecha) => {
 		if (!fecha) return "—";
@@ -99,8 +154,8 @@ const SalidasPage = () => {
 		});
 	};
 
-	const formatCosto = (precio, cantidad) => {
-		const total = Number(precio) * Number(cantidad || 0);
+	const formatCosto = (precio, cantidadSalida) => {
+		const total = Number(precio) * Number(cantidadSalida || 0);
 		return `$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 	};
 
@@ -189,7 +244,9 @@ const SalidasPage = () => {
 								<th>MODELO</th>
 								<th>TALLA</th>
 								<th>COLOR</th>
-								<th>CANTIDAD</th>
+								<th>STOCK ANTES</th>
+								<th>STOCK DESPUES</th>
+								<th>SALIDA</th>
 								<th>REGISTRADO POR</th>
 								<th>IMPORTE</th>
 							</tr>
@@ -197,7 +254,7 @@ const SalidasPage = () => {
 						<tbody>
 							{salidasDetalle.length === 0 ? (
 								<tr>
-									<td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
+									<td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
 										No hay salidas registradas
 									</td>
 								</tr>
@@ -209,7 +266,13 @@ const SalidasPage = () => {
 										<td>{s.talla}</td>
 										<td>{s.color}</td>
 										<td>
-											<span className="badge-cantidad badge-cantidad-salida">-{s.cantidad}</span>
+											<span className="badge-cantidad">{getStockAntes(s) ?? "—"}</span>
+										</td>
+										<td>
+											<span className="badge-cantidad">{getStockDespues(s) ?? "—"}</span>
+										</td>
+										<td>
+											<span className="badge-cantidad badge-cantidad-salida">-{getSalida(s)}</span>
 										</td>
 										<td>
 											<div className="celda-usuario">
@@ -218,7 +281,7 @@ const SalidasPage = () => {
 											</div>
 										</td>
 										<td className="td-costo">
-											{formatCosto(s.precio, s.cantidad)}
+											{formatCosto(s.precio, getSalida(s))}
 										</td>
 									</tr>
 								))

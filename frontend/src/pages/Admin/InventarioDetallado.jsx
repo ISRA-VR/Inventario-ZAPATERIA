@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createProducto, deleteProducto, getCategorias, getProductos, updateProducto } from "../../api/productos";
+import { registrarMovimientoEntrada } from "../../api/movimientos";
 import { toast } from "react-toastify";
 import "../../styles/inventarioDetallado.css";
 import "../../styles/addproducto.css";
@@ -31,7 +32,12 @@ const COLOR_KEYWORDS = [
 const detectColor = (modelo = "") => {
   const limpio = String(modelo).toLowerCase();
   const encontrado = COLOR_KEYWORDS.find((c) => limpio.includes(c));
-  return encontrado ? encontrado[0].toUpperCase() + encontrado.slice(1) : "Sin color";
+  return encontrado ? encontrado[0].toUpperCase() + encontrado.slice(1) : "";
+};
+
+const isPlaceholderColor = (value = "") => {
+  const txt = String(value || "").trim().toLowerCase();
+  return txt === "sin color" || txt === "sin colores";
 };
 
 const parseTallas = (texto = "") => {
@@ -47,7 +53,10 @@ const parseColores = (texto = "") => {
   const lista = String(texto)
     .split(',')
     .map((t) => t.trim())
-    .filter(Boolean);
+    .filter((t) => {
+      const valor = String(t || "").trim();
+      return Boolean(valor) && !isPlaceholderColor(valor);
+    });
 
   return lista.length ? lista : [];
 };
@@ -102,6 +111,16 @@ const normalizeVariantStocks = (pairs, currentStocks = {}) => {
 const sumVariantStocks = (variantStocks = {}) =>
   Object.values(variantStocks).reduce((acc, n) => acc + (Number(n) || 0), 0);
 
+const hasVariantEntries = (variantStocks) =>
+  Boolean(variantStocks && typeof variantStocks === 'object' && Object.keys(variantStocks).length > 0);
+
+const getProductoStockTotal = (producto, variantStocks) => {
+  if (hasVariantEntries(variantStocks)) {
+    return sumVariantStocks(variantStocks);
+  }
+  return Math.max(0, Number(producto?.stock) || 0);
+};
+
 const getSessionUserName = () => {
   try {
     const raw = localStorage.getItem('user');
@@ -130,20 +149,30 @@ const buildEntradaRecord = ({
   idProducto,
   modelo,
   idCategoria,
+  nombreCategoria,
   precio,
   cantidad,
   talla,
   color,
   registradoPor,
+  stockAnterior,
+  stockNuevo,
 }) => {
   const nowIso = new Date().toISOString();
+  const cantidadNormalizada = Math.max(0, Math.round(Number(cantidad) || 0));
+  const stockAnteriorNormalizado = Math.max(0, Math.round(Number(stockAnterior) || 0));
+  const stockNuevoNormalizado = Math.max(0, Math.round(Number(stockNuevo ?? cantidadNormalizada) || 0));
+
   return {
     id_producto: idProducto,
     modelo,
     id_categoria: idCategoria,
+    nombre_categoria: nombreCategoria || null,
     precio: Number(precio) || 0,
-    cantidad: Math.max(0, Math.round(Number(cantidad) || 0)),
-    stock: Math.max(0, Math.round(Number(cantidad) || 0)),
+    cantidad: cantidadNormalizada,
+    stock: stockNuevoNormalizado,
+    stock_anterior: stockAnteriorNormalizado,
+    stock_nuevo: stockNuevoNormalizado,
     talla: talla || 'N/A',
     color: color || 'N/A',
     registroId: `${idProducto || 'producto'}-${talla || 'na'}-${color || 'na'}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -161,7 +190,7 @@ const estadoBadge = (estado, tieneVariantesBajas) => {
 const isPlaceholderVariant = (talla, color) => {
   const t = String(talla || '').trim().toLowerCase();
   const c = String(color || '').trim().toLowerCase();
-  return t === 'sin talla' || c === 'sin color';
+  return t === 'sin talla' || c === 'sin color' || c === 'sin colores';
 };
 
 const formatPrecio = (v) =>
@@ -209,6 +238,22 @@ export default function InventarioDetalladoPage() {
     cargarInventario();
   }, [cargarInventario]);
 
+  useEffect(() => {
+    const refrescar = () => cargarInventario();
+
+    window.addEventListener('storage', refrescar);
+    window.addEventListener('focus', refrescar);
+    window.addEventListener('inventario-updated', refrescar);
+    window.addEventListener('liquidaciones-updated', refrescar);
+
+    return () => {
+      window.removeEventListener('storage', refrescar);
+      window.removeEventListener('focus', refrescar);
+      window.removeEventListener('inventario-updated', refrescar);
+      window.removeEventListener('liquidaciones-updated', refrescar);
+    };
+  }, [cargarInventario]);
+
   const validarFormulario = (form) => {
     const camposRequeridos = {
       modelo: 'Modelo',
@@ -246,6 +291,9 @@ export default function InventarioDetalladoPage() {
 
       const { data: productoCreado } = await createProducto(payload);
       const registradoPor = getSessionUserName();
+      const categoriaNombre = categoriasOptions.find(
+        (cat) => Number(cat.id_categoria) === Number(payload.id_categoria)
+      )?.nombre_categoria || null;
 
       const entradasNuevas = pairs
         .map((pair) => ({ pair, cantidad: Number(stockVariantes[pair.key] || 0) }))
@@ -255,15 +303,28 @@ export default function InventarioDetalladoPage() {
             idProducto: productoCreado?.id_producto,
             modelo: payload.modelo,
             idCategoria: payload.id_categoria,
+            nombreCategoria: categoriaNombre,
             precio: payload.precio,
             cantidad: item.cantidad,
             talla: item.pair.talla,
             color: item.pair.color,
             registradoPor,
+            stockAnterior: 0,
+            stockNuevo: item.cantidad,
           })
         );
 
       pushEntradasToStorage(entradasNuevas);
+
+      if (entradasNuevas.length) {
+        const resultados = await Promise.allSettled(
+          entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
+        );
+        const fallidos = resultados.filter((r) => r.status === 'rejected').length;
+        if (fallidos > 0) {
+          toast.warning('Algunas entradas no se reflejaron en reportes en tiempo real.');
+        }
+      }
 
       if (productoCreado?.id_producto) {
         const siguiente = {
@@ -334,31 +395,79 @@ export default function InventarioDetalladoPage() {
       await updateProducto(productoActual.id_producto, payload);
 
       const registradoPor = getSessionUserName();
+      const categoriaNombre = categoriasOptions.find(
+        (cat) => Number(cat.id_categoria) === Number(payload.id_categoria)
+      )?.nombre_categoria || null;
       const previousMap = stockVariantesPrevios || {};
       const allKeys = Array.from(new Set([...Object.keys(previousMap), ...Object.keys(stockVariantes)]));
+      const totalAntesGlobal = hasVariantEntries(previousMap)
+        ? sumVariantStocks(previousMap)
+        : Math.max(0, Number(productoActual?.stock) || 0);
+      const totalDespuesGlobal = hasVariantEntries(stockVariantes)
+        ? sumVariantStocks(stockVariantes)
+        : Math.max(0, Number(payload.stock) || 0);
 
       const entradasNuevas = allKeys
         .map((key) => {
           const before = Math.max(0, Math.round(Number(previousMap[key]) || 0));
           const after = Math.max(0, Math.round(Number(stockVariantes[key]) || 0));
-          const delta = after - before;
-          if (delta <= 0) return null;
+          const cambioDetectado = after !== before;
+          if (!cambioDetectado) return null;
+
+          const cantidadRegistro = after > 0 ? after : Math.abs(after - before);
+          if (cantidadRegistro <= 0) return null;
 
           const [tallaRaw, colorRaw] = String(key).split('__');
           return buildEntradaRecord({
             idProducto: productoActual.id_producto,
             modelo: payload.modelo,
             idCategoria: payload.id_categoria,
+            nombreCategoria: categoriaNombre,
             precio: payload.precio,
-            cantidad: delta,
+            cantidad: cantidadRegistro,
             talla: tallaRaw || 'N/A',
             color: colorRaw || 'N/A',
             registradoPor,
+            stockAnterior: before,
+            stockNuevo: after,
           });
         })
         .filter(Boolean);
 
+      if (entradasNuevas.length === 0) {
+        const deltaTotal = Math.abs(totalDespuesGlobal - totalAntesGlobal);
+        const cantidadRegistroTotal = totalDespuesGlobal > 0 ? totalDespuesGlobal : deltaTotal;
+
+        if (cantidadRegistroTotal > 0) {
+          entradasNuevas.push(
+            buildEntradaRecord({
+              idProducto: productoActual.id_producto,
+              modelo: payload.modelo,
+              idCategoria: payload.id_categoria,
+              nombreCategoria: categoriaNombre,
+              precio: payload.precio,
+              cantidad: cantidadRegistroTotal,
+              talla: 'N/A',
+              color: 'N/A',
+              registradoPor,
+              stockAnterior: totalAntesGlobal,
+              stockNuevo: totalDespuesGlobal,
+            })
+          );
+        }
+      }
+
       pushEntradasToStorage(entradasNuevas);
+
+      if (entradasNuevas.length) {
+        const resultados = await Promise.allSettled(
+          entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
+        );
+        const fallidos = resultados.filter((r) => r.status === 'rejected').length;
+        if (fallidos > 0) {
+          toast.warning('Algunas entradas no se reflejaron en reportes en tiempo real.');
+        }
+      }
 
       const siguiente = {
         ...colorMap,
@@ -421,17 +530,23 @@ export default function InventarioDetalladoPage() {
 
   const inventario = useMemo(() => {
     return productos.flatMap((p) => {
-      const colorDesdeMapa = Array.isArray(colorMap[p.id_producto]) ? colorMap[p.id_producto] : [];
+      const colorDesdeMapa = (Array.isArray(colorMap[p.id_producto]) ? colorMap[p.id_producto] : [])
+        .map((c) => String(c || "").trim())
+        .filter((c) => c && !isPlaceholderColor(c));
       const colorDesdeCampo = parseColores(p?.colores);
+      const colorDetectado = detectColor(p?.modelo);
       const colores = colorDesdeCampo.length
         ? colorDesdeCampo
-        : (colorDesdeMapa.length ? colorDesdeMapa : [detectColor(p?.modelo)]);
+        : (colorDesdeMapa.length ? colorDesdeMapa : (colorDetectado ? [colorDetectado] : ['N/A']));
 
       const tallas = parseTallas(p?.tallas);
       const pairs = buildVariantPairs(tallas, colores);
       const totalPairs = pairs.length || 1;
-      const fallback = Math.max(0, Math.floor((Number(p.stock) || 0) / totalPairs));
       const varianteStock = variantStockMap[p.id_producto] || {};
+      const varianteConDatos = hasVariantEntries(varianteStock);
+      const totalStockProducto = getProductoStockTotal(p, varianteStock);
+      const fallbackBase = Math.floor(totalStockProducto / totalPairs);
+      const fallbackResto = totalStockProducto % totalPairs;
 
       return pairs.map((pair, i) => ({
         id: `${p.id_producto}-${pair.key}-${i}`,
@@ -442,9 +557,11 @@ export default function InventarioDetalladoPage() {
         estado: p.estado || "activo",
         color: pair.color,
         talla: pair.talla,
-        stock: Object.prototype.hasOwnProperty.call(varianteStock, pair.key)
-          ? Math.max(0, Number(varianteStock[pair.key]) || 0)
-          : fallback,
+        stock: varianteConDatos
+          ? (Object.prototype.hasOwnProperty.call(varianteStock, pair.key)
+              ? Math.max(0, Number(varianteStock[pair.key]) || 0)
+              : 0)
+          : (fallbackBase + (i < fallbackResto ? 1 : 0)),
       }));
     });
   }, [productos, colorMap, variantStockMap]);
@@ -674,7 +791,7 @@ export default function InventarioDetalladoPage() {
                                   {(() => {
                                     const variantesValidas = row.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
                                     const gruposPorColor = variantesValidas.reduce((acc, v) => {
-                                      const key = String(v.color || 'Sin color');
+                                      const key = String(v.color || 'N/A');
                                       if (!acc[key]) acc[key] = [];
                                       acc[key].push(v);
                                       return acc;
@@ -825,12 +942,25 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
 
   const setStockVariante = (key, value) => {
     if (value !== '' && !/^\d*$/.test(value)) return;
-    const n = value === '' ? 0 : Math.max(0, Math.round(Number(value)));
     setForm((prev) => ({
       ...prev,
       stock_variantes: {
         ...(prev.stock_variantes || {}),
-        [key]: n,
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleStockFocus = (key) => {
+    const raw = form.stock_variantes?.[key];
+    const current = raw === '' ? '' : Number(raw ?? stockVariantes[key] ?? 0);
+    if (current !== 0) return;
+
+    setForm((prev) => ({
+      ...prev,
+      stock_variantes: {
+        ...(prev.stock_variantes || {}),
+        [key]: '',
       },
     }));
   };
@@ -928,8 +1058,9 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
                   type="number"
                   min="0"
                   step="1"
-                  value={stockVariantes[pair.key] ?? 0}
+                  value={form.stock_variantes?.[pair.key] === '' ? '' : (stockVariantes[pair.key] ?? 0)}
                   onChange={(e) => setStockVariante(pair.key, e.target.value)}
+                  onFocus={() => handleStockFocus(pair.key)}
                   onKeyDown={handleKeyDown}
                   onWheel={(e) => e.target.blur()}
                 />

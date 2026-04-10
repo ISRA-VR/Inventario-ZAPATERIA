@@ -92,6 +92,14 @@
   cursor: pointer;
 }
 
+.rep-filtro-btn-periodo {
+  background: #1d4ed8;
+}
+
+.rep-filtro-btn-periodo:hover {
+  background: #1e40af;
+}
+
 .rep-filtro-btn-light {
   background: #e2e8f0;
   color: #1e293b;
@@ -100,6 +108,79 @@
 .rep-filtro-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.rep-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.rep-modal-box {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.rep-modal-box h3 {
+  margin: 0 0 4px;
+  color: #1a2236;
+  font-size: 18px;
+}
+
+.rep-modal-box p {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.rep-modal-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rep-modal-btn {
+  border: 1px solid #d5dbe7;
+  background: #f8fafc;
+  color: #1f2937;
+  border-radius: 8px;
+  height: 40px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rep-modal-btn:hover {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  background: #eef4ff;
+}
+
+.rep-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rep-modal-close {
+  width: 100%;
+  border: none;
+  background: #e2e8f0;
+  color: #1e293b;
+  border-radius: 8px;
+  height: 38px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .rep-cards {
@@ -249,6 +330,10 @@
   .rep-filtro-item,
   .rep-filtro-btn {
     width: 100%;
+  }
+
+  .rep-modal-actions {
+    grid-template-columns: 1fr;
   }
 
   .grafico-card {

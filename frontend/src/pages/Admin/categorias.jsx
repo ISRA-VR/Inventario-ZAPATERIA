@@ -17,7 +17,24 @@ const IconFolder = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="n
 
 /* ── API ── */
 const API_CATEGORIAS = `${API_BASE_URL}/api/categorias`;
+const COLOR_MAP_KEY = 'inventario_colores_map';
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+
+const COLOR_KEYWORDS = [
+  'negro', 'negra', 'blanco', 'blanca', 'azul', 'rojo', 'roja', 'verde', 'amarillo', 'amarilla',
+  'gris', 'cafe', 'marron', 'morado', 'beige', 'rosa', 'nude', 'vino', 'dorado', 'plateado',
+];
+
+const isPlaceholderColor = (value = '') => {
+  const txt = String(value || '').trim().toLowerCase();
+  return txt === 'sin color' || txt === 'sin colores';
+};
+
+const detectColor = (modelo = '') => {
+  const limpio = String(modelo || '').toLowerCase();
+  const encontrado = COLOR_KEYWORDS.find((c) => limpio.includes(c));
+  return encontrado ? encontrado[0].toUpperCase() + encontrado.slice(1) : '';
+};
 
 const readVariantStockMap = () => {
   try {
@@ -27,6 +44,66 @@ const readVariantStockMap = () => {
   } catch {
     return {};
   }
+};
+
+const readColorMap = () => {
+  try {
+    const raw = localStorage.getItem(COLOR_MAP_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const parseCsvList = (value) =>
+  String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item && !isPlaceholderColor(item));
+
+const hasVariantEntries = (variantStocks) =>
+  Boolean(variantStocks && typeof variantStocks === 'object' && Object.keys(variantStocks).length > 0);
+
+const sumVariantStockActual = (producto, variantStocks, colorMap) => {
+  if (!hasVariantEntries(variantStocks)) return null;
+
+  const tallas = parseCsvList(producto?.tallas);
+  const coloresProducto = parseCsvList(producto?.colores);
+  const coloresMap = Array.isArray(colorMap?.[producto?.id_producto])
+    ? colorMap[producto.id_producto]
+        .map((c) => String(c || '').trim())
+        .filter((c) => c && !isPlaceholderColor(c))
+    : [];
+  const colorDetectado = detectColor(producto?.modelo);
+  const colores = coloresProducto.length
+    ? coloresProducto
+    : (coloresMap.length ? coloresMap : (colorDetectado ? [colorDetectado] : []));
+
+  if (!tallas.length || !colores.length) return null;
+
+  let suma = 0;
+  let encontroKeyVigente = false;
+
+  tallas.forEach((talla) => {
+    colores.forEach((color) => {
+      const key = `${talla}__${color}`;
+      if (Object.prototype.hasOwnProperty.call(variantStocks, key)) {
+        suma += Math.max(0, Number(variantStocks[key]) || 0);
+        encontroKeyVigente = true;
+      }
+    });
+  });
+
+  return encontroKeyVigente ? suma : null;
+};
+
+const getProductoStockTotal = (producto, variantStocks, colorMap) => {
+  const stockActualVariantes = sumVariantStockActual(producto, variantStocks, colorMap);
+  if (stockActualVariantes != null) {
+    return stockActualVariantes;
+  }
+  return Math.max(0, Number(producto?.stock) || 0);
 };
 
 const CategoriasPage = () => {
@@ -61,17 +138,14 @@ const CategoriasPage = () => {
       const { data } = await getProductos();
       const productos = Array.isArray(data) ? data : [];
       const variantMap = readVariantStockMap();
+      const colorMap = readColorMap();
 
       const acumulado = productos.reduce((acc, producto) => {
         const idCategoria = Number(producto?.id_categoria);
         if (!idCategoria) return acc;
 
         const variantes = variantMap?.[producto?.id_producto];
-        const stockVariantes = variantes && typeof variantes === 'object'
-          ? Object.values(variantes).reduce((sum, val) => sum + (Number(val) || 0), 0)
-          : null;
-
-        const stockFinal = stockVariantes != null ? stockVariantes : (Number(producto?.stock) || 0);
+        const stockFinal = getProductoStockTotal(producto, variantes, colorMap);
         acc[idCategoria] = (acc[idCategoria] || 0) + stockFinal;
         return acc;
       }, {});

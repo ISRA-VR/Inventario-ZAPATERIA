@@ -162,6 +162,27 @@ tr:hover { background: #f8fafc; }
   color: #475569;
 }
 
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  max-width: 240px;
+}
+
+.badge-status.online {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge-status.offline {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+}
+
 /* --- ACCIONES --- */
 .actions-cell {
   display: flex;
@@ -183,6 +204,12 @@ tr:hover { background: #f8fafc; }
 
 .btn-action.delete { color: var(--danger); }
 .btn-action.delete:hover { background-color: #fef2f2; }
+
+.btn-action.deactivate { color: #b45309; }
+.btn-action.deactivate:hover { background-color: #fffbeb; }
+
+.btn-action.activate { color: #166534; }
+.btn-action.activate:hover { background-color: #ecfdf3; }
 
 /* --- MODALES --- */
 .modal-overlay {

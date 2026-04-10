@@ -6,6 +6,10 @@ import '../styles/assistant.css';
 
 const ENTRADAS_LS_KEY = 'entradas_inventario';
 const VENTAS_LS_KEY = 'ventas_punto_venta';
+const LIQUIDACIONES_STORAGE_KEY = 'inventario_liquidaciones_ids';
+const LIQUIDACIONES_DISCOUNT_KEY = 'inventario_liquidaciones_descuentos';
+const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+const COLOR_MAP_KEY = 'inventario_colores_map';
 
 const parseStorageArray = (key) => {
   try {
@@ -14,6 +18,16 @@ const parseStorageArray = (key) => {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+};
+
+const parseStorageObject = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 };
 
@@ -104,6 +118,31 @@ const construirEventosCliente = () => {
   return { entradas, ventas };
 };
 
+const construirContextoSistemaCliente = () => {
+  const liquidaciones = parseStorageArray(LIQUIDACIONES_STORAGE_KEY)
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id));
+
+  const descuentosLiquidacion = parseStorageObject(LIQUIDACIONES_DISCOUNT_KEY);
+  const stockVariantes = parseStorageObject(VARIANT_STOCK_MAP_KEY);
+  const coloresMap = parseStorageObject(COLOR_MAP_KEY);
+
+  const totalVariantesRegistradas = Object.values(stockVariantes).reduce((acc, item) => {
+    if (!item || typeof item !== 'object') return acc;
+    return acc + Object.keys(item).length;
+  }, 0);
+
+  return {
+    liquidaciones,
+    descuentosLiquidacion,
+    totalLiquidaciones: liquidaciones.length,
+    totalVariantesRegistradas,
+    totalMapeosColor: Object.keys(coloresMap).length,
+    stockVariantesMap: stockVariantes,
+    coloresMap,
+  };
+};
+
 const createBotMessage = (text) => ({
   id: `${Date.now()}-bot-${Math.random().toString(16).slice(2)}`,
   role: 'bot',
@@ -121,16 +160,34 @@ export default function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState(() => [
-    createBotMessage('Hola, soy tu asistente de inventario. Puedo ayudarte con stock bajo, resumen del día y movimientos del mes.'),
-  ]);
+  const [messages, setMessages] = useState(() => []);
 
-  const quickPrompts = useMemo(() => [
-    'Resumen del día',
-    'Muéstrame stock bajo',
-    'Salidas del mes',
-    'Resumen del sistema',
-  ], []);
+  useEffect(() => {
+    const nombreUsuario = user?.nombre || user?.email;
+    if (!nombreUsuario) return;
+
+    setMessages((prev) => {
+      if (prev.length > 0) return prev;
+      return [
+        createBotMessage(`Hola ${nombreUsuario}, soy tu asistente. Puedo ayudarte con inventario, caja, entradas, salidas, categorías, liquidaciones y reportes.`),
+      ];
+    });
+  }, [user]);
+
+  const quickPrompts = useMemo(() => {
+    const base = [
+      'Resumen del día',
+      'Reporte del día',
+      'Muéstrame stock bajo',
+      'Salidas del mes',
+      'Resumen del sistema',
+      'Resumen de caja',
+      'Liquidaciones activas',
+      '¿Qué categoría tiene más stock?',
+    ];
+
+    return base;
+  }, []);
 
   const handleSend = async (overrideText) => {
     const text = (overrideText ?? input).trim();
@@ -144,6 +201,7 @@ export default function AssistantWidget() {
     try {
       const clientMetrics = calcularMetricasCliente();
       const clientEvents = construirEventosCliente();
+      const clientSystemSnapshot = construirContextoSistemaCliente();
       const { data } = await sendAssistantMessage({
         question: text,
         clientMetrics,
@@ -151,6 +209,9 @@ export default function AssistantWidget() {
         clientContext: {
           route: window.location.pathname,
           role: user?.role || 'empleado',
+          userName: user?.nombre || user?.email || 'Usuario',
+          userEmail: user?.email || null,
+          systemSnapshot: clientSystemSnapshot,
         },
       });
 
