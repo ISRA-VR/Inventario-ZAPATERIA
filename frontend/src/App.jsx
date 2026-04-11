@@ -19,8 +19,6 @@ import LiquidacionesPage from "./pages/Admin/liquidaciones";
 import PuntoVentaPage from "./pages/punto-venta/puntoVenta";
 import CajaPage from "./pages/punto-venta/caja";
 import HistorialVentasPage from "./pages/punto-venta/historialVentas";
-import Configuracion from "./pages/punto-venta/configuracion";
-<Route path="punto-venta/configuracion" element={<Configuracion />} />
 
 /* 🔥 AQUÍ ESTÁ EL FIX */
 import Devoluciones from "./pages/punto-venta/devoluciones";
@@ -103,7 +101,6 @@ export default function App() {
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
-            <Route path="punto-venta/configuracion" element={<Configuracion />} />
 
             {/* 🔥 AQUÍ TAMBIÉN */}
             <Route path="punto-venta/devoluciones" element={<Devoluciones />} />
@@ -127,7 +124,6 @@ export default function App() {
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
-            <Route path="punto-venta/configuracion" element={<Configuracion />} />
 
             {/* 🔥 AQUÍ TAMBIÉN */}
             <Route path="punto-venta/devoluciones" element={<Devoluciones />} />

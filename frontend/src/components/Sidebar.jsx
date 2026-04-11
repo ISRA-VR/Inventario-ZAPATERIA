@@ -102,12 +102,6 @@ const Sidebar = () => {
       path: `${basePuntoVentaPath}/devoluciones`,
       roles: ['admin', 'empleado']
     },
-    {
-      icon: <Settings size={20} />,
-      label: 'Configuración',
-      path: `${basePuntoVentaPath}/configuracin`,
-      roles: ['admin', 'empleado']
-    },
   ];
 
   const menuItemsFuente = enPuntoVenta ? puntoVentaMenuItems : allMenuItems;
