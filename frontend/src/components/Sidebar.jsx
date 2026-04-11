@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */ 
 import React, { useState, useContext, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -7,7 +8,8 @@ import {
   LayoutDashboard, Users, Package, Tags,
   ArrowUpRight, ArrowDownLeft, Search,
   FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle, Store,
-  ReceiptText, Menu, X, User
+  ReceiptText, Menu, X, User,
+  RotateCcw // 👈 AGREGADO
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -46,7 +48,6 @@ const Sidebar = () => {
   const basePuntoVentaPath = user?.role === 'admin' ? '/admin/punto-venta' : '/empleado/punto-venta';
   const enPuntoVenta = location.pathname.startsWith(basePuntoVentaPath);
 
-  // Definimos todos los items con una propiedad de 'roles' para filtrar
   const allMenuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
@@ -95,9 +96,14 @@ const Sidebar = () => {
       path: `${basePuntoVentaPath}/caja`,
       roles: ['admin', 'empleado']
     },
+    {
+      icon: <RotateCcw size={20} />, // 👈 NUEVO
+      label: 'Devoluciones',
+      path: `${basePuntoVentaPath}/devoluciones`,
+      roles: ['admin', 'empleado']
+    },
   ];
 
-  // Filtramos los items basándonos en el rol del usuario logueado
   const menuItemsFuente = enPuntoVenta ? puntoVentaMenuItems : allMenuItems;
   const menuItems = menuItemsFuente.filter(item => item.roles.includes(user?.role));
 
@@ -124,7 +130,6 @@ const Sidebar = () => {
 
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
 
-        {/* HEADER */}
         <div className="sidebar-header">
           <div className="logo-circle">
             <img src="/favicon.ico" alt="Logo" className="logo-beni-van-img" height={30} />
@@ -139,7 +144,6 @@ const Sidebar = () => {
           </button>
         </div>
 
-        {/* NAV */}
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
             <NavLink
@@ -156,7 +160,6 @@ const Sidebar = () => {
           ))}
         </nav>
 
-        {/* FOOTER */}
         <div className="sidebar-footer">
           {!isCollapsed && (
             <button
@@ -196,7 +199,6 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* --- MODAL DE CONFIRMACIÓN --- */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-box">

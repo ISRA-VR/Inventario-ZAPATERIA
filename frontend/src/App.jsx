@@ -20,6 +20,9 @@ import PuntoVentaPage from "./pages/punto-venta/puntoVenta";
 import CajaPage from "./pages/punto-venta/caja";
 import HistorialVentasPage from "./pages/punto-venta/historialVentas";
 
+/* 🔥 AQUÍ ESTÁ EL FIX */
+import Devoluciones from "./pages/punto-venta/devoluciones";
+
 /* EMPLEADO */
 import EntradasEmpleado from "./pages/Empleado/entrada";
 import SalidasEmpleado from "./pages/Empleado/salidas";
@@ -80,10 +83,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            {/* 🔥 RUTA PRINCIPAL (AQUÍ ESTÁ LA MAGIA) */}
             <Route index element={<DashboardPage />} />
 
-            {/* Rutas normales */}
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="productos" element={<Navigate to="/admin/inventario-detallado" replace />} />
             <Route path="empleados" element={<EmpleadosPage />} />
@@ -100,6 +101,10 @@ export default function App() {
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
+
+            {/* 🔥 AQUÍ TAMBIÉN */}
+            <Route path="punto-venta/devoluciones" element={<Devoluciones />} />
+
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
 
@@ -120,7 +125,9 @@ export default function App() {
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
 
-            {/* Opcional: redirigir si entran directo */}
+            {/* 🔥 AQUÍ TAMBIÉN */}
+            <Route path="punto-venta/devoluciones" element={<Devoluciones />} />
+
             <Route index element={<Navigate to="entradas" />} />
             <Route path="*" element={<Navigate to="/empleado/entradas" replace />} />
           </Route>
