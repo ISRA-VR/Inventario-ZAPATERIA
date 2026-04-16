@@ -6,6 +6,8 @@ import categoriasRoutes from "./routes/categorias.routes.js";
 import tallasRoutes from "./routes/tallas.routes.js";
 import asistenteRoutes from "./routes/asistente.routes.js";
 import movimientosRoutes from "./routes/movimientos.routes.js";
+import devolucionesRoutes from './routes/devoluciones.routes.js';
+import { errorHandler } from "./middleware/errorHandler.js";
 import pool from "./config/db.js";
 
 const app = express();
@@ -20,6 +22,9 @@ app.use("/api/categorias", categoriasRoutes);
 app.use("/api/tallas", tallasRoutes);
 app.use("/api/asistente", asistenteRoutes);
 app.use("/api/movimientos", movimientosRoutes);
+app.use('/api/devoluciones', devolucionesRoutes);
+
+app.use(errorHandler);
 
 const hasConfiguredEnvValue = (value) => {
   const normalized = String(value || "").trim();
