@@ -36,7 +36,6 @@ export default function HistorialVentas() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     cargarVentas();
 
     const sincronizarVentas = () => cargarVentas();
