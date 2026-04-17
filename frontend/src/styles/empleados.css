@@ -1,0 +1,341 @@
+/* Empleados.css */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary:       #0E65C6;
+  --primary-dark:  #0a52a0;
+  --secondary:     #082F5A;
+  --bg-page:       #f0f4f8;
+  --bg-card:       #ffffff;
+  --border:        #e8edf2;
+  --text-main:     #1a2332;
+  --text-sub:      #64748b;
+  --text-light:    #94a3b8;
+  --danger:        #dc2626;
+  --shadow-card:   0 2px 12px rgba(8,47,90,0.08);
+  --shadow-modal:  0 16px 48px rgba(8,47,90,0.20);
+  --radius-card:   14px;
+  --radius-sm:     8px;
+  --transition:    0.18s ease;
+
+  
+  --primary-color: #0E65C6;
+  --primary-hover: #082F5A;
+  --bg-light: #f8fafc;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --white: #ffffff;
+  --error: #ef4444;
+  --success: #22c55e;
+}
+
+.empleados-container {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+  color: var(--text-main);
+}
+
+.empleados-container h2 {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--secondary);
+  line-height: 1.2;
+}
+
+.empleados-container p {
+  font-size: 0.875rem;
+  color: var(--text-sub);
+  margin-top: 0.25rem;
+}
+
+/* --- HEADER & ACTIONS --- */
+.empleados-header {
+  margin-bottom: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Contenedor para el input de búsqueda con ícono */
+.search-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-muted);
+  pointer-events: none; /* Para que no interfiera con el click en el input */
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem; /* Aumentamos padding izquierdo para el ícono */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(14, 101, 198, 0.1);
+}
+
+.btn-crear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-crear:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(14,101,198,0.30);
+}
+
+/* ── Tabla (Estilo Card) ── */
+.empleados-list {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  background: #f8fafc;
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:hover { background: #f8fafc; }
+
+/* --- BADGES --- */
+.badge-rol {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.badge-rol.admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-rol.empleado {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  max-width: 240px;
+}
+
+.badge-status.online {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge-status.offline {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* --- ACCIONES --- */
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-action.edit { color: var(--primary); }
+.btn-action.edit:hover { background-color: #eff6ff; }
+
+.btn-action.delete { color: var(--danger); }
+.btn-action.delete:hover { background-color: #fef2f2; }
+
+.btn-action.deactivate { color: #b45309; }
+.btn-action.deactivate:hover { background-color: #fffbeb; }
+
+.btn-action.activate { color: #166534; }
+.btn-action.activate:hover { background-color: #ecfdf3; }
+
+/* --- MODALES --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: var(--white) !important;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+}
+
+.modal-sm { max-width: 400px; }
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: var(--text-dark);
+}
+
+
+/* --- FORMULARIO MODAL --- */
+.empleado-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.empleado-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.empleado-form input, 
+.empleado-form select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.password-input-container {
+  position: relative;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-guardar,
+.btn-cancelar,
+.btn-eliminar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-guardar {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-cancelar {
+  background-color: #f1f5f9;
+  color: var(--text-dark);
+}
+
+.btn-eliminar {
+  background-color: var(--error);
+  color: white;
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
