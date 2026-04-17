@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Soporte Técnico — M.A.Y.I.E</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #0E65C6;
+      --secondary: #082F5A;
+      --bg:        #F8FAFC;
+      --white:     #ffffff;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --text:      #1e293b;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page-header {
+      background: var(--secondary);
+      position: relative;
+      overflow: hidden;
+      padding: 56px 0 48px;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -40px; left: -60px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(14, 101, 198, 0.2);
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
+    }
+
+    .header-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(14, 101, 198, 0.3);
+      border: 1px solid rgba(91, 163, 245, 0.3);
+      color: #93c5fd;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 2px;
+      margin-bottom: 20px;
+    }
+
+    .header-badge svg { width: 13px; height: 13px; }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .page-header p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.55);
+      font-weight: 300;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding: 9px 18px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--secondary);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .btn-back:hover { background: var(--secondary); color: #fff; border-color: var(--secondary); }
+    .btn-back svg { width: 14px; height: 14px; transition: transform 0.2s; }
+    .btn-back:hover svg { transform: translateX(-3px); }
+
+    .content-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 32px 64px;
+    }
+
+    /* ── CONTACT HERO ── */
+    .contact-hero {
+      background: linear-gradient(135deg, var(--secondary) 0%, #0d4a8a 100%);
+      border-radius: 6px;
+      padding: 36px 36px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      animation: fadeUp 0.35s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contact-hero::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .contact-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(14, 101, 198, 0.5);
+      border: 2px solid rgba(91,163,245,0.4);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .contact-avatar svg { width: 30px; height: 30px; color: #93c5fd; }
+
+    .contact-info h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .contact-info p {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 16px;
+    }
+
+    .email-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(14, 101, 198, 0.4);
+      border: 1px solid rgba(91,163,245,0.35);
+      padding: 8px 16px;
+      border-radius: 3px;
+      font-size: 0.875rem;
+      color: #bfdbfe;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .email-pill:hover {
+      background: rgba(14, 101, 198, 0.7);
+      color: #ffffff;
+    }
+
+    .email-pill svg { width: 15px; height: 15px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+
+    .card-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon svg { width: 17px; height: 17px; color: #fff; }
+
+    .card-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+
+    .card-body { padding: 22px 24px; }
+
+    .card-body p {
+      font-size: 0.875rem;
+      line-height: 1.8;
+      color: #475569;
+      margin-bottom: 14px;
+    }
+
+    .card-body p:last-child { margin-bottom: 0; }
+
+    /* FAQ items */
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+
+    .faq-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .faq-item:first-child { padding-top: 0; }
+
+    .faq-q {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--secondary);
+      margin-bottom: 6px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .faq-q::before {
+      content: 'P';
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      background: var(--primary);
+      color: white;
+      border-radius: 2px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .faq-a {
+      font-size: 0.82rem;
+      color: #64748b;
+      line-height: 1.7;
+      padding-left: 30px;
+    }
+
+    .highlight-box {
+      background: #eff6ff;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 3px 3px 0;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: var(--secondary);
+      font-weight: 500;
+      line-height: 1.6;
+    }
+
+    .email-link {
+      color: var(--primary);
+      font-weight: 500;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(14, 101, 198, 0.4);
+      padding-bottom: 1px;
+      transition: all 0.2s ease;
+    }
+
+    .email-link:hover {
+      color: var(--primary);
+      border-bottom-color: rgba(14, 101, 198, 0.7);
+    }
+
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    @media (max-width: 500px) {
+      .page-footer { flex-direction: column; gap: 12px; text-align: center; }
+      .contact-avatar{display: none;}
+    }
+
+    .page-footer p { font-size: 0.72rem; color: var(--muted); }
+    .footer-logo { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: var(--secondary); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg>
+        Soporte Técnico
+      </div>
+      <h1>Centro de Soporte<br/>M.A.Y.I.E</h1>
+      <p>Equipo de desarrollo y soporte técnico · <a class="email-link" href="mailto:codesmish01@gmail.com">codesmish01@gmail.com</a></p>
+    </div>
+  </header>
+
+  <main class="content-wrap">
+
+    <button class="btn-back" onclick="window.close()" style="padding: 10px; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+        Cerrar
+    </button>
+
+    <div class="contact-hero">
+      <div class="contact-avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" /></svg>
+      </div>
+      <div class="contact-info">
+        <h2>Equipo de Desarrollo M.A.Y.I.E</h2>
+        <p>¿Tienes problemas con el sistema? Nuestro equipo está disponible para ayudarte.</p>
+        <a class="email-pill" href="mailto:codesmish01@gmail.com">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+          codesmish01@gmail.com
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg>
+        </div>
+        <h2>Preguntas frecuentes</h2>
+      </div>
+      <div class="card-body">
+        <div class="faq-item">
+          <div class="faq-q">Olvidé mi contraseña, ¿qué hago?</div>
+          <p class="faq-a">Contacta directamente al administrador del sistema o al equipo de soporte en soporte@mayie.com indicando tu nombre y correo registrado. No compartas tu contraseña por ningún medio.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">El sistema no me deja iniciar sesión aunque creo que mis datos son correctos.</div>
+          <p class="faq-a">Verifica que el correo no tenga espacios adicionales y que el captcha esté resuelto correctamente. Si el problema persiste después de 3 intentos, espera unos minutos y vuelve a intentarlo o comunícate con soporte.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">¿Desde qué dispositivos puedo acceder al sistema?</div>
+          <p class="faq-a">El sistema es compatible con cualquier navegador moderno (Chrome, Firefox, Edge, Safari) tanto en computadora como en tablet. Se recomienda usar la versión más reciente de tu navegador.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Encontré un error en el sistema o algo no funciona correctamente.</div>
+          <p class="faq-a">Envía un correo a soporte@mayie.com describiendo el problema, el navegador que usas y, si es posible, una captura de pantalla del error. El equipo responde en un plazo máximo de 24 horas hábiles.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+        </div>
+        <h2>Horario de atención</h2>
+      </div>
+      <div class="card-body">
+        <p>El equipo de soporte M.A.Y.I.E atiende consultas de lunes a viernes en horario laboral. Para incidencias urgentes fuera de este horario, puedes enviar un correo y recibirás respuesta el siguiente día hábil.</p>
+        <div class="highlight-box">
+          📬 Tiempo de respuesta estimado: menos de 24 horas hábiles para la mayoría de solicitudes.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>© 2026 Beni Van Zapatería · Soporte técnico por M.A.Y.I.E</p>
+    <span class="footer-logo"><img src="logo-Beni_Van-sin-fondo.png" alt="Beni Van Logo" target="_blank" rel="noopener noreferrer" height="50px"></img></span>
+  </footer>
+
+</body>
+</html>
