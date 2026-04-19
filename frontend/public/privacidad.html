@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aviso de Privacidad — Beni Van</title>
+  <title>Aviso de Privacidad - Beni Van</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
     rel="stylesheet" />
@@ -29,28 +29,35 @@
 
     body {
       font-family: 'IBM Plex Sans', sans-serif;
-      background: var(--bg);
+      background: linear-gradient(135deg, #f8fbff 0%, #f0f6ff 100%);
       color: var(--text);
       min-height: 100vh;
     }
 
     /* ── HEADER ── */
     .page-header {
-      background: var(--secondary);
+      background: linear-gradient(135deg, var(--secondary) 0%, #0d4a8a 100%);
       position: relative;
       overflow: hidden;
-      padding: 56px 0 48px;
+      padding: 72px 0 56px;
+      box-shadow: 0 12px 32px rgba(8, 47, 90, 0.18);
     }
 
     .page-header::before {
       content: '';
       position: absolute;
-      top: -60px;
+      top: -80px;
       right: -60px;
-      width: 320px;
-      height: 320px;
+      width: 380px;
+      height: 380px;
       border-radius: 50%;
       background: rgba(14, 101, 198, 0.25);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-20px, 20px); }
     }
 
     .page-header::after {
@@ -59,12 +66,12 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 3px;
+      height: 4px;
       background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
     }
 
     .header-inner {
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 0 32px;
       position: relative;
@@ -74,114 +81,120 @@
     .header-badge {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      background: rgba(14, 101, 198, 0.3);
-      border: 1px solid rgba(91, 163, 245, 0.3);
-      color: #93c5fd;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.1em;
+      gap: 8px;
+      background: rgba(14, 101, 198, 0.25);
+      border: 1px solid rgba(91, 163, 245, 0.45);
+      color: #e0f2fe;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      padding: 5px 12px;
-      border-radius: 2px;
-      margin-bottom: 20px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(4px);
     }
 
     .header-badge svg {
-      width: 13px;
-      height: 13px;
+      width: 14px;
+      height: 14px;
     }
 
     .page-header h1 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 600;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 700;
       color: #ffffff;
       line-height: 1.2;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
     }
 
     .page-header p {
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.55);
-      font-weight: 300;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 400;
+      letter-spacing: 0.3px;
     }
 
     /* ── BACK BUTTON ── */
     .btn-back {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 28px;
-      padding: 9px 18px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 3px;
+      gap: 10px;
+      margin-bottom: 32px;
+      padding: 11px 20px;
+      background: linear-gradient(135deg, var(--white), #f8fafc);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       color: var(--secondary);
       font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     .btn-back:hover {
-      background: var(--secondary);
-      color: #ffffff;
+      background: linear-gradient(135deg, var(--secondary), #0d4a8a);
+      color: #fff;
       border-color: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(8, 47, 90, 0.25);
     }
 
     .btn-back svg {
-      width: 14px;
-      height: 14px;
-      transition: transform 0.2s;
+      width: 16px;
+      height: 16px;
+      transition: transform 0.3s ease;
     }
 
     .btn-back:hover svg {
-      transform: translateX(-3px);
+      transform: translateX(-4px);
     }
 
     /* ── CONTENT ── */
     .content-wrap {
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 40px 32px 64px;
+      padding: 48px 32px 64px;
     }
 
     /* ── CARD ── */
     .card {
       background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-      animation: fadeUp 0.4s ease both;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      animation: fadeUp 0.5s ease both;
+      transition: all 0.3s ease;
     }
 
     .card:nth-child(2) {
-      animation-delay: 0.05s;
-    }
-
-    .card:nth-child(3) {
       animation-delay: 0.1s;
     }
 
-    .card:nth-child(4) {
+    .card:nth-child(3) {
       animation-delay: 0.15s;
     }
 
-    .card:nth-child(5) {
+    .card:nth-child(4) {
       animation-delay: 0.2s;
+    }
+
+    .card:nth-child(5) {
+      animation-delay: 0.25s;
     }
 
     @keyframes fadeUp {
       from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(16px);
       }
 
       to {
@@ -190,48 +203,55 @@
       }
     }
 
+    .card:hover {
+      box-shadow: 0 12px 32px rgba(14, 101, 198, 0.12);
+      border-color: rgba(14, 101, 198, 0.25);
+      transform: translateY(-4px);
+    }
+
     .card-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 18px 24px;
+      gap: 14px;
+      padding: 22px 28px;
       border-bottom: 1px solid var(--border);
-      background: #f8fafc;
+      background: linear-gradient(135deg, rgba(14, 101, 198, 0.03), transparent);
     }
 
     .card-icon {
-      width: 34px;
-      height: 34px;
+      width: 44px;
+      height: 44px;
       background: linear-gradient(135deg, var(--primary), #3b82f6);
-      border-radius: 3px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(14, 101, 198, 0.2);
     }
 
     .card-icon svg {
-      width: 17px;
-      height: 17px;
+      width: 20px;
+      height: 20px;
       color: #fff;
     }
 
     .card-header h2 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 1.2rem;
+      font-weight: 700;
       color: var(--secondary);
     }
 
     .card-body {
-      padding: 22px 24px;
+      padding: 28px;
     }
 
     .card-body p {
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       line-height: 1.8;
       color: #475569;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     .card-body p:last-child {
@@ -243,16 +263,16 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .policy-list li {
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       color: #475569;
-      line-height: 1.7;
+      line-height: 1.8;
     }
 
     .policy-list li::before {
@@ -260,29 +280,31 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
       flex-shrink: 0;
-      margin-top: 7px;
+      margin-top: 8px;
+      box-shadow: 0 2px 4px rgba(14, 101, 198, 0.2);
     }
 
     /* ── HIGHLIGHT BOX ── */
     .highlight-box {
-      background: #eff6ff;
-      border-left: 3px solid var(--primary);
-      border-radius: 0 3px 3px 0;
-      padding: 14px 18px;
-      margin-top: 16px;
-      font-size: 0.82rem;
+      background: linear-gradient(135deg, #f0f6ff, #e8f1ff);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin-top: 18px;
+      font-size: 0.9rem;
       color: var(--secondary);
       font-weight: 500;
-      line-height: 1.6;
+      line-height: 1.7;
+      box-shadow: 0 4px 12px rgba(14, 101, 198, 0.1);
     }
 
     .email-link {
       color: var(--primary);
-      font-weight: 500;
+      font-weight: 600;
       text-decoration: none;
-      border-bottom: 1px solid rgba(14, 101, 198, 0.4);
+      border-bottom: 2px solid rgba(14, 101, 198, 0.3);
       padding-bottom: 1px;
       transition: all 0.2s ease;
     }
@@ -294,34 +316,52 @@
 
     /* ── FOOTER ── */
     .page-footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 32px;
-      max-width: 800px;
+      border-top: 1.5px solid var(--border);
+      padding: 32px;
+      max-width: 900px;
       margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
+      background: rgba(14, 101, 198, 0.02);
     }
 
     .page-footer p {
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       color: var(--muted);
       letter-spacing: 0.03em;
+      font-weight: 500;
     }
 
     .footer-logo {
       font-family: 'Playfair Display', serif;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: var(--secondary);
-      font-weight: 600;
+      font-weight: 700;
     }
 
-    @media (max-width: 500px) {
+    .footer-logo img {
+      height: 45px;
+      opacity: 0.85;
+      transition: opacity 0.3s ease;
+    }
+
+    .footer-logo:hover img {
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
       .page-footer {
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
         text-align: center;
+      }
+      .content-wrap {
+        padding: 32px 16px 48px;
+      }
+      .card-body {
+        padding: 20px;
       }
     }
   </style>
@@ -339,7 +379,7 @@
         Aviso de Privacidad
       </div>
       <h1>Política de Privacidad<br />y Protección de Datos</h1>
-      <p>Última actualización: Marzo 2026 · Beni Van Zapatería</p>
+      <p>Última actualización: Abril 2026 · Beni Van Zapatería</p>
     </div>
   </header>
 
@@ -364,8 +404,8 @@
         <h2>¿Qué información recopilamos?</h2>
       </div>
       <div class="card-body">
-        <p>En <strong>Beni Van Zapatería</strong>, la seguridad y privacidad de tus datos es una prioridad fundamental.
-          Este sistema de inventario interno recopila únicamente la información estrictamente necesaria para garantizar
+        <p>En <strong>Beni Van</strong>, la seguridad y privacidad de tus datos es una prioridad fundamental.
+          Este sistema recopila únicamente la información estrictamente necesaria para garantizar
           el control de acceso y la trazabilidad de operaciones.</p>
         <ul class="policy-list">
           <li>Nombre completo del empleado o administrador registrado.</li>
@@ -391,8 +431,7 @@
         <p>Implementamos medidas de seguridad técnicas y organizativas para proteger tu información contra accesos no
           autorizados, pérdida o alteración.</p>
         <ul class="policy-list">
-          <li>Las contraseñas son almacenadas con cifrado unidireccional (hashing bcrypt). Nadie puede ver tu
-            contraseña, ni el equipo de administración.</li>
+          <li>Nadie puede ver tu contraseña, ni el equipo de administración.</li>
           <li>La sesión expira automáticamente tras un período de inactividad.</li>
           <li>El acceso al sistema está restringido por roles: solo ves lo que tu perfil tiene permitido.</li>
           <li>Las comunicaciones entre tu navegador y el servidor viajan cifradas mediante HTTPS.</li>
@@ -425,7 +464,7 @@
   </main>
 
   <footer class="page-footer">
-    <p>© 2026 Beni Van Zapatería · Sistema de Control de Inventario</p>
+    <p>© 2026 Beni Van Zapatería · Gestión Administrativa</p>
     <span class="footer-logo"><img src="logo-Beni_Van-sin-fondo.png" alt="Beni Van Logo" target="_blank"
         rel="noopener noreferrer" height="50px"></img></span>
   </footer>

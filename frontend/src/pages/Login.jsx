@@ -259,14 +259,25 @@ export default function Login() {
           {/* Los errores ahora se muestran como notificaciones (toast) */}
 
           <form onSubmit={submit}>
+            {blockedUntil && blockedUntil > Date.now() && (
+              <div className="block-alert-banner">
+                <div className="block-alert-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" strokeWidth={0}>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                  </svg>
+                </div>
+                <div className="block-alert-content">
+                  <p className="block-alert-title">Acceso bloqueado</p>
+                  <p className="block-alert-text">Intenta de nuevo en:</p>
+                </div>
+                <div className="block-alert-timer">
+                  <span className="timer-value">{formatMs(blockRemaining)}</span>
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
-              {blockedUntil && blockedUntil > Date.now() && (
-                <div className="block-message">
-                  Acceso bloqueado. Tiempo restante: {formatMs(blockRemaining)}
-                </div>
-              )}
-
               <input
                 id="email"
                 type="email"
