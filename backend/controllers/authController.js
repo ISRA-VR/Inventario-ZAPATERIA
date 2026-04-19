@@ -186,7 +186,7 @@ export const login = async (req, res) => {
     const password = String(req.body?.password || "");
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Correo y contraseña son obligatorios" });
+      return res.status(400).json({ message: "Correo y contraseña son obligatorios", errorCode: "MISSING_CREDENTIALS" });
     }
 
     const [rows] = await pool.query(
@@ -195,18 +195,18 @@ export const login = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return res.status(401).json({ message: "Credenciales inválidas", errorCode: "INVALID_CREDENTIALS" });
     }
 
     const user = rows[0];
 
     if (Number(user?.activo) === 0) {
-      return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta al administrador." });
+      return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta al administrador.", errorCode: "ACCOUNT_DISABLED" });
     }
 
     const match = await verifyPassword(password, user.password);
     if (!match) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return res.status(401).json({ message: "Credenciales inválidas", errorCode: "INVALID_CREDENTIALS" });
     }
 
     if (!isBcryptHash(user.password)) {
@@ -231,7 +231,7 @@ export const login = async (req, res) => {
     });
   } catch (err) {
     console.error("Error en login:", err.message);
-    res.status(500).json({ message: "Error del servidor" });
+    res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
   }
 };
 
@@ -409,7 +409,7 @@ export const forgotPassword = async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
 
     if (!email) {
-      return res.status(400).json({ message: "El correo es requerido." });
+      return res.status(400).json({ message: "El correo es requerido.", errorCode: "MISSING_EMAIL" });
     }
 
     const [rows] = await pool.query(
@@ -418,7 +418,7 @@ export const forgotPassword = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "El correo no está registrado en el sistema." });
+      return res.status(404).json({ message: "El correo no está registrado en el sistema.", errorCode: "EMAIL_NOT_REGISTERED" });
     }
 
     const transporter = getMailTransporter();
@@ -461,7 +461,7 @@ export const forgotPassword = async (req, res) => {
     });
 
     if (Array.isArray(info?.rejected) && info.rejected.length > 0) {
-      return res.status(400).json({ message: "El proveedor de correo rechazó el destinatario. Verifica que el correo exista." });
+      return res.status(400).json({ message: "El proveedor de correo rechazó el destinatario. Verifica que el correo exista.", errorCode: "MAIL_RECIPIENT_REJECTED" });
     }
 
     return res.json({ message: "Te enviamos un correo para confirmar tu solicitud de recuperación." });
@@ -469,13 +469,14 @@ export const forgotPassword = async (req, res) => {
     if (err?.responseCode === 535 || String(err?.message || "").includes("BadCredentials")) {
       return res.status(500).json({
         message: "No se pudo autenticar el servicio de correo. Verifica usuario y contraseña SMTP/Gmail.",
+        errorCode: "MAIL_AUTH_FAILED",
       });
     }
     if (err?.responseCode === 550 || String(err?.message || "").includes("5.1.1")) {
-      return res.status(400).json({ message: "El correo no existe o no puede recibir correos." });
+      return res.status(400).json({ message: "El correo no existe o no puede recibir correos.", errorCode: "MAIL_RECIPIENT_INVALID" });
     }
     console.error("Error en forgotPassword:", err.message);
-    return res.status(500).json({ message: "Error del servidor" });
+    return res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
   }
 };
 
@@ -484,13 +485,14 @@ export const confirmResetRequest = async (req, res) => {
     const token = String(req.body?.token || "").trim();
 
     if (!token) {
-      return res.status(400).json({ message: "Token de confirmación requerido." });
+      return res.status(400).json({ message: "Token de confirmación requerido.", errorCode: "MISSING_TOKEN" });
     }
 
     const transporter = getMailTransporter();
     if (!transporter) {
       return res.status(500).json({
         message: "El servicio de correo no está disponible en este momento. Intenta nuevamente más tarde.",
+        errorCode: "MAIL_SERVICE_UNAVAILABLE",
       });
     }
 
@@ -498,7 +500,7 @@ export const confirmResetRequest = async (req, res) => {
     const payload = jwt.verify(token, resetSecret);
 
     if (!payload?.id || payload.purpose !== "password-reset-confirm") {
-      return res.status(400).json({ message: "Token de confirmación inválido." });
+      return res.status(400).json({ message: "Token de confirmación inválido.", errorCode: "INVALID_TOKEN" });
     }
 
     const [users] = await pool.query(
@@ -507,7 +509,7 @@ export const confirmResetRequest = async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ message: "Usuario no encontrado." });
+      return res.status(404).json({ message: "Usuario no encontrado.", errorCode: "USER_NOT_FOUND" });
     }
 
     const user = users[0];
@@ -541,7 +543,7 @@ export const confirmResetRequest = async (req, res) => {
     });
 
     if (Array.isArray(info?.rejected) && info.rejected.length > 0) {
-      return res.status(400).json({ message: "El proveedor de correo rechazó el destinatario. Verifica que el correo exista." });
+      return res.status(400).json({ message: "El proveedor de correo rechazó el destinatario. Verifica que el correo exista.", errorCode: "MAIL_RECIPIENT_REJECTED" });
     }
 
     return res.json({ message: "Confirmación exitosa. Te enviamos el correo para restablecer la contraseña." });
@@ -549,17 +551,18 @@ export const confirmResetRequest = async (req, res) => {
     if (err?.responseCode === 535 || String(err?.message || "").includes("BadCredentials")) {
       return res.status(500).json({
         message: "No se pudo autenticar el servicio de correo. Verifica usuario y contraseña SMTP/Gmail.",
+        errorCode: "MAIL_AUTH_FAILED",
       });
     }
     if (err.name === "TokenExpiredError") {
-      return res.status(400).json({ message: "El enlace de confirmación expiró. Solicita uno nuevo." });
+      return res.status(400).json({ message: "El enlace de confirmación expiró. Solicita uno nuevo.", errorCode: "TOKEN_EXPIRED" });
     }
     if (err.name === "JsonWebTokenError") {
-      return res.status(400).json({ message: "Token de confirmación inválido." });
+      return res.status(400).json({ message: "Token de confirmación inválido.", errorCode: "INVALID_TOKEN" });
     }
 
     console.error("Error en confirmResetRequest:", err.message);
-    return res.status(500).json({ message: "Error del servidor" });
+    return res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
   }
 };
 
@@ -569,23 +572,23 @@ export const resetPassword = async (req, res) => {
     const newPassword = String(req.body?.password || "");
 
     if (!token || !newPassword) {
-      return res.status(400).json({ message: "Token y nueva contraseña son requeridos." });
+      return res.status(400).json({ message: "Token y nueva contraseña son requeridos.", errorCode: "MISSING_TOKEN_OR_PASSWORD" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "La contraseña debe tener al menos 6 caracteres." });
+      return res.status(400).json({ message: "La contraseña debe tener al menos 6 caracteres.", errorCode: "PASSWORD_TOO_SHORT" });
     }
 
     const resetSecret = process.env.JWT_RESET_SECRET || process.env.JWT_SECRET || "84c0c491bdc299bd803327fcf3019f0e6f4b35165e7aeb9d58c596e6c4eb78b6";
     const payload = jwt.verify(token, resetSecret);
 
     if (!payload?.id || payload.purpose !== "password-reset") {
-      return res.status(400).json({ message: "Token inválido." });
+      return res.status(400).json({ message: "Token inválido.", errorCode: "INVALID_TOKEN" });
     }
 
     const [users] = await pool.query("SELECT id FROM usuarios WHERE id = ? LIMIT 1", [payload.id]);
     if (users.length === 0) {
-      return res.status(404).json({ message: "Usuario no encontrado." });
+      return res.status(404).json({ message: "Usuario no encontrado.", errorCode: "USER_NOT_FOUND" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -596,14 +599,14 @@ export const resetPassword = async (req, res) => {
     return res.json({ message: "Contraseña actualizada correctamente." });
   } catch (err) {
     if (err.name === "TokenExpiredError") {
-      return res.status(400).json({ message: "El enlace expiró. Solicita uno nuevo." });
+      return res.status(400).json({ message: "El enlace expiró. Solicita uno nuevo.", errorCode: "TOKEN_EXPIRED" });
     }
     if (err.name === "JsonWebTokenError") {
-      return res.status(400).json({ message: "Token inválido." });
+      return res.status(400).json({ message: "Token inválido.", errorCode: "INVALID_TOKEN" });
     }
 
     console.error("Error en resetPassword:", err.message);
-    return res.status(500).json({ message: "Error del servidor" });
+    return res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
   }
 };
 
