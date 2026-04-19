@@ -67,6 +67,22 @@ body {
   position: relative;
   overflow: clip;
   background-color: var(--blue-deep);
+  /* Eliminamos cualquier borde o gap extraño */
+  border: none;
+}
+
+/* Este es el parche mágico */
+.login-brand-side::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -2px; /* Lo sacamos un poquito para que traslape */
+  bottom: 0;
+  width: 5px; /* Un ancho pequeño que cubra el error */
+  background-color: inherit; /* Usa el mismo color azul */
+  z-index: 1;
+  /* Si usas un corte inclinado, aquí debemos replicarlo */
+  pointer-events: none;
 }
 
 /* Imagen de fondo con overlay */
@@ -85,19 +101,6 @@ body {
 
 .login-brand-side:hover::before {
   transform: scale(1.0);
-}
-
-/* Triángulo diagonal de transición hacia el form */
-.login-brand-side::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 72px;
-  height: 100%;
-  background: var(--brand-cream);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  z-index: 2;
 }
 
 .login-split-screen > * {

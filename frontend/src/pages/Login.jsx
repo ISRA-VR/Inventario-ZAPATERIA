@@ -128,8 +128,8 @@ export default function Login() {
       <div className="login-brand-side">
         <div className="brand-overlay">
           <img src="/logo-Beni_Van-sin-fondo.png" alt="Logo" className="brand-logo" />
-          <h1>Control de<br />Inventario</h1>
-          <p>Accede a tu panel de control para administrar tus recursos de forma eficiente.</p>
+          <h1>Gestión Administrativa</h1>
+          <p>Ingresa para gestionar ventas, existencias y operaciones del día.</p>
           {!isMobile && <p className="brand-footer">{legalText}</p>}
         </div>
       </div>
