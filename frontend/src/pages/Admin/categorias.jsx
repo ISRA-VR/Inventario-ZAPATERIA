@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext'; // 1. IMPORTAR useAuth
 import '../../styles/addCategoria.css';
@@ -19,6 +19,7 @@ const IconFolder = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="n
 const API_CATEGORIAS = `${API_BASE_URL}/api/categorias`;
 const COLOR_MAP_KEY = 'inventario_colores_map';
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
+const DELETE_UNDO_MS = 7000;
 
 const COLOR_KEYWORDS = [
   'negro', 'negra', 'blanco', 'blanca', 'azul', 'rojo', 'roja', 'verde', 'amarillo', 'amarilla',
@@ -108,6 +109,7 @@ const getProductoStockTotal = (producto, variantStocks, colorMap) => {
 
 const CategoriasPage = () => {
   const { user } = useAuth(); // 2. OBTENER DATOS DE AUTH
+  const esEmpleado = user?.role === 'empleado';
   const [categorias, setCategorias] = useState([]);
   const [stockPorCategoria, setStockPorCategoria] = useState({});
 
@@ -120,6 +122,7 @@ const CategoriasPage = () => {
   const [formCrear, setFormCrear] = useState({ nombre: '', descripcion: '' });
   const [formEditar, setFormEditar] = useState({ nombre: '', descripcion: '' });
   const [categoriaActual, setCategoriaActual] = useState(null);
+  const deleteCategoriaTimeoutRef = useRef(null);
 
   const fetchCategorias = useCallback(async () => {
     if (!user?.token) return;
@@ -175,6 +178,15 @@ const CategoriasPage = () => {
       window.removeEventListener('inventario-updated', refrescar);
     };
   }, [fetchCategorias, fetchStockCategorias]);
+
+  useEffect(() => {
+    return () => {
+      if (deleteCategoriaTimeoutRef.current) {
+        clearTimeout(deleteCategoriaTimeoutRef.current);
+        deleteCategoriaTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   /* ── OPERACIONES CRUD (CON TOKEN) ── */
 
@@ -237,32 +249,74 @@ const CategoriasPage = () => {
     setModalEliminar(true);
   };
 
-  const handleEliminar = async () => {
+  const handleEliminar = () => {
     if (!categoriaActual) return;
-    try {
-      await axios.delete(
-        `${API_CATEGORIAS}/${categoriaActual.id_categoria}`,
-        getAuthConfig() // 3. USAR TOKEN
-      );
-      toast.warn('Categoría eliminada');
-      setModalEliminar(false);
-      fetchCategorias();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error al eliminar la categoría');
+
+    const categoriaObjetivo = { ...categoriaActual };
+    setModalEliminar(false);
+    setCategoriaActual(null);
+
+    if (deleteCategoriaTimeoutRef.current) {
+      clearTimeout(deleteCategoriaTimeoutRef.current);
+      deleteCategoriaTimeoutRef.current = null;
     }
+
+    const timeoutId = setTimeout(async () => {
+      deleteCategoriaTimeoutRef.current = null;
+      try {
+        await axios.delete(
+          `${API_CATEGORIAS}/${categoriaObjetivo.id_categoria}`,
+          getAuthConfig()
+        );
+        toast.warn('Categoría eliminada');
+        fetchCategorias();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Error al eliminar la categoría');
+      }
+    }, DELETE_UNDO_MS);
+
+    deleteCategoriaTimeoutRef.current = timeoutId;
+
+    toast.warning(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">
+            {categoriaObjetivo.nombre_categoria || 'Categoría'} se eliminará en 7s.
+          </span>
+          <button
+            type="button"
+            className="undo-toast-btn"
+            onClick={() => {
+              if (deleteCategoriaTimeoutRef.current === timeoutId) {
+                clearTimeout(timeoutId);
+                deleteCategoriaTimeoutRef.current = null;
+                toast.info('Eliminación cancelada.');
+              }
+              closeToast?.();
+            }}
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: DELETE_UNDO_MS }
+    );
   };
 
   return (
     <div className="categorias-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <h1>Gestión de Categorías</h1>
-          <p>Administra las categorías de productos</p>
+      <header className="categorias-topbar">
+        <div className="categorias-heading">
+          <h1 className="categorias-title">Gestión de Categorías</h1>
+          <p className="categorias-subtitle">Administra las categorías de productos</p>
         </div>
-        <button className="btn-primary" onClick={() => setModalCrear(true)}>
-          <IconPlus /> Nueva Categoría
-        </button>
-      </div>
+
+        <div className="categorias-header">
+          <button className="btn-crear-categoria" onClick={() => setModalCrear(true)}>
+            <IconPlus /> Nueva Categoría
+          </button>
+        </div>
+      </header>
 
       <div className="card">
         <div className="card-header">
@@ -275,14 +329,14 @@ const CategoriasPage = () => {
             <tr>
               <th>Nombre</th>
               <th>Descripción</th>
-              <th className="col-productos">Stock Total</th>
+              {!esEmpleado && <th className="col-productos">Stock Total</th>}
               <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {categorias.length === 0 ? (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={esEmpleado ? 3 : 4}>
                   <div className="empty-state">
                     <div><IconFolder /></div>
                     <p>No hay categorías registradas</p>
@@ -294,9 +348,11 @@ const CategoriasPage = () => {
                 <tr key={cat.id_categoria}>
                   <td className="td-nombre">{cat.nombre_categoria}</td>
                   <td className="td-desc">{cat.descripcion || '—'}</td>
-                  <td className="col-productos">
-                    <span className="badge-productos">{stockPorCategoria[Number(cat.id_categoria)] ?? 0}</span>
-                  </td>
+                  {!esEmpleado && (
+                    <td className="col-productos">
+                      <span className="badge-productos">{stockPorCategoria[Number(cat.id_categoria)] ?? 0}</span>
+                    </td>
+                  )}
                   <td className="col-acciones">
                     <div className="acciones-cell">
                       <button className="btn-icon btn-icon-edit" title="Editar" onClick={() => abrirEditar(cat)}>

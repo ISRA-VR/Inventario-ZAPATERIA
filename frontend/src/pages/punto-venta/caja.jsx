@@ -441,12 +441,68 @@ export default function NuevaVenta() {
     });
   };
 
-  const eliminar = (id) => setCarrito((prev) => prev.filter((p) => p.id !== id));
+  const eliminar = (id) => {
+    const actual = carrito.find((p) => p.id === id);
+    if (!actual) return;
+
+    setCarrito((prev) => prev.filter((p) => p.id !== id));
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">{actual.nombre} eliminado del carrito.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setCarrito((prev) => {
+                if (prev.some((p) => p.id === actual.id)) return prev;
+                return [...prev, actual];
+              });
+              closeToast?.();
+            }}
+            className="undo-toast-btn"
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: 6000 }
+    );
+  };
 
   const cancelar = () => {
+    const snapshotCarrito = [...carrito];
+    const snapshotBusqueda = busqueda;
+    const snapshotPagoConInput = pagoConInput;
+    const snapshotMetodoPago = metodoPago;
+
     setCarrito([]);
     setBusqueda("");
     setPagoConInput("0");
+
+    if (!snapshotCarrito.length && !snapshotBusqueda && snapshotPagoConInput === "0") return;
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">Venta cancelada.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setCarrito(snapshotCarrito);
+              setBusqueda(snapshotBusqueda);
+              setPagoConInput(snapshotPagoConInput);
+              setMetodoPago(snapshotMetodoPago);
+              closeToast?.();
+            }}
+            className="undo-toast-btn"
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: 7000 }
+    );
   };
 
   const finalizarVenta = async () => {

@@ -29,16 +29,54 @@ async function upsertUser({ nombre, email, password, role }) {
   return result.insertId;
 }
 
+async function upsertAdmin({ nombre, email, password }) {
+  const hash = await bcrypt.hash(password, 10);
+  const [rowsByEmail] = await pool.query("SELECT id, role FROM usuarios WHERE email = ? LIMIT 1", [email]);
+  const [adminRows] = await pool.query("SELECT id, email FROM usuarios WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+
+  if (rowsByEmail.length > 0) {
+    const targetUser = rowsByEmail[0];
+    await pool.query(
+      "UPDATE usuarios SET nombre = ?, password = ?, role = 'admin' WHERE id = ?",
+      [nombre, hash, targetUser.id]
+    );
+
+    if (adminRows.length > 0 && adminRows[0].id !== targetUser.id) {
+      await pool.query("UPDATE usuarios SET role = 'empleado' WHERE id = ?", [adminRows[0].id]);
+      console.log(`Admin anterior degradado a empleado: ${adminRows[0].email}`);
+    }
+
+    console.log(`Admin actualizado por correo existente: ${email}`);
+    return targetUser.id;
+  }
+
+  if (adminRows.length > 0) {
+    const admin = adminRows[0];
+    await pool.query(
+      "UPDATE usuarios SET nombre = ?, email = ?, password = ?, role = 'admin' WHERE id = ?",
+      [nombre, email, hash, admin.id]
+    );
+    console.log(`Admin actualizado: ${admin.email} -> ${email}`);
+    return admin.id;
+  }
+
+  const [result] = await pool.query(
+    "INSERT INTO usuarios (nombre, email, password, role) VALUES (?, ?, ?, 'admin')",
+    [nombre, email, hash]
+  );
+  console.log(`Admin creado: ${email} (id ${result.insertId})`);
+  return result.insertId;
+}
+
 (async () => {
   try {
     console.log("⏳ Preparando esquema y usuarios de prueba...");
     await ensureSchema();
 
-    await upsertUser({
+    await upsertAdmin({
       nombre: "Administrador Demo",
-      email: "admin@demo.com",
-      password: "123456",
-      role: "admin",
+      email: "nexdemrize@gmail.com",
+      password: "12345678Xd$",
     });
 
     await upsertUser({
@@ -49,7 +87,7 @@ async function upsertUser({ nombre, email, password, role }) {
     });
 
     console.log("✅ Seed completado. Credenciales de prueba:");
-    console.log("- Admin: admin@demo.com / 123456");
+    console.log("- Admin: nexdemrize@gmail.com / 12345678Xd$");
     console.log("- Empleado: empleado@demo.com / 123456");
   } catch (err) {
     console.error("❌ Error en seed:", err.message);

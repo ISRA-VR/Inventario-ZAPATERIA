@@ -257,10 +257,45 @@ export default function Reportes() {
   };
 
   const limpiarFiltros = async () => {
+    const filtrosPrevios = { ...filtros };
+    const periodoPrevio = periodoActivo;
     const base = { desde: fechaInicioMes, hasta: fechaHoy };
+
+    if (
+      filtrosPrevios.desde === base.desde &&
+      filtrosPrevios.hasta === base.hasta &&
+      periodoPrevio === "mes"
+    ) {
+      return;
+    }
+
     setFiltros(base);
     await cargar(base, "mes");
     setPeriodoActivo("mes");
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">Filtros reiniciados.</span>
+          <button
+            type="button"
+            onClick={async () => {
+              const restaurados = periodoPrevio === "dia"
+                ? { ...filtrosPrevios, hasta: filtrosPrevios.desde }
+                : filtrosPrevios;
+              setFiltros(restaurados);
+              setPeriodoActivo(periodoPrevio);
+              await cargar(restaurados, periodoPrevio);
+              closeToast?.();
+            }}
+            className="undo-toast-btn"
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: 7000 }
+    );
   };
 
   const etiquetaPeriodo = useMemo(() => {

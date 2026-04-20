@@ -11,7 +11,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Box, TrendingUp, TrendingDown, TriangleAlert } from 'lucide-react';
 
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
 const ENTRADAS_LS_KEY = 'entradas_inventario';
@@ -57,14 +56,15 @@ const getEntradaUnidad = (item) => {
   const antes = Number(item?.stock_anterior);
   const despues = Number(item?.stock_nuevo);
   if (Number.isFinite(antes) && Number.isFinite(despues)) {
-    return Math.abs(Math.round(despues) - Math.round(antes));
+    const delta = Math.round(despues) - Math.round(antes);
+    return delta > 0 ? delta : 0;
   }
 
   const cantidad = Number(item?.cantidad);
-  if (Number.isFinite(cantidad)) return Math.abs(Math.round(cantidad));
+  if (Number.isFinite(cantidad)) return Math.max(0, Math.round(cantidad));
 
   const stock = Number(item?.stock);
-  if (Number.isFinite(stock)) return Math.abs(Math.round(stock));
+  if (Number.isFinite(stock)) return Math.max(0, Math.round(stock));
 
   return 0;
 };
@@ -357,7 +357,7 @@ const DashboardPage = () => {
       cambio: cambioTotalProductosFormateado,
       positivo: cambioTotalProductosMes >= 0,
       color: 'azul',
-      icono: <Box size={18} />,
+      icono: <img src="/in-stock.png" alt="Stock total" width={18} height={18} />,
     },
     {
       titulo: 'Entradas del Mes',
@@ -365,7 +365,7 @@ const DashboardPage = () => {
       cambio: cambioEntradasFormateado,
       positivo: cambioEntradasMes >= 0,
       color: 'verde',
-      icono: <TrendingUp size={18} />,
+      icono: <img src="/punta-de-flecha-hacia-arriba.png" alt="Entradas" width={18} height={18} style={{ transform: 'rotate(180deg)' }} />,
     },
     {
       titulo: 'Salidas del Mes',
@@ -373,7 +373,7 @@ const DashboardPage = () => {
       cambio: cambioSalidasFormateado,
       positivo: cambioSalidasMes <= 0,
       color: 'naranja',
-      icono: <TrendingDown size={18} />,
+      icono: <img src="/punta-de-flecha-hacia-arriba.png" alt="Salidas" width={18} height={18} />,
       critico: cambioSalidasMes > 0,
     },
     {
@@ -382,7 +382,7 @@ const DashboardPage = () => {
       cambio: cambioStockBajoFormateado,
       positivo: cambioModelosStockBajoMes <= 0,
       color: 'rojo',
-      icono: <TriangleAlert size={18} />,
+      icono: <img src="/triangulo-de-precaucion.png" alt="Stock bajo" width={18} height={18} />,
       critico: false,
     },
   ]), [

@@ -1,8 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 .liq-page {
   font-family: 'Manrope', sans-serif;
-  padding: 30px 32px;
+  padding: 2.5rem 2rem;
   background: #f4f6f9;
   min-height: 100vh;
   display: flex;
@@ -21,20 +22,23 @@
 .liq-header-texto {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .liq-header h1 {
-  margin: 0;
-  font-size: 21px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: #1a2236;
+  color: #1f2937;
+  line-height: 1.2;
+  margin: 0 0 4px 0;
 }
 
 .liq-header p {
+  font-family: 'Nunito', system-ui, sans-serif;
   margin: 0;
-  font-size: 13px;
-  color: #8a93a8;
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 .liq-counter {

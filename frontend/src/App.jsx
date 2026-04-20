@@ -6,6 +6,7 @@ import AdminLayout from "./pages/AdminLayout";
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import "./styles/undoToast.css";
 
 /* ADMIN */
 import DashboardPage from "./pages/Admin/Dashboard";
@@ -21,8 +22,7 @@ import CajaPage from "./pages/punto-venta/caja";
 import HistorialVentasPage from "./pages/punto-venta/historialVentas";
 
 /* EMPLEADO */
-import EntradasEmpleado from "./pages/Empleado/entrada";
-import SalidasEmpleado from "./pages/Empleado/salidas";
+import MovimientosEmpleado from "./pages/Empleado/entrada";
 import BusquedasEmpleado from "./pages/Empleado/busquedas";
 import EmpleadoLayout from "./pages/Empleado";
 
@@ -90,8 +90,9 @@ export default function App() {
             <Route path="categorias" element={<CategoriasPage />} />
             <Route path="tallaVariante" element={<EntradasPage />} />
 
-            <Route path="entradas" element={<EntradasEmpleado />} />
-            <Route path="salidas" element={<SalidasEmpleado />} />
+            <Route path="movimientos" element={<MovimientosEmpleado />} />
+            <Route path="entradas" element={<Navigate to="/admin/movimientos" replace />} />
+            <Route path="salidas" element={<Navigate to="/admin/movimientos" replace />} />
 
             <Route path="busquedas" element={<BusquedaPage />} />
             <Route path="reportes" element={<ReportesPage />} />
@@ -112,8 +113,9 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="entradas" element={<EntradasEmpleado />} />
-            <Route path="salidas" element={<SalidasEmpleado />} />
+            <Route path="movimientos" element={<MovimientosEmpleado />} />
+            <Route path="entradas" element={<Navigate to="/empleado/movimientos" replace />} />
+            <Route path="salidas" element={<Navigate to="/empleado/movimientos" replace />} />
             <Route path="busquedas" element={<BusquedasEmpleado />} />
             <Route path="categorias" element={<CategoriasPage />} />
             <Route path="punto-venta" element={<PuntoVentaPage />} />
@@ -121,8 +123,8 @@ export default function App() {
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
 
             {/* Opcional: redirigir si entran directo */}
-            <Route index element={<Navigate to="entradas" />} />
-            <Route path="*" element={<Navigate to="/empleado/entradas" replace />} />
+            <Route index element={<Navigate to="movimientos" />} />
+            <Route path="*" element={<Navigate to="/empleado/movimientos" replace />} />
           </Route>
 
         </Routes>

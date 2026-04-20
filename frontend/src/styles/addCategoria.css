@@ -4,6 +4,7 @@
    ============================ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
   --primary:       #0E65C6;
@@ -41,25 +42,74 @@ body, .categorias-page {
   padding: 2.5rem 2rem;
 }
 
-/* ── Header de página ── */
-.page-header {
+.categorias-topbar {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.75rem;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
-.page-header-left h1 {
+.categorias-heading {
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.categorias-title {
+  font-family: 'Nunito', system-ui, sans-serif;
   font-size: 1.55rem;
   font-weight: 700;
-  color: var(--secondary);
+  color: #1f2937;
   line-height: 1.2;
+  margin: 0 0 4px 0;
+  padding: 0;
 }
 
-.page-header-left p {
+.categorias-subtitle {
+  font-family: 'Nunito', system-ui, sans-serif;
   font-size: 0.875rem;
-  color: var(--text-sub);
-  margin-top: 0.25rem;
+  color: #6b7280;
+  margin: 0;
+  padding: 0;
+}
+
+.categorias-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.btn-crear-categoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-crear-categoria:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(14,101,198,0.30);
+}
+
+@media (max-width: 720px) {
+  .categorias-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .categorias-header {
+    justify-content: flex-end;
+  }
 }
 
 /* ── Botón primario ── */

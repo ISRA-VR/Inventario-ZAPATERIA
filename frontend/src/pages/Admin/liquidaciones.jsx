@@ -6,6 +6,7 @@ import '../../styles/liquidaciones.css';
 const LIQUIDACIONES_STORAGE_KEY = 'inventario_liquidaciones_ids';
 const LIQUIDACIONES_DISCOUNT_KEY = 'inventario_liquidaciones_descuentos';
 const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50];
+const CUSTOM_DISCOUNT_VALUE = '__custom_discount__';
 
 const readLiquidaciones = () => {
   try {
@@ -54,6 +55,8 @@ export default function LiquidacionesPage() {
   const [modoSeleccionLiquidacion, setModoSeleccionLiquidacion] = useState(false);
   const [liquidados, setLiquidados] = useState(() => readLiquidaciones());
   const [descuentoSeleccionado, setDescuentoSeleccionado] = useState('20');
+  const [usarDescuentoManual, setUsarDescuentoManual] = useState(false);
+  const [descuentoManual, setDescuentoManual] = useState('');
   const [descuentosPorProducto, setDescuentosPorProducto] = useState(() => readLiquidacionesDescuentos());
 
   const categoriasById = useMemo(
@@ -157,7 +160,7 @@ export default function LiquidacionesPage() {
       return;
     }
 
-    const descuento = Number(descuentoSeleccionado);
+    const descuento = usarDescuentoManual ? Number(descuentoManual) : Number(descuentoSeleccionado);
     if (!Number.isFinite(descuento) || descuento < 0 || descuento > 90) {
       toast.error('Selecciona un descuento válido');
       return;
@@ -203,6 +206,27 @@ export default function LiquidacionesPage() {
     setSeleccionados((prev) => prev.filter((id) => !idsARetirar.includes(id)));
     window.dispatchEvent(new Event('liquidaciones-updated'));
     toast.success('Productos retirados de liquidación');
+  };
+
+  const handleDescuentoSelectChange = (value) => {
+    if (value === CUSTOM_DISCOUNT_VALUE) {
+      setUsarDescuentoManual(true);
+      return;
+    }
+
+    setUsarDescuentoManual(false);
+    setDescuentoSeleccionado(value);
+  };
+
+  const handleDescuentoManualChange = (value) => {
+    const limpio = String(value ?? '').replace(/[^\d]/g, '');
+    if (limpio === '') {
+      setDescuentoManual('');
+      return;
+    }
+
+    const numero = Math.max(0, Math.min(90, Number(limpio)));
+    setDescuentoManual(String(numero));
   };
 
   return (
@@ -309,8 +333,8 @@ export default function LiquidacionesPage() {
           <div className="liq-control">
             <label>Descuento a aplicar</label>
             <select
-              value={descuentoSeleccionado}
-              onChange={(e) => setDescuentoSeleccionado(e.target.value)}
+              value={usarDescuentoManual ? CUSTOM_DISCOUNT_VALUE : descuentoSeleccionado}
+              onChange={(e) => handleDescuentoSelectChange(e.target.value)}
               disabled={!categoriaSeleccionada}
             >
               {DISCOUNT_OPTIONS.map((option) => (
@@ -318,7 +342,21 @@ export default function LiquidacionesPage() {
                   {option}%
                 </option>
               ))}
+              <option value={CUSTOM_DISCOUNT_VALUE}>Ingresar otro descuento</option>
             </select>
+
+            {usarDescuentoManual && (
+              <input
+                type="number"
+                min="0"
+                max="90"
+                step="1"
+                value={descuentoManual}
+                onChange={(e) => handleDescuentoManualChange(e.target.value)}
+                placeholder="Ej. 18"
+                disabled={!categoriaSeleccionada}
+              />
+            )}
           </div>
         </div>
 

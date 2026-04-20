@@ -11,9 +11,26 @@ import "../../styles/addproducto.css"
 const COLOR_MAP_KEY = "inventario_colores_map"
 const VARIANT_STOCK_MAP_KEY = "inventario_stock_variantes_map"
 const ENTRADAS_LS_KEY = "entradas_inventario"
+const VENTAS_LS_KEY = "ventas_punto_venta"
 const ENTRADAS_RESUMEN_LS_KEY = "entradas_resumen"
-const TALLAS_OPCIONES = Array.from({ length: 21 }, (_, i) => String(i + 20))
-const COLORES_OPCIONES = ["Negro", "Blanco", "Cafe", "Azul", "Rojo", "Verde", "Gris", "Beige", "Rosa", "Vino"]
+
+const normalizeText = (value = "") => String(value || "").trim().toLowerCase()
+
+const includesIgnoreCase = (arr = [], candidate = "") => {
+  const normalizedCandidate = normalizeText(candidate)
+  if (!normalizedCandidate) return false
+  return arr.some((item) => normalizeText(item) === normalizedCandidate)
+}
+
+const toTitleCase = (value = "") =>
+  String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+
+const normalizeCustomValue = (value = "") => String(value || "").trim().replace(/\s+/g, " ")
 
 const FORM_EMPTY = {
   modelo: "",
@@ -208,6 +225,16 @@ function Entradas() {
       return []
     }
   })
+  const [ventas, setVentas] = useState(() => {
+    try {
+      const raw = localStorage.getItem(VENTAS_LS_KEY)
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch (error) {
+      console.error("Error parseando ventas en localStorage:", error)
+      return []
+    }
+  })
   const { user } = useAuth()
   const [modalEliminar, setModalEliminar] = useState(false)
   const [modalConfirmar, setModalConfirmar] = useState(false)
@@ -220,6 +247,11 @@ function Entradas() {
   const persistEntradas = (list = []) => {
     localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(list))
     window.dispatchEvent(new Event("entradas-updated"))
+  }
+
+  const persistVentas = (list = []) => {
+    localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(list))
+    window.dispatchEvent(new Event("ventas-pos-updated"))
   }
 
   useEffect(() => {
@@ -240,7 +272,11 @@ function Entradas() {
   }, [entradas])
 
   useEffect(() => {
-    const recargarEntradas = () => {
+    localStorage.setItem(VENTAS_LS_KEY, JSON.stringify(ventas))
+  }, [ventas])
+
+  useEffect(() => {
+    const recargarMovimientos = () => {
       try {
         const guardado = localStorage.getItem(ENTRADAS_LS_KEY)
         const parsed = guardado ? JSON.parse(guardado) : []
@@ -249,19 +285,25 @@ function Entradas() {
           localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(normalized))
         }
         setEntradas(normalized)
+
+        const rawVentas = localStorage.getItem(VENTAS_LS_KEY)
+        const parsedVentas = rawVentas ? JSON.parse(rawVentas) : []
+        setVentas(Array.isArray(parsedVentas) ? parsedVentas : [])
       } catch (error) {
-        console.error("Error recargando entradas en localStorage:", error)
+        console.error("Error recargando movimientos en localStorage:", error)
       }
     }
 
-    window.addEventListener("storage", recargarEntradas)
-    window.addEventListener("focus", recargarEntradas)
-    window.addEventListener("entradas-updated", recargarEntradas)
+    window.addEventListener("storage", recargarMovimientos)
+    window.addEventListener("focus", recargarMovimientos)
+    window.addEventListener("entradas-updated", recargarMovimientos)
+    window.addEventListener("ventas-pos-updated", recargarMovimientos)
 
     return () => {
-      window.removeEventListener("storage", recargarEntradas)
-      window.removeEventListener("focus", recargarEntradas)
-      window.removeEventListener("entradas-updated", recargarEntradas)
+      window.removeEventListener("storage", recargarMovimientos)
+      window.removeEventListener("focus", recargarMovimientos)
+      window.removeEventListener("entradas-updated", recargarMovimientos)
+      window.removeEventListener("ventas-pos-updated", recargarMovimientos)
     }
   }, [])
 
@@ -341,6 +383,19 @@ function Entradas() {
     return f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear()
   }
 
+  const parseVentaFecha = (venta) => {
+    const fechaBase = venta?.fecha || (venta?.created_at ? String(venta.created_at).slice(0, 10) : null)
+    const horaBase = venta?.hora || (venta?.created_at
+      ? new Date(venta.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })
+      : "00:00")
+
+    const compuesta = fechaBase
+      ? `${fechaBase}T${horaBase}:00`
+      : (venta?.created_at || null)
+
+    return parseFecha(compuesta)
+  }
+
   const pedirConfirmacion = (accion, periodo) => {
     setAccionPendiente(() => accion)
     setPeriodoSeleccionado(periodo)
@@ -361,49 +416,180 @@ function Entradas() {
     setPeriodoSeleccionado("")
   }
 
-  const eliminarEntradasHoy = () => {
-    setEntradas((prev) =>
-      {
-        const next = prev.filter((e) => {
-        const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return true
-        return !esHoy(fecha)
-        })
-        persistEntradas(next)
-        return next
-      }
+  const mostrarUndoMovimientos = ({ prevEntradas, prevVentas, periodo }) => {
+    const restore = () => {
+      setEntradas(prevEntradas)
+      setVentas(prevVentas)
+      persistEntradas(prevEntradas)
+      persistVentas(prevVentas)
+      toast.success(`Movimientos de ${periodo} restaurados.`)
+    }
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">Movimientos de {periodo} eliminados.</span>
+          <button
+            type="button"
+            onClick={() => {
+              restore()
+              closeToast?.()
+            }}
+            className="undo-toast-btn"
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: 7000 }
     )
+  }
+
+  const eliminarEntradasHoy = () => {
+    const prevEntradas = [...entradas]
+    const prevVentas = [...ventas]
+
+    const nextEntradas = prevEntradas.filter((e) => {
+      const fecha = obtenerFechaRegistro(e)
+      if (!parseFecha(fecha)) return true
+      return !esHoy(fecha)
+    })
+
+    const nextVentas = prevVentas.filter((venta) => {
+      const fechaVenta = parseVentaFecha(venta)
+      if (!fechaVenta) return true
+      return !esHoy(fechaVenta)
+    })
+
+    setEntradas(nextEntradas)
+    setVentas(nextVentas)
+    persistEntradas(nextEntradas)
+    persistVentas(nextVentas)
+    mostrarUndoMovimientos({ prevEntradas, prevVentas, periodo: "hoy" })
   }
 
   const eliminarEntradasSemana = () => {
-    setEntradas((prev) =>
-      {
-        const next = prev.filter((e) => {
-        const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return true
-        return !estaEnEstaSemana(fecha)
-        })
-        persistEntradas(next)
-        return next
-      }
-    )
+    const prevEntradas = [...entradas]
+    const prevVentas = [...ventas]
+
+    const nextEntradas = prevEntradas.filter((e) => {
+      const fecha = obtenerFechaRegistro(e)
+      if (!parseFecha(fecha)) return true
+      return !estaEnEstaSemana(fecha)
+    })
+
+    const nextVentas = prevVentas.filter((venta) => {
+      const fechaVenta = parseVentaFecha(venta)
+      if (!fechaVenta) return true
+      return !estaEnEstaSemana(fechaVenta)
+    })
+
+    setEntradas(nextEntradas)
+    setVentas(nextVentas)
+    persistEntradas(nextEntradas)
+    persistVentas(nextVentas)
+    mostrarUndoMovimientos({ prevEntradas, prevVentas, periodo: "esta semana" })
   }
 
   const eliminarEntradasMes = () => {
-    setEntradas((prev) =>
-      {
-        const next = prev.filter((e) => {
-        const fecha = obtenerFechaRegistro(e)
-        if (!parseFecha(fecha)) return true
-        return !estaEnEsteMes(fecha)
-        })
-        persistEntradas(next)
-        return next
-      }
-    )
+    const prevEntradas = [...entradas]
+    const prevVentas = [...ventas]
+
+    const nextEntradas = prevEntradas.filter((e) => {
+      const fecha = obtenerFechaRegistro(e)
+      if (!parseFecha(fecha)) return true
+      return !estaEnEsteMes(fecha)
+    })
+
+    const nextVentas = prevVentas.filter((venta) => {
+      const fechaVenta = parseVentaFecha(venta)
+      if (!fechaVenta) return true
+      return !estaEnEsteMes(fechaVenta)
+    })
+
+    setEntradas(nextEntradas)
+    setVentas(nextVentas)
+    persistEntradas(nextEntradas)
+    persistVentas(nextVentas)
+    mostrarUndoMovimientos({ prevEntradas, prevVentas, periodo: "este mes" })
   }
 
-  const baseDatosEntradas = entradas
+  const getMovimientoDelta = (item) => {
+    if (Number.isFinite(Number(item?.movimiento_delta))) {
+      return Math.round(Number(item.movimiento_delta))
+    }
+
+    const antesRaw = Number(item?.stock_anterior)
+    const despuesRaw = Number(item?.stock_nuevo ?? item?.stock)
+    const antes = Number.isFinite(antesRaw) ? Math.max(0, Math.round(antesRaw)) : null
+    const despues = Number.isFinite(despuesRaw) ? Math.max(0, Math.round(despuesRaw)) : null
+
+    if (antes != null && despues != null) {
+      return despues - antes
+    }
+
+    const fallback = Number(item?.cantidad)
+    if (Number.isFinite(fallback)) return Math.round(fallback)
+    return null
+  }
+
+  const baseDatosEntradas = useMemo(() => {
+    const entradasNormalizadas = (Array.isArray(entradas) ? entradas : []).map((item) => {
+      const antes = Number(item?.stock_anterior)
+      const despues = Number(item?.stock_nuevo ?? item?.stock)
+      const delta = Number.isFinite(antes) && Number.isFinite(despues)
+        ? Math.round(despues) - Math.round(antes)
+        : Math.round(Number(item?.cantidad) || 0)
+
+      return {
+        ...item,
+        movimiento_delta: delta,
+        tipo_movimiento: delta >= 0 ? "entrada" : "salida",
+        fecha_creacion: item?.fecha_creacion || item?.created_at || item?.fechaCreacion || null,
+        modelo: item?.modelo || item?.nombre || "N/A",
+      }
+    })
+
+    const salidasNormalizadas = (Array.isArray(ventas) ? ventas : []).flatMap((venta) => {
+      const fechaVenta = parseVentaFecha(venta)
+      const fechaIso = fechaVenta ? fechaVenta.toISOString() : (venta?.created_at || null)
+      const detalle = Array.isArray(venta?.detalle) ? venta.detalle : []
+
+      return detalle.map((item, idx) => {
+        const antes = Number(item?.stock_anterior)
+        const despues = Number(item?.stock_nuevo)
+        const delta = Number.isFinite(antes) && Number.isFinite(despues)
+          ? Math.round(despues) - Math.round(antes)
+          : -Math.abs(Math.round(Number(item?.cantidad) || 0))
+
+        return {
+          registroId: `${venta?.id || "venta"}-${idx}`,
+          id_producto: item?.id_producto,
+          modelo: item?.nombre || item?.modelo || "N/A",
+          talla: item?.talla || "N/A",
+          color: item?.color || "N/A",
+          stock_anterior: Number.isFinite(antes) ? Math.max(0, Math.round(antes)) : null,
+          stock_nuevo: Number.isFinite(despues) ? Math.max(0, Math.round(despues)) : null,
+          cantidad: Math.abs(Math.round(Number(item?.cantidad) || 0)),
+          precio: Number(item?.precio) || 0,
+          registrado_por: venta?.registrado_por || item?.registrado_por || "Empleado",
+          fecha_creacion: fechaIso,
+          movimiento_delta: delta,
+          tipo_movimiento: "salida",
+        }
+      })
+    })
+
+    return [...entradasNormalizadas, ...salidasNormalizadas]
+      .sort((a, b) => {
+        const fa = parseFecha(a?.fecha_creacion || a?.created_at || a?.fechaCreacion)
+        const fb = parseFecha(b?.fecha_creacion || b?.created_at || b?.fechaCreacion)
+        const ta = fa ? fa.getTime() : 0
+        const tb = fb ? fb.getTime() : 0
+        return tb - ta
+      })
+  }, [entradas, ventas])
+
   const entradasHoy = baseDatosEntradas.filter((p) => esHoy(obtenerFechaRegistro(p))).length
   const entradasSemana = baseDatosEntradas.filter((p) => estaEnEstaSemana(obtenerFechaRegistro(p))).length
   const entradasMes = baseDatosEntradas.filter((p) => estaEnEsteMes(obtenerFechaRegistro(p))).length
@@ -454,16 +640,16 @@ function Entradas() {
   }
 
   const getEntrada = (item) => {
-    const antes = getStockAntes(item)
-    const despues = getStockDespues(item)
+    const delta = getMovimientoDelta(item)
+    if (delta == null) return null
+    if (delta <= 0) return null
+    return delta
+  }
 
-    if (antes != null && despues != null) {
-      return Math.abs(despues - antes)
-    }
-
-    const fallback = Number(item?.cantidad)
-    if (Number.isFinite(fallback)) return Math.abs(Math.round(fallback))
-    return null
+  const getTipoMovimiento = (item) => {
+    const delta = getMovimientoDelta(item)
+    if (delta == null) return "desconocido"
+    return delta >= 0 ? "entrada" : "salida"
   }
 
   const validarFormulario = (form) => {
@@ -564,8 +750,8 @@ function Entradas() {
     <div className="entradas-page">
       <div className="encabezado">
         <div className="encabezado-texto">
-          <h1 className="titulo-pagina">Entradas de Inventario</h1>
-          <p className="subtitulo-pagina">Consulta y gestiona los ingresos de productos al inventario</p>
+          <h1 className="titulo-pagina">Movimientos de Inventario</h1>
+          <p className="subtitulo-pagina">Consulta en un solo lugar entradas y salidas de productos.</p>
         </div>
         {user?.role === "empleado" && (
           <button
@@ -582,7 +768,7 @@ function Entradas() {
       <div className="tarjetas-resumen">
         <div className="tarjeta">
           <div className="tarjeta-info">
-            <span className="tarjeta-titulo">Entradas Hoy</span>
+            <span className="tarjeta-titulo">Movimientos Hoy</span>
             <span className="tarjeta-numero">{entradasHoy}</span>
           </div>
           <div className="tarjeta-icono verde"><Box size={18} /></div>
@@ -590,7 +776,7 @@ function Entradas() {
 
         <div className="tarjeta">
           <div className="tarjeta-info">
-            <span className="tarjeta-titulo">Esta Semana</span>
+            <span className="tarjeta-titulo">Movimientos Semana</span>
             <span className="tarjeta-numero">{entradasSemana}</span>
           </div>
           <div className="tarjeta-icono azul"><CalendarDays size={18} /></div>
@@ -598,7 +784,7 @@ function Entradas() {
 
         <div className="tarjeta">
           <div className="tarjeta-info">
-            <span className="tarjeta-titulo">Total Mes</span>
+            <span className="tarjeta-titulo">Movimientos Mes</span>
             <span className="tarjeta-numero">{entradasMes}</span>
           </div>
           <div className="tarjeta-icono morado"><BarChart3 size={18} /></div>
@@ -607,7 +793,7 @@ function Entradas() {
 
       <div className="card-tabla">
         <div className="card-header">
-          <h2 className="card-titulo">Historial de Entradas</h2>
+          <h2 className="card-titulo">Historial de Movimientos</h2>
           <div className="btn-limpiar" onClick={() => setModalEliminar(true)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
@@ -625,7 +811,8 @@ function Entradas() {
                 <th>COLOR</th>
                 <th>STOCK ANTES</th>
                 <th>STOCK DESPUES</th>
-                <th>ENTRADA</th>
+                <th>MOVIMIENTO</th>
+                <th>TIPO</th>
                 <th>REGISTRADO POR</th>
                 <th>COSTO TOTAL</th>
               </tr>
@@ -633,8 +820,8 @@ function Entradas() {
             <tbody>
               {baseDatosEntradas.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
-                    No hay entradas registradas
+                  <td colSpan={10} style={{ textAlign: "center", padding: "30px", color: "#aaa" }}>
+                    No hay movimientos registrados
                   </td>
                 </tr>
               ) : (
@@ -652,11 +839,24 @@ function Entradas() {
                     </td>
                     <td>
                       {(() => {
-                        const entrada = getEntrada(p)
-                        if (entrada == null) return "—"
+                        const delta = getMovimientoDelta(p)
+                        if (delta == null) return "—"
+                        const qty = Math.abs(delta)
+                        const sign = delta >= 0 ? "+" : "-"
                         return (
-                          <span className="badge-cantidad">
-                            +{entrada}
+                          <span className={`badge-cantidad ${delta < 0 ? "badge-cantidad-salida" : ""}`}>
+                            {sign}{qty}
+                          </span>
+                        )
+                      })()}
+                    </td>
+                    <td>
+                      {(() => {
+                        const tipo = getTipoMovimiento(p)
+                        const label = tipo === "entrada" ? "Entrada" : (tipo === "salida" ? "Salida" : "N/A")
+                        return (
+                          <span className={`badge-tipo ${tipo === "entrada" ? "badge-tipo-entrada" : (tipo === "salida" ? "badge-tipo-salida" : "")}`}>
+                            {label}
                           </span>
                         )
                       })()}
@@ -668,7 +868,10 @@ function Entradas() {
                       </div>
                     </td>
                     <td className="td-costo">
-                      {formatCosto(p.precio, p.cantidad)}
+                      {formatCosto(
+                        p.precio,
+                        Math.abs((getMovimientoDelta(p) ?? Number(p.cantidad) ?? 0))
+                      )}
                     </td>
                   </tr>
                 ))
@@ -683,7 +886,7 @@ function Entradas() {
         <div className="entradas-modal-overlay" onClick={() => setModalEliminar(false)}>
           <div className="entradas-modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="entradas-modal-header">
-              <h3>Limpiar Entradas</h3>
+              <h3>Limpiar Movimientos</h3>
               <button className="entradas-modal-close" onClick={() => setModalEliminar(false)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -691,16 +894,16 @@ function Entradas() {
               </button>
             </div>
             <div className="entradas-modal-body">
-              <p>Selecciona el período para eliminar las entradas:</p>
+              <p>Selecciona el período para eliminar los movimientos:</p>
               <div className="entradas-modal-opciones">
                 <button className="entradas-modal-btn" onClick={() => pedirConfirmacion(eliminarEntradasHoy, "hoy")}>
-                  Eliminar Entradas de Hoy
+                  Eliminar Movimientos de Hoy
                 </button>
                 <button className="entradas-modal-btn" onClick={() => pedirConfirmacion(eliminarEntradasSemana, "esta semana")}>
-                  Eliminar Entradas de Esta Semana
+                  Eliminar Movimientos de Esta Semana
                 </button>
                 <button className="entradas-modal-btn" onClick={() => pedirConfirmacion(eliminarEntradasMes, "este mes")}>
-                  Eliminar Entradas de Este Mes
+                  Eliminar Movimientos de Este Mes
                 </button>
               </div>
             </div>
@@ -716,7 +919,7 @@ function Entradas() {
             <div className="entradas-confirm-icono"><TriangleAlert size={18} /></div>
             <h3 className="entradas-confirm-titulo">¿Estás seguro?</h3>
             <p className="entradas-confirm-texto">
-              Se eliminarán todas las entradas de <strong>{periodoSeleccionado}</strong>. Esta acción no se puede deshacer.
+              Se eliminarán todos los movimientos de <strong>{periodoSeleccionado}</strong>.
             </p>
             <div className="entradas-confirm-acciones">
               <button className="entradas-confirm-cancelar" onClick={cancelarConfirmacion}>
@@ -758,7 +961,12 @@ function Entradas() {
 }
 
 const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
-  const tallasSeleccionadas = useMemo(() => parseTallas(form.tallas), [form.tallas])
+  const [nuevaTalla, setNuevaTalla] = useState("")
+  const [nuevoColor, setNuevoColor] = useState("")
+  const tallasSeleccionadas = useMemo(
+    () => parseTallas(form.tallas).filter((talla) => normalizeText(talla) !== "sin talla"),
+    [form.tallas]
+  )
   const coloresSeleccionados = useMemo(() => parseColores(form.colores), [form.colores])
   const combinaciones = useMemo(
     () => buildVariantPairs(tallasSeleccionadas, coloresSeleccionados),
@@ -790,12 +998,63 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const toggleTalla = (talla) => {
-    setForm((prev) => ({ ...prev, tallas: toggleValueInCsv(prev.tallas, talla) }))
+  const quitarTalla = (talla) => {
+    setForm((prev) => ({
+      ...prev,
+      tallas: toCsv(parseTallas(prev.tallas).filter((item) => normalizeText(item) !== normalizeText(talla) && normalizeText(item) !== "sin talla")),
+    }))
   }
 
-  const toggleColor = (color) => {
-    setForm((prev) => ({ ...prev, colores: toggleValueInCsv(prev.colores, color) }))
+  const quitarColor = (color) => {
+    setForm((prev) => ({
+      ...prev,
+      colores: toCsv(parseColores(prev.colores).filter((item) => normalizeText(item) !== normalizeText(color))),
+    }))
+  }
+
+  const agregarColorPersonalizado = () => {
+    const colorFormateado = toTitleCase(nuevoColor)
+
+    if (!colorFormateado) {
+      toast.warn("Escribe un color para agregar.")
+      return
+    }
+
+    if (includesIgnoreCase(coloresSeleccionados, colorFormateado)) {
+      toast.info("Ese color ya esta seleccionado.")
+      setNuevoColor("")
+      return
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      colores: toCsv([...parseColores(prev.colores), colorFormateado]),
+    }))
+    setNuevoColor("")
+  }
+
+  const agregarTallaPersonalizada = () => {
+    const tallaFormateada = normalizeCustomValue(nuevaTalla)
+
+    if (!tallaFormateada) {
+      toast.warn("Escribe una talla para agregar.")
+      return
+    }
+
+    if (includesIgnoreCase(tallasSeleccionadas, tallaFormateada)) {
+      toast.info("Esa talla ya esta seleccionada.")
+      setNuevaTalla("")
+      return
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      tallas: toCsv([
+        ...parseTallas(prev.tallas).filter((talla) => normalizeText(talla) !== "sin talla"),
+        tallaFormateada,
+      ]),
+    }))
+    setNuevaTalla("")
   }
 
   const setStockVariante = (key, value) => {
@@ -876,39 +1135,75 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
       </div>
 
       <div className="form-group form-group-tallas">
-        <label>Tallas disponibles *</label>
-        <div className="selector-grid">
-          {TALLAS_OPCIONES.map((talla) => {
-            return (
+        <label>Tallas *</label>
+        <div className="custom-option-row">
+          <input
+            type="text"
+            value={nuevaTalla}
+            onChange={(e) => setNuevaTalla(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                agregarTallaPersonalizada()
+              }
+            }}
+            placeholder="Otra talla (ej. 39.5)"
+          />
+          <button type="button" className="custom-option-btn" onClick={agregarTallaPersonalizada}>
+            Agregar talla
+          </button>
+        </div>
+        {tallasSeleccionadas.length > 0 && (
+          <div className="custom-option-tags">
+            {tallasSeleccionadas.map((talla) => (
               <button
                 key={talla}
                 type="button"
-                className={`selector-chip ${tallasSeleccionadas.includes(talla) ? "active" : ""}`}
-                onClick={() => toggleTalla(talla)}
+                className="selector-chip active custom-option-chip"
+                onClick={() => quitarTalla(talla)}
+                title="Quitar talla"
               >
                 {talla}
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="form-group span-2 form-group-colores">
         <label>Color *</label>
-        <div className="selector-grid selector-grid-colores">
-          {COLORES_OPCIONES.map((color) => {
-            return (
+        <div className="custom-option-row">
+          <input
+            type="text"
+            value={nuevoColor}
+            onChange={(e) => setNuevoColor(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                agregarColorPersonalizado()
+              }
+            }}
+            placeholder="Otro color (ej. Mostaza)"
+          />
+          <button type="button" className="custom-option-btn" onClick={agregarColorPersonalizado}>
+            Agregar color
+          </button>
+        </div>
+        {coloresSeleccionados.length > 0 && (
+          <div className="custom-option-tags">
+            {coloresSeleccionados.map((color) => (
               <button
                 key={color}
                 type="button"
-                className={`selector-chip ${coloresSeleccionados.includes(color) ? "active" : ""}`}
-                onClick={() => toggleColor(color)}
+                className="selector-chip active custom-option-chip"
+                onClick={() => quitarColor(color)}
+                title="Quitar color"
               >
                 {color}
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="form-group span-2">

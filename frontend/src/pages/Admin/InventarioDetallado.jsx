@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createProducto, deleteProducto, getCategorias, getProductos, updateProducto } from "../../api/productos";
 import { registrarMovimientoEntrada } from "../../api/movimientos";
 import { toast } from "react-toastify";
@@ -10,8 +10,25 @@ const COLOR_MAP_KEY = 'inventario_colores_map';
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
 const ENTRADAS_LS_KEY = 'entradas_inventario';
 const VARIANT_LOW_STOCK_LIMIT = 30;
-const TALLAS_OPCIONES = Array.from({ length: 21 }, (_, i) => String(i + 20));
-const COLORES_OPCIONES = ['Negro', 'Blanco', 'Cafe', 'Azul', 'Rojo', 'Verde', 'Gris', 'Beige', 'Rosa', 'Vino'];
+const DELETE_UNDO_MS = 7000;
+
+const normalizeText = (value = '') => String(value || '').trim().toLowerCase();
+
+const includesIgnoreCase = (arr = [], candidate = '') => {
+  const normalizedCandidate = normalizeText(candidate);
+  if (!normalizedCandidate) return false;
+  return arr.some((item) => normalizeText(item) === normalizedCandidate);
+};
+
+const toTitleCase = (value = '') =>
+  String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+
+  const normalizeCustomValue = (value = '') => String(value || '').trim().replace(/\s+/g, ' ');
 
 const FORM_EMPTY = {
   modelo: '',
@@ -202,6 +219,65 @@ const isPlaceholderVariant = (talla, color) => {
 const formatPrecio = (v) =>
   v != null ? `$${Number(v).toLocaleString("es-MX")}` : "-";
 
+const buildResumenModelos = (items = []) => {
+  const map = new Map();
+
+  items.forEach((item) => {
+    const key = item.idProducto;
+    const curr = map.get(key) || {
+      idProducto: item.idProducto,
+      categoria: item.categoria,
+      modelo: item.modelo,
+      precio: item.precio,
+      estado: item.estado,
+      colores: new Set(),
+      tallas: new Set(),
+      stockTotal: 0,
+      variantes: [],
+      varianteMap: {},
+    };
+
+    curr.colores.add(item.color);
+    curr.tallas.add(item.talla);
+    curr.stockTotal += Number(item.stock) || 0;
+    curr.variantes.push({ talla: item.talla, color: item.color, stock: item.stock });
+    curr.varianteMap[`${item.talla}__${item.color}`] = Number(item.stock) || 0;
+
+    map.set(key, curr);
+  });
+
+  return Array.from(map.values())
+    .map((m) => ({
+      ...m,
+      colores: Array.from(m.colores).sort((a, b) => a.localeCompare(b)),
+      tallas: Array.from(m.tallas).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+      variantes: [...m.variantes].sort((a, b) => {
+        const porTalla = a.talla.localeCompare(b.talla, undefined, { numeric: true });
+        if (porTalla !== 0) return porTalla;
+        return a.color.localeCompare(b.color);
+      }),
+      varianteMap: m.varianteMap,
+      variantesBajas: m.variantes
+        .filter((v) => Number(v.stock || 0) <= VARIANT_LOW_STOCK_LIMIT && !isPlaceholderVariant(v.talla, v.color))
+        .map((v) => ({ ...v, stock: Number(v.stock || 0) })),
+    }))
+    .sort((a, b) => a.modelo.localeCompare(b.modelo));
+};
+
+const getVariantesParaFiltroStock = (item, filtroStock) => {
+  const variantesReales = (item?.variantes || []).filter((v) => !isPlaceholderVariant(v.talla, v.color));
+
+  if (filtroStock === 'bajo') {
+    return variantesReales.filter((v) => Number(v.stock || 0) <= VARIANT_LOW_STOCK_LIMIT);
+  }
+
+  if (filtroStock === 'agotado') {
+    return variantesReales.filter((v) => Number(v.stock || 0) <= 0);
+  }
+
+  return variantesReales;
+};
+
 export default function InventarioDetalladoPage() {
   const [productos, setProductos] = useState([]);
   const [categoriasOptions, setCategoriasOptions] = useState([]);
@@ -218,8 +294,10 @@ export default function InventarioDetalladoPage() {
   const [busquedaModelo, setBusquedaModelo] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroColor, setFiltroColor] = useState("");
+  const [filtroStock, setFiltroStock] = useState("");
   const [expandedModelId, setExpandedModelId] = useState(null);
   const [stockVariantesPrevios, setStockVariantesPrevios] = useState({});
+  const deleteProductoTimeoutRef = useRef(null);
 
   const cargarInventario = useCallback(async () => {
     try {
@@ -259,6 +337,15 @@ export default function InventarioDetalladoPage() {
       window.removeEventListener('liquidaciones-updated', refrescar);
     };
   }, [cargarInventario]);
+
+  useEffect(() => {
+    return () => {
+      if (deleteProductoTimeoutRef.current) {
+        clearTimeout(deleteProductoTimeoutRef.current);
+        deleteProductoTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const validarFormulario = (form) => {
     const camposRequeridos = {
@@ -515,23 +602,60 @@ export default function InventarioDetalladoPage() {
     setModalEliminar(true);
   };
 
-  const confirmarEliminar = async () => {
+  const confirmarEliminar = () => {
     if (!productoEliminar?.idProducto) return;
 
-    try {
-      await deleteProducto(productoEliminar.idProducto);
-      toast.success("Modelo eliminado correctamente.");
-      if (expandedModelId === productoEliminar.idProducto) {
-        setExpandedModelId(null);
-      }
-      setModalEliminar(false);
-      setProductoEliminar(null);
-      window.dispatchEvent(new Event('inventario-updated'));
-      await cargarInventario();
-    } catch (error) {
-      const errorMsg = error.response?.data?.message || "No se pudo eliminar el modelo.";
-      toast.error(errorMsg);
+    const productoObjetivo = { ...productoEliminar };
+    setModalEliminar(false);
+    setProductoEliminar(null);
+
+    if (deleteProductoTimeoutRef.current) {
+      clearTimeout(deleteProductoTimeoutRef.current);
+      deleteProductoTimeoutRef.current = null;
     }
+
+    const timeoutId = setTimeout(async () => {
+      deleteProductoTimeoutRef.current = null;
+      try {
+        await deleteProducto(productoObjetivo.idProducto);
+        toast.success("Modelo eliminado correctamente.");
+        if (expandedModelId === productoObjetivo.idProducto) {
+          setExpandedModelId(null);
+        }
+        window.dispatchEvent(new Event('inventario-updated'));
+        await cargarInventario();
+      } catch (error) {
+        const errorMsg = error.response?.data?.message || "No se pudo eliminar el modelo.";
+        toast.error(errorMsg);
+      }
+    }, DELETE_UNDO_MS);
+
+    deleteProductoTimeoutRef.current = timeoutId;
+
+    toast.warning(
+      ({ closeToast }) => (
+        <div className="undo-toast-row">
+          <span className="undo-toast-text">
+            {productoObjetivo.modelo || "Modelo"} se eliminara en 7s.
+          </span>
+          <button
+            type="button"
+            className="undo-toast-btn"
+            onClick={() => {
+              if (deleteProductoTimeoutRef.current === timeoutId) {
+                clearTimeout(timeoutId);
+                deleteProductoTimeoutRef.current = null;
+                toast.info("Eliminación cancelada.");
+              }
+              closeToast?.();
+            }}
+          >
+            Deshacer
+          </button>
+        </div>
+      ),
+      { autoClose: DELETE_UNDO_MS }
+    );
   };
 
   const inventario = useMemo(() => {
@@ -589,52 +713,40 @@ export default function InventarioDetalladoPage() {
     });
   }, [inventario, busquedaModelo, filtroCategoria, filtroColor]);
 
-  const resumenModelos = useMemo(() => {
-    const map = new Map();
+  const resumenModelos = useMemo(() => buildResumenModelos(filtradas), [filtradas]);
+  const resumenModelosCompletos = useMemo(
+    () => new Map(buildResumenModelos(inventario).map((item) => [item.idProducto, item])),
+    [inventario]
+  );
 
-    filtradas.forEach((item) => {
-      const key = item.idProducto;
-      const curr = map.get(key) || {
-        idProducto: item.idProducto,
-        categoria: item.categoria,
-        modelo: item.modelo,
-        precio: item.precio,
-        estado: item.estado,
-        colores: new Set(),
-        tallas: new Set(),
-        stockTotal: 0,
-        variantes: [],
-        varianteMap: {},
-      };
+  const resumenModelosFiltrados = useMemo(() => {
+    if (!filtroStock) return resumenModelos;
 
-      curr.colores.add(item.color);
-      curr.tallas.add(item.talla);
-      curr.stockTotal += Number(item.stock) || 0;
-      curr.variantes.push({ talla: item.talla, color: item.color, stock: item.stock });
-      curr.varianteMap[`${item.talla}__${item.color}`] = Number(item.stock) || 0;
+    return resumenModelos.filter((item) => {
+      const variantesReales = item.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
 
-      map.set(key, curr);
+      if (filtroStock === 'bajo') {
+        return item.variantesBajas.length > 0;
+      }
+
+      if (filtroStock === 'agotado') {
+        if (!variantesReales.length) return Number(item.stockTotal || 0) <= 0;
+        return variantesReales.some((v) => Number(v.stock || 0) <= 0);
+      }
+
+      if (filtroStock === 'normal') {
+        if (!variantesReales.length) return Number(item.stockTotal || 0) > VARIANT_LOW_STOCK_LIMIT;
+        return variantesReales.every((v) => Number(v.stock || 0) > VARIANT_LOW_STOCK_LIMIT);
+      }
+
+      return true;
     });
+  }, [resumenModelos, filtroStock]);
 
-    return Array.from(map.values())
-      .map((m) => ({
-        ...m,
-        colores: Array.from(m.colores).sort((a, b) => a.localeCompare(b)),
-        tallas: Array.from(m.tallas).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
-        variantes: [...m.variantes].sort((a, b) => {
-          const porTalla = a.talla.localeCompare(b.talla, undefined, { numeric: true });
-          if (porTalla !== 0) return porTalla;
-          return a.color.localeCompare(b.color);
-        }),
-        varianteMap: m.varianteMap,
-        variantesBajas: m.variantes
-          .filter((v) => Number(v.stock || 0) <= VARIANT_LOW_STOCK_LIMIT && !isPlaceholderVariant(v.talla, v.color))
-          .map((v) => ({ ...v, stock: Number(v.stock || 0) })),
-      }))
-      .sort((a, b) => a.modelo.localeCompare(b.modelo));
-  }, [filtradas]);
-
-  const totalStockVista = resumenModelos.reduce((acc, item) => acc + item.stockTotal, 0);
+  const totalStockVista = resumenModelosFiltrados.reduce((acc, item) => acc + item.stockTotal, 0);
+  const tieneFiltrosActivos = Boolean(
+    busquedaModelo.trim() || filtroCategoria || filtroColor || filtroStock
+  );
 
   const renderCompactChips = (items, prefix) => {
     const max = 3;
@@ -655,30 +767,33 @@ export default function InventarioDetalladoPage() {
 
   return (
     <div className="id-wrapper">
-      <header className="id-header">
-        <div>
-          <h1>Inventario Detallado</h1>
-          <p>
+      <header className="id-topbar">
+        <div className="id-heading">
+          <h1 className="id-title">Inventario</h1>
+          <p className="id-subtitle">
             Consulta el stock por modelo y revisa su detalle por talla y color.
           </p>
         </div>
-        <button
-          type="button"
-          className="id-primary-btn"
-          onClick={() => setModalCrear(true)}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Registrar modelo
-        </button>
+
+        <div className="id-header-actions">
+          <button
+            type="button"
+            className="id-primary-btn"
+            onClick={() => setModalCrear(true)}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Registrar modelo
+          </button>
+        </div>
       </header>
 
       <section className="id-kpis">
         <article className="id-kpi">
           <span>Modelos visibles</span>
-          <strong>{resumenModelos.length}</strong>
+          <strong>{resumenModelosFiltrados.length}</strong>
         </article>
         <article className="id-kpi">
           <span>Stock en vista</span>
@@ -708,12 +823,20 @@ export default function InventarioDetalladoPage() {
           ))}
         </select>
 
+        <select value={filtroStock} onChange={(e) => setFiltroStock(e.target.value)}>
+          <option value="">Todo el stock</option>
+          <option value="bajo">Stock bajo</option>
+          <option value="agotado">Agotado</option>
+          <option value="normal">Stock normal</option>
+        </select>
+
         <button
           type="button"
           onClick={() => {
             setBusquedaModelo("");
             setFiltroCategoria("");
             setFiltroColor("");
+            setFiltroStock("");
           }}
         >
           Limpiar filtros
@@ -723,7 +846,7 @@ export default function InventarioDetalladoPage() {
       <section className="id-card">
         {loading ? (
           <p className="id-estado">Cargando inventario...</p>
-        ) : resumenModelos.length === 0 ? (
+        ) : resumenModelosFiltrados.length === 0 ? (
           <p className="id-estado">No hay datos para mostrar con los filtros actuales.</p>
         ) : (
           <div className="id-table-wrap">
@@ -740,9 +863,13 @@ export default function InventarioDetalladoPage() {
                 </tr>
               </thead>
               <tbody>
-                {resumenModelos.map((row) => (
+                {resumenModelosFiltrados.map((row) => {
+                  const rowCompleto = resumenModelosCompletos.get(row.idProducto) || row;
+                  const mostrarMatrizAutomatica = filtroStock === 'bajo' || filtroStock === 'agotado';
+                  const detalleAbierto = mostrarMatrizAutomatica || expandedModelId === row.idProducto;
+                  return (
                   <React.Fragment key={row.idProducto}>
-                    <tr>
+                    <tr className={tieneFiltrosActivos ? 'id-row-filtered' : ''}>
                       <td>{row.categoria}</td>
                       <td>{row.modelo}</td>
                       <td>{renderCompactChips(row.colores, `${row.idProducto}-c`)}</td>
@@ -754,7 +881,7 @@ export default function InventarioDetalladoPage() {
                           <button
                             type="button"
                             className="id-edit-btn"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => abrirEditar(rowCompleto)}
                             title="Modificar modelo"
                             aria-label="Modificar modelo"
                           >
@@ -763,7 +890,7 @@ export default function InventarioDetalladoPage() {
                           <button
                             type="button"
                             className="id-delete-btn"
-                            onClick={() => handleEliminar(row)}
+                            onClick={() => handleEliminar(rowCompleto)}
                             title="Eliminar modelo"
                             aria-label="Eliminar modelo"
                           >
@@ -773,13 +900,14 @@ export default function InventarioDetalladoPage() {
                             type="button"
                             className="id-toggle-btn"
                             onClick={() => setExpandedModelId((prev) => (prev === row.idProducto ? null : row.idProducto))}
+                            style={{ display: mostrarMatrizAutomatica ? 'none' : 'inline-flex' }}
                           >
                             {expandedModelId === row.idProducto ? 'Ocultar' : 'Ver detalle'}
                           </button>
                         </div>
                       </td>
                     </tr>
-                    {expandedModelId === row.idProducto && (
+                    {detalleAbierto && (
                       <tr className="id-expand-row">
                         <td colSpan={7}>
                           <div className="id-expand-card">
@@ -795,13 +923,23 @@ export default function InventarioDetalladoPage() {
                                 </thead>
                                 <tbody>
                                   {(() => {
-                                    const variantesValidas = row.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
+                                    const variantesValidas = mostrarMatrizAutomatica
+                                      ? getVariantesParaFiltroStock(rowCompleto, filtroStock)
+                                      : rowCompleto.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
                                     const gruposPorColor = variantesValidas.reduce((acc, v) => {
                                       const key = String(v.color || 'N/A');
                                       if (!acc[key]) acc[key] = [];
                                       acc[key].push(v);
                                       return acc;
                                     }, {});
+
+                                    if (!Object.keys(gruposPorColor).length) {
+                                      return (
+                                        <tr>
+                                          <td colSpan={4} className="id-estado">No hay variantes para este filtro.</td>
+                                        </tr>
+                                      );
+                                    }
 
                                     return Object.entries(gruposPorColor).flatMap(([color, items]) =>
                                       items.map((v, idx) => {
@@ -833,7 +971,7 @@ export default function InventarioDetalladoPage() {
                       </tr>
                     )}
                   </React.Fragment>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
@@ -898,7 +1036,7 @@ export default function InventarioDetalladoPage() {
             <div className="modal-body">
               <p>¿Seguro que quieres eliminar este modelo?</p>
               <p><strong>{productoEliminar?.modelo || 'Modelo'}</strong></p>
-              <p>Esta acción no se puede deshacer.</p>
+              <p>Podrás deshacer durante 7 segundos.</p>
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalEliminar(false)}>Cancelar</button>
@@ -912,7 +1050,12 @@ export default function InventarioDetalladoPage() {
 }
 
 const FormularioProducto = ({ form, setForm, categorias }) => {
-  const tallasSeleccionadas = useMemo(() => parseTallas(form.tallas), [form.tallas]);
+  const [nuevaTalla, setNuevaTalla] = useState('');
+  const [nuevoColor, setNuevoColor] = useState('');
+  const tallasSeleccionadas = useMemo(
+    () => parseTallas(form.tallas).filter((talla) => normalizeText(talla) !== 'sin talla'),
+    [form.tallas]
+  );
   const coloresSeleccionados = useMemo(() => parseColores(form.colores), [form.colores]);
   const combinaciones = useMemo(() => buildVariantPairs(tallasSeleccionadas, coloresSeleccionados), [tallasSeleccionadas, coloresSeleccionados]);
   const stockVariantes = useMemo(() => normalizeVariantStocks(combinaciones, form.stock_variantes), [combinaciones, form.stock_variantes]);
@@ -938,12 +1081,63 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const toggleTalla = (talla) => {
-    setForm((prev) => ({ ...prev, tallas: toggleValueInCsv(prev.tallas, talla) }));
+  const quitarTalla = (talla) => {
+    setForm((prev) => ({
+      ...prev,
+      tallas: toCsv(parseTallas(prev.tallas).filter((item) => normalizeText(item) !== normalizeText(talla) && normalizeText(item) !== 'sin talla')),
+    }));
   };
 
-  const toggleColor = (color) => {
-    setForm((prev) => ({ ...prev, colores: toggleValueInCsv(prev.colores, color) }));
+  const quitarColor = (color) => {
+    setForm((prev) => ({
+      ...prev,
+      colores: toCsv(parseColores(prev.colores).filter((item) => normalizeText(item) !== normalizeText(color))),
+    }));
+  };
+
+  const agregarColorPersonalizado = () => {
+    const colorFormateado = toTitleCase(nuevoColor);
+
+    if (!colorFormateado) {
+      toast.warn('Escribe un color para agregar.');
+      return;
+    }
+
+    if (includesIgnoreCase(coloresSeleccionados, colorFormateado)) {
+      toast.info('Ese color ya esta seleccionado.');
+      setNuevoColor('');
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      colores: toCsv([...parseColores(prev.colores), colorFormateado]),
+    }));
+    setNuevoColor('');
+  };
+
+  const agregarTallaPersonalizada = () => {
+    const tallaFormateada = normalizeCustomValue(nuevaTalla);
+
+    if (!tallaFormateada) {
+      toast.warn('Escribe una talla para agregar.');
+      return;
+    }
+
+    if (includesIgnoreCase(tallasSeleccionadas, tallaFormateada)) {
+      toast.info('Esa talla ya esta seleccionada.');
+      setNuevaTalla('');
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      tallas: toCsv([
+        ...parseTallas(prev.tallas).filter((talla) => normalizeText(talla) !== 'sin talla'),
+        tallaFormateada,
+      ]),
+    }));
+    setNuevaTalla('');
   };
 
   const setStockVariante = (key, value) => {
@@ -1020,35 +1214,75 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
       </div>
 
       <div className="form-group form-group-tallas">
-        <label>Tallas disponibles *</label>
-        <div className="selector-grid">
-          {TALLAS_OPCIONES.map((talla) => (
-            <button
-              key={talla}
-              type="button"
-              className={`selector-chip ${tallasSeleccionadas.includes(talla) ? 'active' : ''}`}
-              onClick={() => toggleTalla(talla)}
-            >
-              {talla}
-            </button>
-          ))}
+        <label>Tallas *</label>
+        <div className="custom-option-row">
+          <input
+            type="text"
+            value={nuevaTalla}
+            onChange={(e) => setNuevaTalla(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarTallaPersonalizada();
+              }
+            }}
+            placeholder="Otra talla (ej. 39.5)"
+          />
+          <button type="button" className="custom-option-btn" onClick={agregarTallaPersonalizada}>
+            Agregar talla
+          </button>
         </div>
+        {tallasSeleccionadas.length > 0 && (
+          <div className="custom-option-tags">
+            {tallasSeleccionadas.map((talla) => (
+              <button
+                key={talla}
+                type="button"
+                className="selector-chip active custom-option-chip"
+                onClick={() => quitarTalla(talla)}
+                title="Quitar talla"
+              >
+                {talla}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="form-group span-2 form-group-colores">
         <label>Color *</label>
-        <div className="selector-grid selector-grid-colores">
-          {COLORES_OPCIONES.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`selector-chip ${coloresSeleccionados.includes(color) ? 'active' : ''}`}
-              onClick={() => toggleColor(color)}
-            >
-              {color}
-            </button>
-          ))}
+        <div className="custom-option-row">
+          <input
+            type="text"
+            value={nuevoColor}
+            onChange={(e) => setNuevoColor(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarColorPersonalizado();
+              }
+            }}
+            placeholder="Otro color (ej. Mostaza)"
+          />
+          <button type="button" className="custom-option-btn" onClick={agregarColorPersonalizado}>
+            Agregar color
+          </button>
         </div>
+        {coloresSeleccionados.length > 0 && (
+          <div className="custom-option-tags">
+            {coloresSeleccionados.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className="selector-chip active custom-option-chip"
+                onClick={() => quitarColor(color)}
+                title="Quitar color"
+              >
+                {color}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="form-group span-2">

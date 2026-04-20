@@ -1,5 +1,6 @@
 /* Empleados.css */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
   --primary:       #0E65C6;
@@ -37,22 +38,32 @@
   color: var(--text-main);
 }
 
-.empleados-container h2 {
+.empleados-heading {
+  padding: 0;
+  margin-bottom: 28px;
+}
+
+.empleados-title {
+  font-family: 'Nunito', system-ui, sans-serif;
   font-size: 1.55rem;
   font-weight: 700;
-  color: var(--secondary);
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  padding: 0;
   line-height: 1.2;
 }
 
-.empleados-container p {
+.empleados-subtitle {
+  font-family: 'Nunito', system-ui, sans-serif;
   font-size: 0.875rem;
-  color: var(--text-sub);
-  margin-top: 0.25rem;
+  color: #6b7280;
+  margin: 0;
+  padding: 0;
 }
 
 /* --- HEADER & ACTIONS --- */
 .empleados-header {
-  margin-bottom: 2rem;
+  margin-bottom: 28px;
 }
 
 .header-actions {

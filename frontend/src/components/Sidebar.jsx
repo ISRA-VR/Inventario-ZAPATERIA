@@ -4,8 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useAuth } from "../context/AuthContext";
 
 import {
-  LayoutDashboard, Users, Package, Tags,
-  ArrowUpRight, ArrowDownLeft, Search,
+  Home, Users, Package, Tags,
+  ArrowUpRight, Search,
   FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle, Store,
   ReceiptText, Menu, X, User
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const Sidebar = () => {
   };
 
   const irAInventario = () => {
-    const rutaInventario = user?.role === 'admin' ? '/admin/inventario-detallado' : '/empleado/entradas';
+    const rutaInventario = user?.role === 'admin' ? '/admin/inventario-detallado' : '/empleado/movimientos';
     navigate(rutaInventario);
   };
 
@@ -48,22 +48,16 @@ const Sidebar = () => {
 
   // Definimos todos los items con una propiedad de 'roles' para filtrar
   const allMenuItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard', roles: ['admin'] },
+    { icon: <Home size={20} />, label: 'Inicio', path: '/admin/dashboard', roles: ['admin'] },
     { icon: <Users size={20} />, label: 'Empleados', path: '/admin/empleados', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/admin/categorias', roles: ['admin'] },
     { icon: <Tags size={20} />, label: 'Gestión de Categorías', path: '/empleado/categorias', roles: ['empleado'] },
-    { icon: <Package size={20} />, label: 'Inventario Detallado', path: '/admin/inventario-detallado', roles: ['admin'] },
+    { icon: <Package size={20} />, label: 'Inventario', path: '/admin/inventario-detallado', roles: ['admin'] },
     { icon: <FileText size={20} />, label: 'Liquidaciones', path: '/admin/liquidaciones', roles: ['admin'] },
     {
       icon: <ArrowUpRight size={20} />,
-      label: 'Entradas',
-      path: user?.role === 'admin' ? '/admin/entradas' : '/empleado/entradas',
-      roles: ['admin', 'empleado']
-    },
-    {
-      icon: <ArrowDownLeft size={20} />,
-      label: 'Salidas',
-      path: user?.role === 'admin' ? '/admin/salidas' : '/empleado/salidas',
+      label: 'Movimientos',
+      path: user?.role === 'admin' ? '/admin/movimientos' : '/empleado/movimientos',
       roles: ['admin', 'empleado']
     },
     { 

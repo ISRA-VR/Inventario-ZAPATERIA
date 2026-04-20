@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
 .entradas-page {
-  padding: 28px 32px;
+  padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -11,24 +13,30 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 6px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 .encabezado-texto {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .titulo-pagina {
-  font-size: 28px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: #22344d;
+  color: #1f2937;
+  line-height: 1.2;
+  margin: 0 0 4px 0;
 }
 
 .subtitulo-pagina {
-  font-size: 14px;
-  color: #6f7783;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
 }
 
 .entradas-primary-btn {
@@ -197,6 +205,27 @@
   background-color: #f8dddd;
   color: #a13a3a;
   border: 1px solid #efc1c1;
+}
+
+.badge-tipo {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.badge-tipo-entrada {
+  background-color: #e1f4e9;
+  color: #1f7a4c;
+  border-color: #b8e4cb;
+}
+
+.badge-tipo-salida {
+  background-color: #fde8e8;
+  color: #a13a3a;
+  border-color: #f4c2c2;
 }
 
 .celda-usuario {
