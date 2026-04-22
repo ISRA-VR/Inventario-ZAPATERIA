@@ -307,7 +307,7 @@ const getVariantesParaFiltroStock = (item, filtroStock) => {
   return variantesReales;
 };
 
-export default function InventarioDetalladoPage() {
+export default function InventarioDetalladoPage({ canManage = true }) {
   const [productos, setProductos] = useState([]);
   const [categoriasOptions, setCategoriasOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -885,19 +885,21 @@ export default function InventarioDetalladoPage() {
           </p>
         </div>
 
-        <div className="id-header-actions">
-          <button
-            type="button"
-            className="id-primary-btn"
-            onClick={() => setModalCrear(true)}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Registrar modelo
-          </button>
-        </div>
+        {canManage && (
+          <div className="id-header-actions">
+            <button
+              type="button"
+              className="id-primary-btn"
+              onClick={() => setModalCrear(true)}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Registrar modelo
+            </button>
+          </div>
+        )}
       </header>
 
       <section className="id-kpis">
@@ -996,24 +998,28 @@ export default function InventarioDetalladoPage() {
                             <td>{formatPrecio(row.precio)}</td>
                             <td>
                               <div className="id-actions">
-                                <button
-                                  type="button"
-                                  className="id-edit-btn"
-                                  onClick={() => abrirEditar(rowCompleto)}
-                                  title="Modificar modelo"
-                                  aria-label="Modificar modelo"
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  type="button"
-                                  className="id-delete-btn"
-                                  onClick={() => handleEliminar(rowCompleto)}
-                                  title="Eliminar modelo"
-                                  aria-label="Eliminar modelo"
-                                >
-                                  Eliminar
-                                </button>
+                                {canManage && (
+                                  <button
+                                    type="button"
+                                    className="id-edit-btn"
+                                    onClick={() => abrirEditar(rowCompleto)}
+                                    title="Modificar modelo"
+                                    aria-label="Modificar modelo"
+                                  >
+                                    Editar
+                                  </button>
+                                )}
+                                {canManage && (
+                                  <button
+                                    type="button"
+                                    className="id-delete-btn"
+                                    onClick={() => handleEliminar(rowCompleto)}
+                                    title="Eliminar modelo"
+                                    aria-label="Eliminar modelo"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   className="id-toggle-btn"
@@ -1099,7 +1105,7 @@ export default function InventarioDetalladoPage() {
         )}
       </section>
 
-      {modalCrear && (
+      {canManage && modalCrear && (
         <div className="modal-overlay" onClick={() => setModalCrear(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1111,7 +1117,6 @@ export default function InventarioDetalladoPage() {
                 form={formCrear}
                 setForm={setFormCrear}
                 categorias={categoriasOptions}
-                productos={productos}
                 modeloDuplicado={modeloDuplicadoCrear}
               />
             </div>
@@ -1123,7 +1128,7 @@ export default function InventarioDetalladoPage() {
         </div>
       )}
 
-      {modalEditar && (
+      {canManage && modalEditar && (
         <div className="modal-overlay" onClick={() => setModalEditar(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1135,7 +1140,6 @@ export default function InventarioDetalladoPage() {
                 form={formEditar}
                 setForm={setFormEditar}
                 categorias={categoriasOptions}
-                productos={productos}
                 modeloDuplicado={modeloDuplicadoEditar}
               />
             </div>
@@ -1147,7 +1151,7 @@ export default function InventarioDetalladoPage() {
         </div>
       )}
 
-      {modalEliminar && (
+      {canManage && modalEliminar && (
         <div className="modal-overlay" onClick={() => setModalEliminar(false)}>
           <div className="modal-box modal-box-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1170,7 +1174,7 @@ export default function InventarioDetalladoPage() {
   );
 }
 
-const FormularioProducto = ({ form, setForm, categorias, productos = [], modeloDuplicado = false }) => {
+const FormularioProducto = ({ form, setForm, categorias, modeloDuplicado = false }) => {
   const [nuevaTalla, setNuevaTalla] = useState('');
   const [nuevoColor, setNuevoColor] = useState('');
   const tallasSeleccionadas = useMemo(
@@ -1181,46 +1185,12 @@ const FormularioProducto = ({ form, setForm, categorias, productos = [], modeloD
   const combinaciones = useMemo(() => buildVariantPairs(tallasSeleccionadas, coloresSeleccionados), [tallasSeleccionadas, coloresSeleccionados]);
   const stockVariantes = useMemo(() => normalizeVariantStocks(combinaciones, form.stock_variantes), [combinaciones, form.stock_variantes]);
   const stockTotalCalculado = useMemo(() => sumVariantStocks(stockVariantes), [stockVariantes]);
-  const modelosSugeridos = useMemo(() => {
-    const map = new Map();
-    (Array.isArray(productos) ? productos : []).forEach((p) => {
-      const modelo = String(p?.modelo || '').trim();
-      if (!modelo) return;
-      const key = normalizeText(modelo);
-      if (!map.has(key)) map.set(key, modelo);
-    });
-    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
-  }, [productos]);
-
-  const getCoincidenciaExacta = (modeloRaw = '') => {
-    const objetivo = normalizeText(modeloRaw);
-    if (!objetivo) return null;
-    const matches = (Array.isArray(productos) ? productos : [])
-      .filter((p) => normalizeText(p?.modelo) === objetivo);
-    if (matches.length !== 1) return null;
-    return matches[0];
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'modelo') {
-      const match = getCoincidenciaExacta(value);
-      if (!match) {
-        setForm((prev) => ({ ...prev, [name]: value }));
-        return;
-      }
-
-      setForm((prev) => ({
-        ...prev,
-        modelo: value,
-        id_categoria: match?.id_categoria ?? '',
-        precio: Number.isFinite(Number(match?.precio)) ? String(match.precio) : prev.precio,
-        tallas: String(match?.tallas || prev.tallas || ''),
-        colores: String(match?.colores || prev.colores || ''),
-        estado: String(match?.estado || prev.estado || 'activo'),
-        stock_variantes: {},
-      }));
+      setForm((prev) => ({ ...prev, [name]: value }));
       return;
     }
 
@@ -1334,18 +1304,9 @@ const FormularioProducto = ({ form, setForm, categorias, productos = [], modeloD
           value={form.modelo}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          list="inventario-modelos-admin"
           placeholder="Ej. 1100"
           autoFocus
         />
-        <datalist id="inventario-modelos-admin">
-          {modelosSugeridos.map((modelo) => (
-            <option key={modelo} value={modelo} />
-          ))}
-        </datalist>
-        <small style={{ color: '#667085', display: 'block', marginTop: 6 }}>
-          Sugerencias basadas en el inventario actual.
-        </small>
         {modeloDuplicado && (
           <small style={{ color: '#b42318', display: 'block', marginTop: 6 }}>
             Ya existe un modelo con ese nombre en esta categoría.

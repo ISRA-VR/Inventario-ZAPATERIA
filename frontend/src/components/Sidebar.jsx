@@ -40,7 +40,7 @@ const Sidebar = () => {
   };
 
   const irAInventario = () => {
-    const rutaInventario = user?.role === 'admin' ? '/admin/inventario-detallado' : '/empleado/movimientos';
+    const rutaInventario = user?.role === 'admin' ? '/admin/inventario-detallado' : '/empleado/busquedas';
     navigate(rutaInventario);
   };
 

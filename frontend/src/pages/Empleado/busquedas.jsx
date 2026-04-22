@@ -1,5 +1,7 @@
-const MovimientosPage = () => {
-	return null;
+import InventarioDetalladoPage from "../Admin/InventarioDetallado";
+
+const BusquedasEmpleadoPage = () => {
+  return <InventarioDetalladoPage canManage={false} />;
 };
 
-export default MovimientosPage;
+export default BusquedasEmpleadoPage;
