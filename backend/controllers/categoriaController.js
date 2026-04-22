@@ -29,9 +29,17 @@ export const createCategoria = async (req, res) => {
   }
 
   try {
+    const [existe] = await pool.query(
+      'SELECT id_categoria FROM categorias WHERE LOWER(nombre_categoria) = LOWER(?) LIMIT 1',
+      [nombre_categoria.trim()]
+    );
+    if (existe.length > 0) {
+      return res.status(409).json({ message: 'Ya existe una categoría con ese nombre' });
+    }
+
     const [result] = await pool.query(
       'INSERT INTO categorias (nombre_categoria, descripcion) VALUES (?, ?)',
-      [nombre_categoria, descripcion]
+      [nombre_categoria.trim(), descripcion]
     );
     res.status(201).json({
       message: 'Categoría creada exitosamente',
@@ -52,9 +60,17 @@ export const updateCategoria = async (req, res) => {
   }
 
   try {
+    const [existe] = await pool.query(
+      'SELECT id_categoria FROM categorias WHERE LOWER(nombre_categoria) = LOWER(?) AND id_categoria != ? LIMIT 1',
+      [nombre_categoria.trim(), id]
+    );
+    if (existe.length > 0) {
+      return res.status(409).json({ message: 'Ya existe una categoría con ese nombre' });
+    }
+
     const [result] = await pool.query(
       'UPDATE categorias SET nombre_categoria = ?, descripcion = ? WHERE id_categoria = ?',
-      [nombre_categoria, descripcion, id]
+      [nombre_categoria.trim(), descripcion, id]
     );
 
     if (result.affectedRows === 0) {

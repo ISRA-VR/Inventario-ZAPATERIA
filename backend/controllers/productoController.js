@@ -1,4 +1,5 @@
 import Producto from '../models/Producto.js';
+import pool from '../config/db.js';
 
 const isValidModelo = (value = '') => {
   const modelo = String(value || '').trim();
@@ -81,6 +82,15 @@ export const createProducto = async (req, res) => {
 
     if (!areValidColores(colores)) {
       return res.status(400).json({ message: 'El color es obligatorio y no puede ser solo guiones o símbolos.' });
+    }
+
+    // Verificar duplicado: mismo modelo en la misma categoría
+    const [duplicado] = await pool.query(
+      'SELECT id_producto FROM productos WHERE LOWER(modelo) = LOWER(?) AND id_categoria = ? LIMIT 1',
+      [modelo.trim(), id_categoria || null]
+    );
+    if (duplicado.length > 0) {
+      return res.status(409).json({ message: 'Ya existe un modelo con ese nombre en esta categoría' });
     }
 
     // req.user lo pone el middleware protect, tiene los datos del usuario logueado

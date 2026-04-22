@@ -198,6 +198,12 @@ const CategoriasPage = () => {
 
   const handleCrear = async () => {
     if (!formCrear.nombre.trim()) return;
+    const nombreNuevo = formCrear.nombre.trim().toLowerCase();
+    const duplicado = categorias.some((c) => c.nombre_categoria.trim().toLowerCase() === nombreNuevo);
+    if (duplicado) {
+      toast.error('Ya existe una categoría con ese nombre');
+      return;
+    }
     try {
       await axios.post(
         API_CATEGORIAS,
@@ -227,6 +233,14 @@ const CategoriasPage = () => {
 
   const handleEditar = async () => {
     if (!formEditar.nombre.trim() || !categoriaActual) return;
+    const nombreEditado = formEditar.nombre.trim().toLowerCase();
+    const duplicado = categorias.some(
+      (c) => c.nombre_categoria.trim().toLowerCase() === nombreEditado && c.id_categoria !== categoriaActual.id_categoria
+    );
+    if (duplicado) {
+      toast.error('Ya existe una categoría con ese nombre');
+      return;
+    }
     try {
       await axios.put(
         `${API_CATEGORIAS}/${categoriaActual.id_categoria}`,
