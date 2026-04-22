@@ -199,10 +199,6 @@ export const registrarDevolucion = async (req, res) => {
   }
 };
 
-// backend/controllers/devolucionesController.js
-
-import pool from '../config/db.js';
-
 export const getMontoVenta = async (numeroVenta) => {
   try {
     const [rows] = await pool.query(
