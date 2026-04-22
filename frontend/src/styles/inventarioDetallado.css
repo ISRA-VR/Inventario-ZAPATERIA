@@ -249,6 +249,36 @@
   background: #f8fbff;
 }
 
+.id-category-group-row td {
+  background: #f1f5f9;
+  border-top: 1px solid #d8e3f0;
+  border-bottom: 1px solid #d8e3f0;
+  padding: 10px 14px;
+}
+
+.id-category-group-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.id-category-group-count {
+  margin-left: 10px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.id-model-cell {
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .id-tallas-wrap {
   display: flex;
   flex-wrap: wrap;

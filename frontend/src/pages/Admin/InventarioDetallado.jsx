@@ -13,6 +13,11 @@ const VARIANT_LOW_STOCK_LIMIT = 30;
 const DELETE_UNDO_MS = 3000;
 
 const normalizeText = (value = '') => String(value || '').trim().toLowerCase();
+const normalizeCategoryId = (value) => {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 const modeloEsValido = (value = '') => {
   const limpio = String(value || '').trim();
   if (!limpio) return false;
@@ -281,7 +286,11 @@ const buildResumenModelos = (items = []) => {
         .filter((v) => Number(v.stock || 0) <= VARIANT_LOW_STOCK_LIMIT && !isPlaceholderVariant(v.talla, v.color))
         .map((v) => ({ ...v, stock: Number(v.stock || 0) })),
     }))
-    .sort((a, b) => a.modelo.localeCompare(b.modelo));
+    .sort((a, b) => {
+      const porCategoria = String(a.categoria || '').localeCompare(String(b.categoria || ''));
+      if (porCategoria !== 0) return porCategoria;
+      return String(a.modelo || '').localeCompare(String(b.modelo || ''));
+    });
 };
 
 const getVariantesParaFiltroStock = (item, filtroStock) => {
@@ -367,6 +376,28 @@ export default function InventarioDetalladoPage() {
     };
   }, []);
 
+  const modeloDuplicadoCrear = useMemo(() => {
+    const modelo = normalizeText(formCrear.modelo);
+    const categoria = normalizeCategoryId(formCrear.id_categoria);
+    if (!modelo || categoria === null) return false;
+
+    return productos.some(
+      (p) => normalizeText(p?.modelo) === modelo && normalizeCategoryId(p?.id_categoria) === categoria
+    );
+  }, [productos, formCrear.modelo, formCrear.id_categoria]);
+
+  const modeloDuplicadoEditar = useMemo(() => {
+    const modelo = normalizeText(formEditar.modelo);
+    const categoria = normalizeCategoryId(formEditar.id_categoria);
+    if (!modelo || categoria === null || !productoActual?.id_producto) return false;
+
+    return productos.some(
+      (p) => Number(p?.id_producto) !== Number(productoActual.id_producto)
+        && normalizeText(p?.modelo) === modelo
+        && normalizeCategoryId(p?.id_categoria) === categoria
+    );
+  }, [productos, formEditar.modelo, formEditar.id_categoria, productoActual]);
+
   const validarFormulario = (form) => {
     const camposRequeridos = {
       modelo: 'Modelo',
@@ -405,7 +436,21 @@ export default function InventarioDetalladoPage() {
 
   const handleCrear = async (e) => {
     e.preventDefault();
+    if (modeloDuplicadoCrear) {
+      toast.warn('Ya existe un modelo con ese nombre en esta categoría.');
+      return;
+    }
     if (!validarFormulario(formCrear)) return;
+
+    const modeloCrear = normalizeText(formCrear.modelo);
+    const categoriaCrear = normalizeCategoryId(formCrear.id_categoria);
+    const existeDuplicado = productos.some(
+      (p) => normalizeText(p?.modelo) === modeloCrear && normalizeCategoryId(p?.id_categoria) === categoriaCrear
+    );
+    if (existeDuplicado) {
+      toast.warn('Ya existe un modelo con ese nombre en esta categoría.');
+      return;
+    }
 
     try {
       const pairs = buildVariantPairs(parseTallas(formCrear.tallas), parseColores(formCrear.colores));
@@ -507,8 +552,24 @@ export default function InventarioDetalladoPage() {
 
   const handleEditar = async (e) => {
     e.preventDefault();
+    if (modeloDuplicadoEditar) {
+      toast.warn('Ya existe un modelo con ese nombre en esta categoría.');
+      return;
+    }
     if (!validarFormulario(formEditar)) return;
     if (!productoActual?.id_producto) return;
+
+    const modeloEditar = normalizeText(formEditar.modelo);
+    const categoriaEditar = normalizeCategoryId(formEditar.id_categoria);
+    const existeDuplicado = productos.some(
+      (p) => Number(p?.id_producto) !== Number(productoActual?.id_producto)
+        && normalizeText(p?.modelo) === modeloEditar
+        && normalizeCategoryId(p?.id_categoria) === categoriaEditar
+    );
+    if (existeDuplicado) {
+      toast.warn('Ya existe un modelo con ese nombre en esta categoría.');
+      return;
+    }
 
     try {
       const pairs = buildVariantPairs(parseTallas(formEditar.tallas), parseColores(formEditar.colores));
@@ -780,6 +841,18 @@ export default function InventarioDetalladoPage() {
     });
   }, [resumenModelos, filtroStock]);
 
+  const gruposPorCategoria = useMemo(() => {
+    const map = new Map();
+    resumenModelosFiltrados.forEach((item) => {
+      const categoria = item?.categoria || 'Sin categoría';
+      if (!map.has(categoria)) {
+        map.set(categoria, []);
+      }
+      map.get(categoria).push(item);
+    });
+    return Array.from(map.entries()).map(([categoria, items]) => ({ categoria, items }));
+  }, [resumenModelosFiltrados]);
+
   const totalStockVista = resumenModelosFiltrados.reduce((acc, item) => acc + item.stockTotal, 0);
   const tieneFiltrosActivos = Boolean(
     busquedaModelo.trim() || filtroCategoria || filtroColor || filtroStock
@@ -890,7 +963,6 @@ export default function InventarioDetalladoPage() {
             <table className="id-table">
               <thead>
                 <tr>
-                  <th>Categoría</th>
                   <th>Modelo</th>
                   <th>Colores</th>
                   <th>Tallas</th>
@@ -900,124 +972,132 @@ export default function InventarioDetalladoPage() {
                 </tr>
               </thead>
               <tbody>
-                {resumenModelosFiltrados.map((row) => {
-                  const rowCompleto = resumenModelosCompletos.get(row.idProducto) || row;
-                  const mostrarMatrizAutomatica = filtroStock === 'bajo' || filtroStock === 'agotado';
-                  const detalleAbierto = mostrarMatrizAutomatica || expandedModelId === row.idProducto;
-                  return (
-                  <React.Fragment key={row.idProducto}>
-                    <tr className={tieneFiltrosActivos ? 'id-row-filtered' : ''}>
-                      <td>{row.categoria}</td>
-                      <td>{row.modelo}</td>
-                      <td>{renderCompactChips(row.colores, `${row.idProducto}-c`)}</td>
-                      <td>{renderCompactChips(row.tallas, `${row.idProducto}-t`)}</td>
-                      <td>{row.stockTotal}</td>
-                      <td>{formatPrecio(row.precio)}</td>
-                      <td>
-                        <div className="id-actions">
-                          <button
-                            type="button"
-                            className="id-edit-btn"
-                            onClick={() => abrirEditar(rowCompleto)}
-                            title="Modificar modelo"
-                            aria-label="Modificar modelo"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="id-delete-btn"
-                            onClick={() => handleEliminar(rowCompleto)}
-                            title="Eliminar modelo"
-                            aria-label="Eliminar modelo"
-                          >
-                            Eliminar
-                          </button>
-                          <button
-                            type="button"
-                            className="id-toggle-btn"
-                            onClick={() => setExpandedModelId((prev) => (prev === row.idProducto ? null : row.idProducto))}
-                            style={{ display: mostrarMatrizAutomatica ? 'none' : 'inline-flex' }}
-                          >
-                            {expandedModelId === row.idProducto ? 'Ocultar' : 'Ver detalle'}
-                          </button>
-                        </div>
+                {gruposPorCategoria.map((grupo) => (
+                  <React.Fragment key={`categoria-${grupo.categoria}`}>
+                    <tr className="id-category-group-row">
+                      <td colSpan={6}>
+                        <span className="id-category-group-chip">{grupo.categoria}</span>
+                        <span className="id-category-group-count">{grupo.items.length} modelo(s)</span>
                       </td>
                     </tr>
-                    {detalleAbierto && (
-                      <tr className="id-expand-row">
-                        <td colSpan={7}>
-                          <div className="id-expand-card">
-                            <div className="id-matrix-wrap">
-                              <table className="id-matrix-table">
-                                <thead>
-                                  <tr>
-                                    <th>Talla</th>
-                                    <th>Color</th>
-                                    <th>Stock</th>
-                                    <th>Estado</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(() => {
-                                    const variantesValidas = mostrarMatrizAutomatica
-                                      ? getVariantesParaFiltroStock(rowCompleto, filtroStock)
-                                      : rowCompleto.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
-                                    const gruposPorColor = variantesValidas.reduce((acc, v) => {
-                                      const key = String(v.color || 'N/A');
-                                      if (!acc[key]) acc[key] = [];
-                                      acc[key].push(v);
-                                      return acc;
-                                    }, {});
 
-                                    if (!Object.keys(gruposPorColor).length) {
-                                      return (
+                    {grupo.items.map((row) => {
+                      const rowCompleto = resumenModelosCompletos.get(row.idProducto) || row;
+                      const mostrarMatrizAutomatica = filtroStock === 'bajo' || filtroStock === 'agotado';
+                      const detalleAbierto = mostrarMatrizAutomatica || expandedModelId === row.idProducto;
+
+                      return (
+                        <React.Fragment key={row.idProducto}>
+                          <tr className={tieneFiltrosActivos ? 'id-row-filtered' : ''}>
+                            <td className="id-model-cell">{row.modelo}</td>
+                            <td>{renderCompactChips(row.colores, `${row.idProducto}-c`)}</td>
+                            <td>{renderCompactChips(row.tallas, `${row.idProducto}-t`)}</td>
+                            <td>{row.stockTotal}</td>
+                            <td>{formatPrecio(row.precio)}</td>
+                            <td>
+                              <div className="id-actions">
+                                <button
+                                  type="button"
+                                  className="id-edit-btn"
+                                  onClick={() => abrirEditar(rowCompleto)}
+                                  title="Modificar modelo"
+                                  aria-label="Modificar modelo"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="id-delete-btn"
+                                  onClick={() => handleEliminar(rowCompleto)}
+                                  title="Eliminar modelo"
+                                  aria-label="Eliminar modelo"
+                                >
+                                  Eliminar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="id-toggle-btn"
+                                  onClick={() => setExpandedModelId((prev) => (prev === row.idProducto ? null : row.idProducto))}
+                                  style={{ display: mostrarMatrizAutomatica ? 'none' : 'inline-flex' }}
+                                >
+                                  {expandedModelId === row.idProducto ? 'Ocultar' : 'Ver detalle'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {detalleAbierto && (
+                            <tr className="id-expand-row">
+                              <td colSpan={6}>
+                                <div className="id-expand-card">
+                                  <div className="id-matrix-wrap">
+                                    <table className="id-matrix-table">
+                                      <thead>
                                         <tr>
-                                          <td colSpan={4} className="id-estado">No hay variantes para este filtro.</td>
+                                          <th>Talla</th>
+                                          <th>Color</th>
+                                          <th>Stock</th>
+                                          <th>Estado</th>
                                         </tr>
-                                      );
-                                    }
+                                      </thead>
+                                      <tbody>
+                                        {(() => {
+                                          const variantesValidas = mostrarMatrizAutomatica
+                                            ? getVariantesParaFiltroStock(rowCompleto, filtroStock)
+                                            : rowCompleto.variantes.filter((v) => !isPlaceholderVariant(v.talla, v.color));
+                                          const gruposPorColor = variantesValidas.reduce((acc, v) => {
+                                            const key = String(v.color || 'N/A');
+                                            if (!acc[key]) acc[key] = [];
+                                            acc[key].push(v);
+                                            return acc;
+                                          }, {});
 
-                                    return Object.entries(gruposPorColor).flatMap(([color, items]) =>
-                                      items.map((v, idx) => {
-                                        const stock = Number(v.stock || 0);
-                                        const agotado = stock === 0;
-                                        const bajo = stock < VARIANT_LOW_STOCK_LIMIT;
-                                        return (
-                                          <tr key={`${row.idProducto}-mx-${v.talla}-${color}-${idx}`}>
-                                            <td className="id-matrix-talla">{v.talla}</td>
-                                            {idx === 0 && (
-                                              <td rowSpan={items.length} className="id-matrix-color-group">{color}</td>
-                                            )}
-                                            <td className={bajo ? 'id-stock-bajo-cell' : ''}>{stock}</td>
-                                            <td>
-                                              <span className={`id-variant-status ${agotado ? 'is-out' : (bajo ? 'is-low' : 'is-ok')}`}>
-                                                {agotado ? 'Agotado' : (bajo ? 'Stock bajo' : 'Disponible')}
-                                              </span>
-                                            </td>
-                                          </tr>
-                                        );
-                                      })
-                                    );
-                                  })()}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                                          if (!Object.keys(gruposPorColor).length) {
+                                            return (
+                                              <tr>
+                                                <td colSpan={4} className="id-estado">No hay variantes para este filtro.</td>
+                                              </tr>
+                                            );
+                                          }
+
+                                          return Object.entries(gruposPorColor).flatMap(([color, items]) =>
+                                            items.map((v, idx) => {
+                                              const stock = Number(v.stock || 0);
+                                              const agotado = stock === 0;
+                                              const bajo = stock < VARIANT_LOW_STOCK_LIMIT;
+                                              return (
+                                                <tr key={`${row.idProducto}-mx-${v.talla}-${color}-${idx}`}>
+                                                  <td className="id-matrix-talla">{v.talla}</td>
+                                                  {idx === 0 && (
+                                                    <td rowSpan={items.length} className="id-matrix-color-group">{color}</td>
+                                                  )}
+                                                  <td className={bajo ? 'id-stock-bajo-cell' : ''}>{stock}</td>
+                                                  <td>
+                                                    <span className={`id-variant-status ${agotado ? 'is-out' : (bajo ? 'is-low' : 'is-ok')}`}>
+                                                      {agotado ? 'Agotado' : (bajo ? 'Stock bajo' : 'Disponible')}
+                                                    </span>
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })
+                                          );
+                                        })()}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </React.Fragment>
-                );})}
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </section>
-
-      <p className="id-note">
-        Nota: el stock se muestra por cada combinación de talla y color registrada en el inventario.
-      </p>
 
       {modalCrear && (
         <div className="modal-overlay" onClick={() => setModalCrear(false)}>
@@ -1031,11 +1111,13 @@ export default function InventarioDetalladoPage() {
                 form={formCrear}
                 setForm={setFormCrear}
                 categorias={categoriasOptions}
+                productos={productos}
+                modeloDuplicado={modeloDuplicadoCrear}
               />
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalCrear(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleCrear}>Registrar</button>
+              <button className="btn-primary" onClick={handleCrear} disabled={modeloDuplicadoCrear}>Registrar</button>
             </div>
           </div>
         </div>
@@ -1053,11 +1135,13 @@ export default function InventarioDetalladoPage() {
                 form={formEditar}
                 setForm={setFormEditar}
                 categorias={categoriasOptions}
+                productos={productos}
+                modeloDuplicado={modeloDuplicadoEditar}
               />
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalEditar(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleEditar}>Guardar cambios</button>
+              <button className="btn-primary" onClick={handleEditar} disabled={modeloDuplicadoEditar}>Guardar cambios</button>
             </div>
           </div>
         </div>
@@ -1086,7 +1170,7 @@ export default function InventarioDetalladoPage() {
   );
 }
 
-const FormularioProducto = ({ form, setForm, categorias }) => {
+const FormularioProducto = ({ form, setForm, categorias, productos = [], modeloDuplicado = false }) => {
   const [nuevaTalla, setNuevaTalla] = useState('');
   const [nuevoColor, setNuevoColor] = useState('');
   const tallasSeleccionadas = useMemo(
@@ -1097,12 +1181,46 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
   const combinaciones = useMemo(() => buildVariantPairs(tallasSeleccionadas, coloresSeleccionados), [tallasSeleccionadas, coloresSeleccionados]);
   const stockVariantes = useMemo(() => normalizeVariantStocks(combinaciones, form.stock_variantes), [combinaciones, form.stock_variantes]);
   const stockTotalCalculado = useMemo(() => sumVariantStocks(stockVariantes), [stockVariantes]);
+  const modelosSugeridos = useMemo(() => {
+    const map = new Map();
+    (Array.isArray(productos) ? productos : []).forEach((p) => {
+      const modelo = String(p?.modelo || '').trim();
+      if (!modelo) return;
+      const key = normalizeText(modelo);
+      if (!map.has(key)) map.set(key, modelo);
+    });
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [productos]);
+
+  const getCoincidenciaExacta = (modeloRaw = '') => {
+    const objetivo = normalizeText(modeloRaw);
+    if (!objetivo) return null;
+    const matches = (Array.isArray(productos) ? productos : [])
+      .filter((p) => normalizeText(p?.modelo) === objetivo);
+    if (matches.length !== 1) return null;
+    return matches[0];
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'modelo') {
-      setForm((prev) => ({ ...prev, [name]: value }));
+      const match = getCoincidenciaExacta(value);
+      if (!match) {
+        setForm((prev) => ({ ...prev, [name]: value }));
+        return;
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        modelo: value,
+        id_categoria: match?.id_categoria ?? '',
+        precio: Number.isFinite(Number(match?.precio)) ? String(match.precio) : prev.precio,
+        tallas: String(match?.tallas || prev.tallas || ''),
+        colores: String(match?.colores || prev.colores || ''),
+        estado: String(match?.estado || prev.estado || 'activo'),
+        stock_variantes: {},
+      }));
       return;
     }
 
@@ -1216,9 +1334,23 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
           value={form.modelo}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          list="inventario-modelos-admin"
           placeholder="Ej. 1100"
           autoFocus
         />
+        <datalist id="inventario-modelos-admin">
+          {modelosSugeridos.map((modelo) => (
+            <option key={modelo} value={modelo} />
+          ))}
+        </datalist>
+        <small style={{ color: '#667085', display: 'block', marginTop: 6 }}>
+          Sugerencias basadas en el inventario actual.
+        </small>
+        {modeloDuplicado && (
+          <small style={{ color: '#b42318', display: 'block', marginTop: 6 }}>
+            Ya existe un modelo con ese nombre en esta categoría.
+          </small>
+        )}
       </div>
 
       <div className="form-group span-2">

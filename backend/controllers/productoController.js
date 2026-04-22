@@ -45,6 +45,30 @@ const areValidColores = (rawColores = '') => {
   return lista.length > 0 && lista.every((item) => isValidColorValue(item));
 };
 
+const findDuplicateModeloByCategoria = async ({ modelo, idCategoria, excludeId = null }) => {
+  const normalizedModelo = String(modelo || '').trim();
+  const normalizedCategoria = idCategoria || null;
+
+  const sql = `
+    SELECT id_producto
+    FROM productos
+    WHERE LOWER(TRIM(modelo)) = LOWER(?)
+      AND ((id_categoria IS NULL AND ? IS NULL) OR id_categoria = ?)
+      AND (? IS NULL OR id_producto != ?)
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [
+    normalizedModelo,
+    normalizedCategoria,
+    normalizedCategoria,
+    excludeId,
+    excludeId,
+  ]);
+
+  return rows.length > 0;
+};
+
 // Obtener todos los productos
 export const getProductos = async (req, res) => {
   try {
@@ -71,8 +95,10 @@ export const getProductoById = async (req, res) => {
 export const createProducto = async (req, res) => {
   try {
     const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, colores } = req.body;
+    const modeloNormalizado = String(modelo || '').trim();
+    const categoriaNormalizada = id_categoria || null;
 
-    if (!isValidModelo(modelo)) {
+    if (!isValidModelo(modeloNormalizado)) {
       return res.status(400).json({ message: 'El modelo es obligatorio y no puede ser solo guiones o símbolos.' });
     }
 
@@ -85,11 +111,11 @@ export const createProducto = async (req, res) => {
     }
 
     // Verificar duplicado: mismo modelo en la misma categoría
-    const [duplicado] = await pool.query(
-      'SELECT id_producto FROM productos WHERE LOWER(modelo) = LOWER(?) AND id_categoria = ? LIMIT 1',
-      [modelo.trim(), id_categoria || null]
-    );
-    if (duplicado.length > 0) {
+    const duplicado = await findDuplicateModeloByCategoria({
+      modelo: modeloNormalizado,
+      idCategoria: categoriaNormalizada,
+    });
+    if (duplicado) {
       return res.status(409).json({ message: 'Ya existe un modelo con ese nombre en esta categoría' });
     }
 
@@ -97,8 +123,8 @@ export const createProducto = async (req, res) => {
     const registrado_por = req.user?.nombre || req.user?.email || 'Desconocido';
 
     const savedProducto = await Producto.create({
-      modelo,
-      id_categoria: id_categoria || null,
+      modelo: modeloNormalizado,
+      id_categoria: categoriaNormalizada,
       stock,
       precio,
       estado,
@@ -120,8 +146,10 @@ export const updateProducto = async (req, res) => {
   try {
     const { modelo, id_categoria, stock, precio, estado, tallas, cantidad_inicial, colores } = req.body;
     const { id } = req.params;
+    const modeloNormalizado = String(modelo || '').trim();
+    const categoriaNormalizada = id_categoria || null;
 
-    if (!isValidModelo(modelo)) {
+    if (!isValidModelo(modeloNormalizado)) {
       return res.status(400).json({ message: 'El modelo es obligatorio y no puede ser solo guiones o símbolos.' });
     }
 
@@ -138,9 +166,18 @@ export const updateProducto = async (req, res) => {
       return res.status(404).json({ message: 'Modelo no encontrado' });
     }
 
+    const duplicado = await findDuplicateModeloByCategoria({
+      modelo: modeloNormalizado,
+      idCategoria: categoriaNormalizada,
+      excludeId: Number(id),
+    });
+    if (duplicado) {
+      return res.status(409).json({ message: 'Ya existe un modelo con ese nombre en esta categoría' });
+    }
+
     const updatedProducto = await Producto.update(id, {
-      modelo,
-      id_categoria: id_categoria || null,
+      modelo: modeloNormalizado,
+      id_categoria: categoriaNormalizada,
       stock,
       precio,
       estado,
