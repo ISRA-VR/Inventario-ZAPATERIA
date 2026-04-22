@@ -198,3 +198,23 @@ export const registrarDevolucion = async (req, res) => {
     return res.status(500).json({ message: 'Error del servidor.' });
   }
 };
+
+// backend/controllers/devolucionesController.js
+
+import pool from '../config/db.js';
+
+export const getMontoVenta = async (numeroVenta) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT SUM(monto) AS total
+       FROM asistente_movimientos
+       WHERE event_key LIKE ? AND tipo = 'salida'`,
+      [numeroVenta]
+    );
+
+    return rows[0]?.total || 0;
+  } catch (error) {
+    console.error("Error obteniendo monto de venta:", error);
+    return 0;
+  }
+};

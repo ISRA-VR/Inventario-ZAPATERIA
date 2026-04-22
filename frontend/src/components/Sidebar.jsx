@@ -7,7 +7,8 @@ import {
   Home, Users, Package, Tags,
   ArrowUpRight, Search,
   FileText, History, LogOut, ChevronLeft, ChevronRight, AlertTriangle, Store,
-  ReceiptText, Menu, X, User
+  ReceiptText, Menu, X, User,
+  RotateCcw
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -87,6 +88,12 @@ const Sidebar = () => {
       icon: <ReceiptText size={20} />,
       label: 'Ir a Caja',
       path: `${basePuntoVentaPath}/caja`,
+      roles: ['admin', 'empleado']
+    },
+    {
+      icon: <RotateCcw size={20} />,
+      label: 'Devoluciones',
+      path: `${basePuntoVentaPath}/devoluciones`,
       roles: ['admin', 'empleado']
     },
   ];

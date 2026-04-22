@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import ConfirmResetRequest from "./pages/ConfirmResetRequest";
 import AdminLayout from "./pages/AdminLayout";
+import Devoluciones from "./pages/punto-venta/devoluciones";
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="punto-venta" element={<PuntoVentaPage />} />
             <Route path="punto-venta/caja" element={<CajaPage />} />
             <Route path="punto-venta/historial" element={<HistorialVentasPage />} />
+            <Route path="punto-venta/devoluciones" element={<Devoluciones />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
 
