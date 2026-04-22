@@ -16,6 +16,13 @@ const port = Number(process.env.PORT || 3001);
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send(`
+    <h1>🚀 API STOCKFLOW</h1>
+    <p>Servidor funcionando correctamente</p>
+  `);
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/productos", productosRoutes);
 app.use("/api/categorias", categoriasRoutes);

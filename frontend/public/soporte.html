@@ -1,667 +1,322 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Soporte Técnico - M.A.Y.I.E</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soporte Técnico - Beni Van</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --navy:    #060E1F;
-      --blue:    #1558D6;
-      --sky:     #3B8FFF;
-      --accent:  #00D4FF;
-      --light:   #EAF2FF;
-      --white:   #ffffff;
-      --muted:   #8499BB;
-      --border:  rgba(53, 120, 230, 0.18);
-      --text:    #0D1B38;
-      --card-bg: rgba(255,255,255,0.82);
+      --primary: #0E65C6;
+      --secondary: #082F5A;
+      --bg: #F8FAFC;
+      --white: #ffffff;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --text: #1e293b;
     }
 
-    /* ── BASE ── */
     body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--navy);
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: linear-gradient(135deg, #f8fbff 0%, #f0f6ff 100%);
       color: var(--text);
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
-    /* ── HERO HEADER ── */
-    .hero {
+    /* ── HEADER ── */
+    .page-header {
+      background: linear-gradient(135deg, var(--secondary) 0%, #0d4a8a 100%);
       position: relative;
-      background: var(--navy);
-      padding: 0;
       overflow: hidden;
-      min-height: 420px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
+      padding: 72px 0 56px;
+      box-shadow: 0 12px 32px rgba(8, 47, 90, 0.18);
     }
 
-    /* Animated mesh background */
-    .hero-mesh {
+    .page-header::before {
+      content: '';
       position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 70% 80% at 10% 40%, rgba(21,88,214,0.45) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 60% at 85% 20%, rgba(0,212,255,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 60% 90%, rgba(59,143,255,0.22) 0%, transparent 55%);
-      z-index: 0;
-    }
-
-    /* Grid texture */
-    .hero-grid {
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(53,120,230,0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(53,120,230,0.08) 1px, transparent 1px);
-      background-size: 48px 48px;
-      z-index: 0;
-    }
-
-    /* Floating orbs */
-    .orb {
-      position: absolute;
+      top: -80px;
+      right: -60px;
+      width: 380px;
+      height: 380px;
       border-radius: 50%;
-      filter: blur(60px);
-      animation: drift 14s ease-in-out infinite;
-      z-index: 0;
-    }
-    .orb-1 { width: 360px; height: 360px; background: rgba(21,88,214,0.35); top: -80px; left: -60px; animation-delay: 0s; }
-    .orb-2 { width: 280px; height: 280px; background: rgba(0,212,255,0.15); top: 60px; right: -40px; animation-delay: -5s; }
-    .orb-3 { width: 200px; height: 200px; background: rgba(59,143,255,0.2); bottom: 0; left: 40%; animation-delay: -8s; }
-
-    @keyframes drift {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(20px, -15px) scale(1.03); }
-      66% { transform: translate(-15px, 20px) scale(0.97); }
+      background: rgba(14, 101, 198, 0.25);
+      animation: float 8s ease-in-out infinite;
     }
 
-    .hero-inner {
-      position: relative;
-      z-index: 2;
-      max-width: 960px;
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-20px, 20px); }
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
+    }
+
+    .header-inner {
+      max-width: 900px;
       margin: 0 auto;
-      padding: 60px 40px 0;
-      width: 100%;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Nav pill */
-    .nav-pill {
+    .header-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(12px);
-      border-radius: 40px;
-      padding: 8px 18px 8px 8px;
-      color: rgba(255,255,255,0.75);
-      font-size: 0.78rem;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 36px;
-    }
-
-    .nav-pill-dot {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--blue), var(--accent));
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .nav-pill-dot svg { width: 14px; height: 14px; color: white; }
-
-    .hero-title {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(2.8rem, 6vw, 5rem);
-      font-weight: 800;
-      color: var(--white);
-      line-height: 1.05;
-      letter-spacing: -1.5px;
-      margin-bottom: 18px;
-    }
-
-    .hero-title span {
-      background: linear-gradient(110deg, var(--accent) 0%, var(--sky) 50%, #a78bfa 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-sub {
-      font-size: 1.05rem;
-      color: rgba(255,255,255,0.5);
-      font-weight: 300;
-      max-width: 480px;
-      line-height: 1.7;
-    }
-
-    /* ── TEAM SHOWCASE ── */
-    .team-band {
-      position: relative;
-      z-index: 2;
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 40px;
-      margin-top: 48px;
-    }
-
-    .team-showcase {
-      background: linear-gradient(135deg, rgba(21,88,214,0.3) 0%, rgba(0,212,255,0.12) 100%);
-      border: 1px solid rgba(0,212,255,0.3);
-      border-radius: 24px;
-      padding: 40px 44px;
-      display: flex;
-      align-items: center;
-      gap: 44px;
-      backdrop-filter: blur(20px);
-      position: relative;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(0,212,255,0.1),
-        0 24px 64px rgba(0,0,0,0.4),
-        inset 0 1px 0 rgba(255,255,255,0.1);
-      animation: fadeSlideUp 0.7s cubic-bezier(0.22,1,0.36,1) both;
-    }
-
-    .team-showcase::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.6), rgba(59,143,255,0.4), transparent);
-    }
-
-    .team-showcase::after {
-      content: 'M.A.Y.I.E';
-      position: absolute;
-      right: -20px;
-      top: 50%;
-      transform: translateY(-50%) rotate(90deg);
-      font-family: 'Syne', sans-serif;
-      font-size: 4.5rem;
-      font-weight: 800;
-      color: rgba(255,255,255,0.03);
-      letter-spacing: 0.15em;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(32px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Logo container — the STAR of the show */
-    .logo-showcase {
-      flex-shrink: 0;
-      position: relative;
-      width: 180px;
-      height: 180px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Rotating ring */
-    .logo-ring {
-      position: absolute;
-      inset: -12px;
-      border-radius: 50%;
-      border: 1.5px solid transparent;
-      background: linear-gradient(var(--navy), var(--navy)) padding-box,
-                  conic-gradient(from 0deg, var(--accent), var(--blue), var(--sky), transparent, var(--accent)) border-box;
-      animation: spin 8s linear infinite;
-    }
-
-    .logo-ring-2 {
-      position: absolute;
-      inset: -20px;
-      border-radius: 50%;
-      border: 1px solid transparent;
-      background: linear-gradient(var(--navy), var(--navy)) padding-box,
-                  conic-gradient(from 180deg, rgba(0,212,255,0.4), transparent, rgba(59,143,255,0.3), transparent) border-box;
-      animation: spin 14s linear infinite reverse;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    /* Glow pulses */
-    .logo-glow {
-      position: absolute;
-      inset: -8px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,212,255,0.25), rgba(21,88,214,0.15), transparent 70%);
-      animation: pulse-glow 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.7; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.08); }
-    }
-
-    /* Logo frame */
-    .logo-frame {
-      position: relative;
-      width: 160px;
-      height: 160px;
-      border-radius: 28px;
-      background: linear-gradient(135deg, rgba(21,88,214,0.4), rgba(0,0,0,0.3));
-      border: 1.5px solid rgba(0,212,255,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow:
-        0 0 40px rgba(0,212,255,0.25),
-        0 0 80px rgba(21,88,214,0.2),
-        inset 0 1px 0 rgba(255,255,255,0.15);
-      overflow: hidden;
-      transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
-      z-index: 1;
-      cursor: pointer;
-    }
-
-    .logo-frame:hover {
-      transform: scale(1.06);
-      box-shadow:
-        0 0 60px rgba(0,212,255,0.45),
-        0 0 100px rgba(21,88,214,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-      border-color: rgba(0,212,255,0.7);
-    }
-
-    .logo-frame img {
-      width: 260px;
-      height: auto;
-      filter: drop-shadow(0 4px 12px rgba(0,212,255,0.4)) brightness(1.05);
-      transition: all 0.5s ease;
-    }
-
-    .logo-frame:hover img {
-      filter: drop-shadow(0 8px 24px rgba(0,212,255,0.6)) brightness(1.1);
-    }
-
-    /* Corner accents */
-    .logo-corner {
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border-color: rgba(0,212,255,0.7);
-      border-style: solid;
-    }
-    .logo-corner.tl { top: 6px; left: 6px; border-width: 2px 0 0 2px; border-radius: 2px 0 0 0; }
-    .logo-corner.tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; border-radius: 0 2px 0 0; }
-    .logo-corner.bl { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; border-radius: 0 0 0 2px; }
-    .logo-corner.br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; border-radius: 0 0 2px 0; }
-
-    /* Scanline effect */
-    .logo-frame::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0,212,255,0.025) 3px,
-        rgba(0,212,255,0.025) 4px
-      );
-      pointer-events: none;
-    }
-
-    /* Label */
-    .logo-label {
-      position: absolute;
-      bottom: -32px;
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      font-family: 'Syne', sans-serif;
+      background: rgba(14, 101, 198, 0.25);
+      border: 1px solid rgba(91, 163, 245, 0.45);
+      color: #e0f2fe;
       font-size: 0.7rem;
       font-weight: 700;
-      letter-spacing: 0.18em;
-      color: var(--accent);
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      opacity: 0.8;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(4px);
     }
 
-    /* Team info */
-    .team-info {
-      flex: 1;
-      position: relative;
-      z-index: 1;
+    .header-badge svg {
+      width: 14px;
+      height: 14px;
     }
 
-    .team-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,212,255,0.1);
-      border: 1px solid rgba(0,212,255,0.25);
-      color: var(--accent);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 5px 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
     }
 
-    .team-tag::before {
-      content: '';
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: blink 2s ease-in-out infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .team-name {
-      font-family: 'Syne', sans-serif;
-      font-size: 3rem;
-      font-weight: 800;
-      color: var(--white);
-      letter-spacing: -0.5px;
-      line-height: 1;
-      margin-bottom: 16px;
-    }
-
-    .team-name .dot { color: var(--accent); }
-
-    .team-desc {
+    .page-header p {
       font-size: 0.95rem;
-      color: rgba(255,255,255,0.55);
-      line-height: 1.75;
-      margin-bottom: 28px;
-      font-weight: 300;
-      max-width: 420px;
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 400;
+      letter-spacing: 0.3px;
     }
 
-    .cta-email {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, var(--blue) 0%, #0f3fa8 100%);
-      border: 1px solid rgba(59,143,255,0.4);
-      color: var(--white);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 500;
-      padding: 13px 24px;
-      border-radius: 10px;
-      text-decoration: none;
-      letter-spacing: 0.02em;
-      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: 0 8px 24px rgba(21,88,214,0.4);
-    }
-
-    .cta-email:hover {
-      background: linear-gradient(135deg, #1d6cf7 0%, var(--blue) 100%);
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 14px 36px rgba(21,88,214,0.55);
-      border-color: rgba(0,212,255,0.4);
-    }
-
-    .cta-email svg { width: 18px; height: 18px; transition: transform 0.3s ease; }
-    .cta-email:hover svg { transform: translateX(2px) scale(1.1); }
-
-    /* ── CURVED TRANSITION ── */
-    .curve-wrap {
-      position: relative;
-      z-index: 1;
-    }
-
-    .curve-top {
-      width: 100%;
-      height: 80px;
-      background: var(--navy);
-      clip-path: ellipse(55% 100% at 50% 0%);
-    }
-
-    /* ── MAIN CONTENT ── */
-    .main-bg {
-      background: linear-gradient(180deg, #F0F5FF 0%, #E8EEFF 100%);
-      position: relative;
-    }
-
-    .main-bg::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        radial-gradient(circle at 20% 30%, rgba(21,88,214,0.06) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(0,212,255,0.05) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    .content-wrap {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 16px 40px 72px;
-      position: relative;
-    }
-
-    /* Back button */
+    /* ── BACK BUTTON ── */
     .btn-back {
       display: inline-flex;
       align-items: center;
-      gap: 9px;
-      margin-bottom: 40px;
-      padding: 10px 20px;
-      background: white;
+      gap: 10px;
+      margin-bottom: 32px;
+      padding: 11px 20px;
+      background: linear-gradient(135deg, var(--white), #f8fafc);
       border: 1.5px solid var(--border);
       border-radius: 8px;
-      color: var(--navy);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 500;
-      letter-spacing: 0.03em;
+      color: var(--secondary);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     .btn-back:hover {
-      background: var(--navy);
-      color: var(--white);
-      border-color: var(--navy);
-      transform: translateY(-2px) translateX(-2px);
-      box-shadow: 0 8px 20px rgba(6,14,31,0.2);
+      background: linear-gradient(135deg, var(--secondary), #0d4a8a);
+      color: #fff;
+      border-color: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(8, 47, 90, 0.25);
     }
 
-    .btn-back svg { width: 15px; height: 15px; transition: transform 0.3s ease; }
-    .btn-back:hover svg { transform: translateX(-3px); }
-
-    /* ── FEATURES GRID ── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 40px;
-      animation: fadeSlideUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+    .btn-back svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.3s ease;
     }
 
-    .feature-card {
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 18px 22px;
-      text-align: center;
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 2px 16px rgba(21,88,214,0.07);
-      cursor: default;
+    .btn-back:hover svg {
+      transform: translateX(-4px);
     }
 
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--blue), var(--accent));
-      opacity: 0;
-      transition: opacity 0.3s ease;
+    /* ── CONTENT ── */
+    .content-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 32px 64px;
     }
 
-    .feature-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 16px 40px rgba(21,88,214,0.16);
-      border-color: rgba(21,88,214,0.25);
-    }
-
-    .feature-card:hover::before { opacity: 1; }
-
-    .feature-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      margin: 0 auto 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 20px rgba(21,88,214,0.2);
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-
-    .feature-card:hover .feature-icon {
-      transform: scale(1.1) rotate(-6deg);
-    }
-
-    .feature-icon svg { width: 26px; height: 26px; color: white; }
-
-    .feature-card h3 {
-      font-family: 'Syne', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--navy);
-      margin-bottom: 6px;
-      letter-spacing: -0.2px;
-    }
-
-    .feature-card p {
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    /* ── CARDS ── */
+    /* ── CARD ── */
     .card {
-      background: white;
+      background: var(--white);
       border: 1.5px solid var(--border);
-      border-radius: 20px;
+      border-radius: 12px;
       overflow: hidden;
       margin-bottom: 24px;
-      box-shadow: 0 4px 24px rgba(21,88,214,0.08);
-      transition: all 0.4s ease;
-      animation: fadeSlideUp 0.6s cubic-bezier(0.22,1,0.36,1) both;
-      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      animation: fadeUp 0.5s ease both;
+      transition: all 0.3s ease;
     }
 
-    .card:nth-child(2) { animation-delay: 0.1s; }
-    .card:nth-child(3) { animation-delay: 0.18s; }
+    .card:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .card:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+
+    .card:nth-child(4) {
+      animation-delay: 0.2s;
+    }
+
+    .card:nth-child(5) {
+      animation-delay: 0.25s;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
     .card:hover {
-      box-shadow: 0 12px 40px rgba(21,88,214,0.14);
-      border-color: rgba(21,88,214,0.2);
-      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(14, 101, 198, 0.12);
+      border-color: rgba(14, 101, 198, 0.25);
+      transform: translateY(-4px);
     }
 
     .card-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 28px 32px;
-      border-bottom: 1.5px solid var(--border);
-      background: linear-gradient(135deg, rgba(21,88,214,0.03), transparent);
+      gap: 14px;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(14, 101, 198, 0.03), transparent);
     }
 
     .card-icon {
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, var(--blue), var(--sky));
-      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 6px 16px rgba(21,88,214,0.3);
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 4px 12px rgba(14, 101, 198, 0.2);
     }
 
-    .card:hover .card-icon {
-      transform: scale(1.1) rotate(6deg);
+    .card-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #fff;
     }
-
-    .card-icon svg { width: 22px; height: 22px; color: white; }
 
     .card-header h2 {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.35rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
       font-weight: 700;
-      color: var(--navy);
-      letter-spacing: -0.4px;
+      color: var(--secondary);
     }
 
     .card-body {
-      padding: 32px;
+      padding: 28px;
     }
 
     .card-body p {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       line-height: 1.8;
-      color: #4A5568;
-      margin-bottom: 14px;
-      font-weight: 400;
+      color: #475569;
+      margin-bottom: 16px;
     }
 
-    .card-body p:last-child { margin-bottom: 0; }
-
-    /* FAQ */
-    .faq-item {
-      border-bottom: 1px solid rgba(21,88,214,0.08);
-      padding: 22px 0;
+    .card-body p:last-child {
+      margin-bottom: 0;
     }
 
-    .faq-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .faq-item:first-child { padding-top: 0; }
+    /* ── LIST ── */
+    .policy-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-    .faq-q {
+    .policy-list li {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      font-size: 0.98rem;
-      font-weight: 600;
-      color: var(--navy);
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: color 0.2s;
-      font-family: 'Syne', sans-serif;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: #475569;
+      line-height: 1.8;
     }
 
-    .faq-q:hover { color: var(--blue); }
+    .policy-list li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      flex-shrink: 0;
+      margin-top: 8px;
+      box-shadow: 0 2px 4px rgba(14, 101, 198, 0.2);
+    }
 
-    .faq-num {
+    /* ── FAQ ── */
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+
+    .faq-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .faq-item:first-child {
+      padding-top: 0;
+    }
+
+    .faq-question {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .faq-number {
       width: 28px;
       height: 28px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--blue), var(--sky));
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
       color: white;
       font-size: 0.75rem;
       font-weight: 700;
@@ -669,293 +324,481 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      margin-top: 1px;
-      font-family: 'Syne', sans-serif;
     }
 
-    .faq-a {
-      font-size: 0.92rem;
-      color: #5A6A84;
+    .faq-answer {
+      font-size: 0.9rem;
+      color: #475569;
       line-height: 1.8;
-      padding-left: 42px;
+      padding-left: 40px;
     }
 
+    /* ── HIGHLIGHT BOX ── */
     .highlight-box {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: linear-gradient(135deg, rgba(21,88,214,0.06), rgba(0,212,255,0.04));
-      border: 1.5px solid rgba(21,88,214,0.15);
-      border-radius: 12px;
-      padding: 18px 22px;
-      margin-top: 20px;
-      font-size: 0.92rem;
-      color: var(--navy);
+      background: linear-gradient(135deg, #f0f6ff, #e8f1ff);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin-top: 18px;
+      font-size: 0.9rem;
+      color: var(--secondary);
       font-weight: 500;
-      line-height: 1.6;
-      transition: all 0.3s ease;
+      line-height: 1.7;
+      box-shadow: 0 4px 12px rgba(14, 101, 198, 0.1);
     }
 
-    .highlight-box:hover {
-      background: linear-gradient(135deg, rgba(21,88,214,0.1), rgba(0,212,255,0.06));
-      border-color: rgba(21,88,214,0.25);
-      transform: translateX(4px);
+    .email-link {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 2px solid rgba(14, 101, 198, 0.3);
+      padding-bottom: 1px;
+      transition: all 0.2s ease;
     }
 
-    .highlight-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--blue), var(--accent));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 1.1rem;
+    .email-link:hover {
+      color: var(--secondary);
+      border-bottom-color: var(--secondary);
     }
 
     /* ── FOOTER ── */
     .page-footer {
-      background: var(--navy);
-      padding: 36px 40px;
+      border-top: 1.5px solid var(--border);
+      padding: 32px;
+      max-width: 900px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      max-width: none;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(14, 101, 198, 0.02);
     }
 
-    .footer-left p {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.35);
-      font-weight: 300;
+    .page-footer p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
     }
 
     .footer-logo {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.9rem;
+      color: var(--secondary);
+      font-weight: 700;
     }
 
     .footer-logo img {
-      height: 44px;
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      height: 45px;
+      opacity: 0.85;
+      transition: opacity 0.3s ease;
     }
 
+    .footer-logo:hover img {
+      opacity: 1;
+    }
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 800px) {
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    /* ── TEAM CARD ── */
+    .card.team-highlight {
+      background: linear-gradient(135deg, #f0f6ff 0%, #e8f1ff 100%);
+      border: 2px solid var(--primary);
+      position: relative;
+      overflow: hidden;
+    }
 
-      .team-showcase {
-        flex-direction: column;
-        text-align: center;
-        padding: 36px 28px 52px;
-        gap: 32px;
+    .card.team-highlight::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), #5ba3f5, var(--primary));
+    }
+
+    .card-header.team-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #0d4a8a 100%);
+      border-bottom: none;
+    }
+
+    .card-header.team-header h2 {
+      color: white;
+      font-size: 1.4rem;
+    }
+
+    .card-icon.team-icon {
+      background: linear-gradient(135deg, #ffffff, #f0f6ff);
+      box-shadow: 0 6px 20px rgba(14, 101, 198, 0.25);
+    }
+
+    .card-icon.team-icon svg {
+      color: var(--primary);
+      width: 24px;
+      height: 24px;
+    }
+
+    .team-card-content {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 36px;
+      align-items: flex-start;
+    }
+
+    .team-image {
+      text-align: center;
+      position: relative;
+    }
+
+    .team-image::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      background: linear-gradient(135deg, var(--primary), #5ba3f5);
+      border-radius: 16px;
+      opacity: 0.1;
+      z-index: -1;
+    }
+
+    .team-image img {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(14, 101, 198, 0.25);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 3px solid white;
+    }
+
+    .team-image:hover img {
+      transform: scale(1.08) translateY(-4px);
+      box-shadow: 0 16px 48px rgba(14, 101, 198, 0.35);
+    }
+
+    .team-info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .team-description {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--secondary);
+      font-weight: 500;
+    }
+
+    .team-members-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .team-member {
+      padding: 14px 16px;
+      background: white;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .team-member:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(14, 101, 198, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .team-member-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .team-member-name {
+      color: var(--secondary);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .team-contact-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .team-contact-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .team-contact-link:hover::after {
+      transform: scaleX(1);
+    }
+
+    .team-contact-link:hover {
+      color: var(--secondary);
+    }
+
+    .team-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--primary), #5ba3f5);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      width: fit-content;
+    }
+
+    @media (max-width: 768px) {
+      .team-card-content {
+        grid-template-columns: 1fr;
+        gap: 24px;
       }
 
-      .team-desc { margin: 0 auto 28px; }
-      .team-tag, .cta-email { margin: 0 auto; }
-      .team-tag { display: flex; justify-content: center; }
+      .team-image img {
+        max-width: 220px;
+      }
 
-      .logo-label { display: none; }
+      .team-members-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 600px) {
-      .hero-inner { padding: 48px 20px 0; }
-      .team-band { padding: 0 20px; }
-      .content-wrap { padding: 16px 20px 48px; }
-      .card-header { padding: 20px 22px; }
-      .card-body { padding: 20px 22px; }
-      .features-grid { gap: 12px; }
-      .team-name { font-size: 2.4rem; }
-      .page-footer { padding: 28px 20px; flex-direction: column; gap: 16px; text-align: center; }
-    }
-
-    @media (max-width: 480px) {
-      .features-grid { grid-template-columns: 1fr; }
+      .page-footer {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+      .content-wrap {
+        padding: 32px 16px 48px;
+      }
+      .card-body {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- ══ HERO ══ -->
-  <div class="hero">
-    <div class="hero-mesh"></div>
-    <div class="hero-grid"></div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-
-    <div class="hero-inner">
-      <div class="nav-pill">
-        <div class="nav-pill-dot">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg>
-        </div>
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
         Soporte Técnico
       </div>
-
-      <h1 class="hero-title">Centro de<br><span>Soporte</span></h1>
-      <p class="hero-sub">Soluciones técnicas especializadas para tu sistema — rápidas, confiables y documentadas.</p>
+      <h1>Centro de Soporte</h1>
+      <p>Última actualización: Abril 2026 · Beni Van Zapatería</p>
+      <p>Soluciones técnicas especializadas para tu sistema — rápidas, confiables y documentadas.</p>
     </div>
+  </header>
 
-    <!-- Team showcase card -->
-    <div class="team-band" style="margin-bottom: -40px; padding-bottom: 8px;">
-      <div class="team-showcase">
+  <main class="content-wrap">
 
-        <!-- ★ LOGO M.A.Y.I.E ★ -->
-        <div class="logo-showcase">
-          <div class="logo-ring-2"></div>
-          <div class="logo-ring"></div>
-          <div class="logo-glow"></div>
-          <div class="logo-frame">
-            <div class="logo-corner tl"></div>
-            <div class="logo-corner tr"></div>
-            <div class="logo-corner bl"></div>
-            <div class="logo-corner br"></div>
-            <img src="mayie.png" alt="Logo del equipo M.A.Y.I.E">
-          </div>
-          <div class="logo-label">Equipo</div>
-        </div>
-
-        <!-- Info del equipo -->
-        <div class="team-info">
-          <div class="team-tag">Proyecto desarrollado por</div>
-          <div class="team-name">
-            M<span class="dot">.</span>A<span class="dot">.</span>Y<span class="dot">.</span>I<span class="dot">.</span>E
-          </div>
-          <p class="team-desc">
-            ¿Tienes problemas con el sistema? Nuestro equipo está disponible para ayudarte.
-            Nos especializamos en soluciones personalizadas y soporte técnico de calidad.
-          </p>
-          <a class="cta-email" href="mailto:codesmish01@gmail.com">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
-            Contactar al equipo
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ CURVED TRANSITION ══ -->
-  <div class="main-bg">
-    <div class="curve-wrap" style="background: var(--navy);">
-      <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="display:block;width:100%;height:80px;">
-        <path d="M0,0 C360,80 1080,80 1440,0 L1440,80 L0,80 Z" fill="#F0F5FF"/>
+    <button class="btn-back" onclick="window.close()" style="padding: 10px; cursor: pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
       </svg>
+      Cerrar
+    </button>
+
+    <div class="card team-highlight">
+      <div class="card-header team-header">
+        <div class="card-icon team-icon">
+          <img src="faviconMAYIE.png" alt="Logo M.A.Y.I.E" style="width: 30px; height: 30px;">
+        </div>
+        <h2>Equipo de Desarrollo</h2>
+      </div>
+      <div class="card-body" style="padding: 32px;">
+        <div class="team-badge">
+          <span>⭐</span>
+          <span>Proyecto de Desarrollo Web</span>
+        </div>
+        <div class="team-card-content">
+          <div class="team-image">
+            <img src="mayie.png" alt="Logo y equipo M.A.Y.I.E">
+          </div>
+          <div class="team-info-section">
+            <p class="team-description">
+              <strong>M.A.Y.I.E</strong> es un equipo de desarrolladores especializados en la creación de sistemas web innovadores y soluciones tecnológicas integrales. Trabajamos con pasión y precisión para ofrecer herramientas que transforman la gestión empresarial.
+            </p>
+            
+            <div class="team-members-grid">
+              <div class="team-member">
+                <div class="team-member-title">📧 Correo</div>
+                <div class="team-member-name">
+                  <a href="mailto:codesmish01@gmail.com" class="team-contact-link">codesmish01@gmail.com</a>
+                </div>
+              </div>
+              
+              <div class="team-member">
+                <div class="team-member-title">⏰ Disponibilidad</div>
+                <div class="team-member-name">Lunes a viernes<br>8:00 AM - 4:00 PM</div>
+              </div>
+
+              <div class="team-member">
+                <div class="team-member-title">⚡ Respuesta</div>
+                <div class="team-member-name">Máximo 48 horas<br>hábiles</div>
+              </div>
+
+              <div class="team-member">
+                <div class="team-member-title">🎯 Especialidad</div>
+                <div class="team-member-name">Sistemas web,<br>inventario,<br>POS, APIs</div>
+              </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 20px; display: flex; align-items: center; gap: 12px; padding: 16px 18px; background: linear-gradient(135deg, #dbeafe, #e0f2fe); border-left-color: var(--primary);">
+              <span style="font-size: 1.3rem; flex-shrink: 0;">✨</span>
+              <span><strong>Soluciones de calidad</strong> con atención personalizada para cada cliente</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <main class="content-wrap">
-
-      <button class="btn-back" onclick="window.close()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
-        Cerrar
-      </button>
-
-      <!-- Features -->
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon" style="background: linear-gradient(135deg, #1558D6, #3B8FFF);">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-          </div>
-          <h3>Respuesta Rápida</h3>
-          <p>Menos de 24 horas en días hábiles</p>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+          </svg>
         </div>
+        <h2>Acerca del soporte</h2>
+      </div>
+      <div class="card-body">
+        <p>¿Tienes problemas con el sistema? Nuestro equipo está disponible para ayudarte. Nos especializamos en soluciones personalizadas y soporte técnico de calidad.</p>
+        <p>El equipo <strong>M.A.Y.I.E</strong> responde a todas las consultas en máximo <strong>48 horas hábiles</strong>. Puedes contactarnos enviando un correo con una descripción clara del problema.</p>
+        <ul class="policy-list">
+          <li>Respuesta rápida: menos de 48 horas en días hábiles</li>
+          <li>Soporte experto: equipo especializado en desarrollo web</li>
+          <li>Confiable: soluciones probadas y documentadas</li>
+          <li>Disponible 24/5: puedes enviar correos en cualquier momento</li>
+        </ul>
+      </div>
+    </div>
 
-        <div class="feature-card">
-          <div class="feature-icon" style="background: linear-gradient(135deg, #060E1F, #1558D6);">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" /></svg>
-          </div>
-          <h3>Soporte Experto</h3>
-          <p>Equipo especializado en desarrollo web</p>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
         </div>
-
-        <div class="feature-card">
-          <div class="feature-icon" style="background: linear-gradient(135deg, #0CB8D4, #1558D6);">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-          </div>
-          <h3>100% Confiable</h3>
-          <p>Soluciones probadas y documentadas</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon" style="background: linear-gradient(135deg, #3B8FFF, #00D4FF);">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
-          </div>
-          <h3>Correo 24/7</h3>
-          <p>Accesible en cualquier momento</p>
+        <h2>Horario de atención</h2>
+      </div>
+      <div class="card-body">
+        <p>El equipo de soporte M.A.Y.I.E atiende consultas de lunes a viernes en horario laboral. Para incidencias urgentes fuera de este horario, puedes enviar un correo y recibirás respuesta el siguiente día hábil.</p>
+        <div class="highlight-box">
+          ⏱️ Tiempo de respuesta estimado: <strong>menos de 48 horas hábiles</strong> para la mayoría de solicitudes.
         </div>
       </div>
+    </div>
 
-      <!-- FAQ -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg>
-          </div>
-          <h2>Preguntas frecuentes</h2>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+          </svg>
         </div>
-        <div class="card-body">
-          <div class="faq-item">
-            <div class="faq-q">
-              <span class="faq-num">01</span>
-              Olvidé mi contraseña, ¿qué hago?
-            </div>
-            <p class="faq-a">Contacta directamente al administrador del sistema o al equipo de soporte indicando tu nombre y correo registrado. No compartas tu contraseña por ningún medio.</p>
+        <h2>Preguntas frecuentes</h2>
+      </div>
+      <div class="card-body">
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="faq-number">01</span>
+            Olvidé mi contraseña, ¿qué hago?
           </div>
-          <div class="faq-item">
-            <div class="faq-q">
-              <span class="faq-num">02</span>
-              El sistema no me deja iniciar sesión aunque mis datos son correctos.
-            </div>
-            <p class="faq-a">Verifica que el correo no tenga espacios adicionales y que el captcha esté resuelto correctamente. Si el problema persiste después de 8 intentos, espera unos minutos o comunícate con soporte.</p>
+          <p class="faq-answer">Contacta directamente al administrador del sistema o al equipo de soporte indicando tu nombre y correo registrado. No compartas tu contraseña por ningún medio.</p>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="faq-number">02</span>
+            El sistema no me deja iniciar sesión aunque mis datos son correctos.
           </div>
-          <div class="faq-item">
-            <div class="faq-q">
-              <span class="faq-num">03</span>
-              ¿Desde qué dispositivos puedo acceder al sistema?
-            </div>
-            <p class="faq-a">El sistema es compatible con cualquier navegador moderno (Chrome, Firefox, Edge, Safari) tanto en computadora como en tablet o celular. Se recomienda usar la versión más reciente.</p>
+          <p class="faq-answer">Verifica que el correo no tenga espacios adicionales y que el captcha esté resuelto correctamente. Si el problema persiste después de 8 intentos, espera unos minutos o comunícate con soporte.</p>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="faq-number">03</span>
+            ¿Desde qué dispositivos puedo acceder al sistema?
           </div>
-          <div class="faq-item">
-            <div class="faq-q">
-              <span class="faq-num">04</span>
-              Encontré un error o algo no funciona correctamente.
-            </div>
-            <p class="faq-a">Envía un correo al soporte técnico describiendo el problema, el navegador que usas y, si es posible, una captura de pantalla del error. El equipo responde en máximo 24 horas hábiles.</p>
+          <p class="faq-answer">El sistema es compatible con cualquier navegador moderno (Chrome, Firefox, Edge, Safari) tanto en computadora como en tablet o celular. Se recomienda usar la versión más reciente.</p>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="faq-number">04</span>
+            Encontré un error o algo no funciona correctamente.
           </div>
+          <p class="faq-answer">Envía un correo al soporte técnico describiendo el problema, el navegador que usas y, si es posible, una captura de pantalla del error. El equipo responde en máximo 48 horas hábiles.</p>
         </div>
       </div>
+    </div>
 
-      <!-- Horario -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-          </div>
-          <h2>Horario de atención</h2>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+          </svg>
         </div>
-        <div class="card-body">
-          <p>El equipo de soporte M.A.Y.I.E atiende consultas de lunes a viernes en horario laboral. Para incidencias urgentes fuera de este horario, puedes enviar un correo y recibirás respuesta el siguiente día hábil.</p>
-          <div class="highlight-box">
-            <div class="highlight-icon">📬</div>
-            <span>Tiempo de respuesta estimado: <strong>menos de 24 horas hábiles</strong> para la mayoría de solicitudes.</span>
-          </div>
-        </div>
+        <h2>Contacto</h2>
       </div>
+      <div class="card-body">
+        <p>Para cualquier consulta, problema técnico o solicitud de soporte, puedes contactarnos a través del correo electrónico del equipo M.A.Y.I.E.</p>
+        <div class="highlight-box">
+          📧 Correo de soporte: <a class="email-link" href="mailto:codesmish01@gmail.com">codesmish01@gmail.com</a>
+        </div>
+        <p style="margin-top: 16px;">Por favor, incluye en tu correo:</p>
+        <ul class="policy-list">
+          <li>Descripción clara del problema que enfrentas</li>
+          <li>El navegador y dispositivo que estás utilizando</li>
+          <li>Si es posible, una captura de pantalla del error</li>
+          <li>Tu nombre de usuario o correo registrado en el sistema</li>
+        </ul>
+      </div>
+    </div>
 
-    </main>
-  </div>
+  </main>
 
-  <!-- ══ FOOTER ══ -->
   <footer class="page-footer">
-    <div class="footer-left">
-      <p>© 2026 Beni Van Zapatería &nbsp;·&nbsp; Soporte técnico por M.A.Y.I.E</p>
-    </div>
-    <div class="footer-logo">
-      <img src="logo-Beni_Van-sin-fondo.png" alt="Beni Van Logo">
-    </div>
+    <p>© 2026 Beni Van Zapatería · Soporte técnico por M.A.Y.I.E</p>
+    <span class="footer-logo"><img src="logo-Beni_Van-sin-fondo.png" alt="Beni Van Logo" target="_blank"
+        rel="noopener noreferrer" height="50px"></img></span>
   </footer>
 
 </body>
+
 </html>
