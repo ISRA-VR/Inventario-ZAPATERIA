@@ -866,7 +866,62 @@ function Entradas() {
           }
         }
 
-        toast.success("Stock agregado con éxito")
+        // Capturar estado previo para poder deshacer
+        const idsAgregados = new Set(entradasNuevas.map((e) => e.registroId))
+        const precioUsado = Number(formCrear.precio) || Number(productoExistente.precio) || 0
+        const prevTotalStock = Object.values(existingVariantMap).reduce((sum, v) => sum + Number(v || 0), 0)
+
+        const undoAgregarStock = async () => {
+          try {
+            await updateProducto(idProducto, {
+              modelo: productoExistente.modelo,
+              id_categoria: productoExistente.id_categoria,
+              stock: prevTotalStock,
+              precio: precioUsado,
+              estado: productoExistente.estado || "activo",
+              tallas: productoExistente.tallas,
+              colores: productoExistente.colores || "",
+              cantidad_inicial: productoExistente.cantidad_inicial || 0,
+            })
+
+            // Restaurar variantMap en localStorage
+            const vm = readMap(VARIANT_STOCK_MAP_KEY)
+            vm[idProducto] = existingVariantMap
+            localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(vm))
+
+            // Quitar las entradas recién agregadas de localStorage y del estado
+            const rawEnt = localStorage.getItem(ENTRADAS_LS_KEY)
+            const prevList = rawEnt ? JSON.parse(rawEnt) : []
+            const restoredList = Array.isArray(prevList)
+              ? prevList.filter((e) => !idsAgregados.has(e.registroId))
+              : []
+            localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(restoredList))
+            window.dispatchEvent(new Event("entradas-updated"))
+
+            setEntradas((prev) => prev.filter((e) => !idsAgregados.has(e.registroId)))
+
+            window.dispatchEvent(new Event("inventario-updated"))
+            toast.success("Stock revertido.")
+          } catch {
+            toast.error("No se pudo deshacer el stock agregado.")
+          }
+        }
+
+        toast.info(
+          ({ closeToast }) => (
+            <div className="undo-toast-row">
+              <span className="undo-toast-text">Stock agregado para <strong>{productoExistente.modelo}</strong>.</span>
+              <button
+                type="button"
+                onClick={() => { undoAgregarStock(); closeToast?.() }}
+                className="undo-toast-btn"
+              >
+                Deshacer
+              </button>
+            </div>
+          ),
+          { autoClose: 6000 }
+        )
       } else {
         // ── Modo: registrar nuevo modelo ──
         const payload = {
@@ -1204,6 +1259,9 @@ const FormularioRegistroModelo = ({ form, setForm, categorias, productos = [], m
         return
       }
 
+      // Leer stock actual por variante del localStorage para pre-llenar la cuadrícula
+      const storedVariantMap = readMap(VARIANT_STOCK_MAP_KEY)[match.id_producto] || {}
+
       setForm((prev) => ({
         ...prev,
         modelo: value,
@@ -1212,7 +1270,7 @@ const FormularioRegistroModelo = ({ form, setForm, categorias, productos = [], m
         tallas: String(match?.tallas || prev.tallas || ""),
         colores: String(match?.colores || prev.colores || ""),
         estado: String(match?.estado || prev.estado || "activo"),
-        stock_variantes: {},
+        stock_variantes: storedVariantMap,
       }))
       return
     }
