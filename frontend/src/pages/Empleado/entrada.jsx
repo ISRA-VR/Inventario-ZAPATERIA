@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { Box, CalendarDays, BarChart3, User, TriangleAlert, Plus } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
-import { createProducto, getCategorias } from "../../api/productos"
+import { createProducto, getCategorias, getProductos, updateProducto } from "../../api/productos"
 import { registrarMovimientoEntrada } from "../../api/movimientos"
 import { toast } from "react-toastify"
 import "../../styles/entradas.css"
@@ -15,6 +15,11 @@ const VENTAS_LS_KEY = "ventas_punto_venta"
 const ENTRADAS_RESUMEN_LS_KEY = "entradas_resumen"
 
 const normalizeText = (value = "") => String(value || "").trim().toLowerCase()
+const normalizeCategoryId = (value) => {
+  if (value === '' || value === null || value === undefined) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
 const normalizeIdentity = (value = "") => String(value || "").trim().toLowerCase()
 
 const modeloEsValido = (value = "") => {
@@ -271,6 +276,7 @@ function Entradas() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("")
   const [modalRegistrarModelo, setModalRegistrarModelo] = useState(false)
   const [categorias, setCategorias] = useState([])
+  const [productos, setProductos] = useState([])
   const [formCrear, setFormCrear] = useState(FORM_EMPTY)
 
   const persistEntradas = (list = []) => {
@@ -284,16 +290,17 @@ function Entradas() {
   }
 
   useEffect(() => {
-    const cargarCategorias = async () => {
+    const cargarDatos = async () => {
       try {
-        const { data } = await getCategorias()
-        setCategorias(Array.isArray(data) ? data : [])
+        const [catRes, prodRes] = await Promise.all([getCategorias(), getProductos()])
+        setCategorias(Array.isArray(catRes.data) ? catRes.data : [])
+        setProductos(Array.isArray(prodRes.data) ? prodRes.data : [])
       } catch (error) {
-        console.error("Error cargando categorías:", error)
+        console.error("Error cargando datos:", error)
       }
     }
 
-    cargarCategorias()
+    cargarDatos()
   }, [])
 
   useEffect(() => {
@@ -752,7 +759,33 @@ function Entradas() {
     return true
   }
 
+  const modeloDuplicadoCrear = useMemo(() => {
+    const modelo = normalizeText(formCrear.modelo)
+    const categoria = normalizeCategoryId(formCrear.id_categoria)
+    if (!modelo || categoria === null) return false
+    return productos.some(
+      (p) => normalizeText(p?.modelo) === modelo && normalizeCategoryId(p?.id_categoria) === categoria
+    )
+  }, [productos, formCrear.modelo, formCrear.id_categoria])
+
+  // Producto existente con exact match de modelo + categoría (para modo agregar stock)
+  const productoExistente = useMemo(() => {
+    const objetivo = normalizeText(formCrear.modelo)
+    const catId = normalizeCategoryId(formCrear.id_categoria)
+    if (!objetivo || catId === null) return null
+    const matches = productos.filter(
+      (p) => normalizeText(p?.modelo) === objetivo && normalizeCategoryId(p?.id_categoria) === catId
+    )
+    return matches.length === 1 ? matches[0] : null
+  }, [productos, formCrear.modelo, formCrear.id_categoria])
+
+  const modoAgregarStock = productoExistente !== null
+
   const handleRegistrarModelo = async () => {
+    if (modeloDuplicadoCrear && !modoAgregarStock) {
+      toast.warn("Ya existe un modelo con ese nombre en esta categoría.")
+      return
+    }
     if (!validarFormulario(formCrear)) return
 
     try {
@@ -763,62 +796,192 @@ function Entradas() {
       }
 
       const stockVariantes = normalizeVariantStocks(pairs, formCrear.stock_variantes)
-      const payload = {
-        ...formCrear,
-        stock: sumVariantStocks(stockVariantes),
-        precio: Number(formCrear.precio) || 0,
-        stock_variantes: stockVariantes,
-      }
 
-      const { data: productoCreado } = await createProducto(payload)
-      const registradoPor = user?.nombre || user?.email || getSessionUserName()
-      const categoriaNombre = categorias.find(
-        (cat) => Number(cat.id_categoria) === Number(payload.id_categoria)
-      )?.nombre_categoria || null
+      if (modoAgregarStock) {
+        // ── Modo: agregar stock a un producto existente ──
+        const idProducto = productoExistente.id_producto
+        const existingVariantMap = readMap(VARIANT_STOCK_MAP_KEY)[idProducto] || {}
 
-      const entradasNuevas = pairs
-        .map((pair) => ({ pair, cantidad: Number(stockVariantes[pair.key] || 0) }))
-        .filter((item) => item.cantidad > 0)
-        .map((item) =>
-          buildEntradaRecord({
-            idProducto: productoCreado?.id_producto,
-            modelo: payload.modelo,
-            idCategoria: payload.id_categoria,
-            nombreCategoria: categoriaNombre,
-            precio: payload.precio,
-            cantidad: item.cantidad,
-            talla: item.pair.talla,
-            color: item.pair.color,
-            registradoPor,
-            registradoPorId: userIdValido ? userId : null,
-            stockAnterior: 0,
-            stockNuevo: item.cantidad,
-          })
-        )
+        // Sumar las cantidades nuevas al stock actual por variante
+        const mergedVariantMap = { ...existingVariantMap }
+        pairs.forEach((pair) => {
+          const added = Number(stockVariantes[pair.key] || 0)
+          if (added > 0) {
+            mergedVariantMap[pair.key] = (Number(existingVariantMap[pair.key] || 0)) + added
+          }
+        })
 
-      pushEntradasToStorage(entradasNuevas)
+        const totalStock = Object.values(mergedVariantMap).reduce((sum, v) => sum + Number(v || 0), 0)
 
-      if (entradasNuevas.length) {
-        const resultados = await Promise.allSettled(
-          entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
-        )
-        const fallidos = resultados.filter((r) => r.status === "rejected").length
-        if (fallidos > 0) {
-          toast.warning("Algunas entradas no se reflejaron en reportes en tiempo real.")
-        }
-      }
+        await updateProducto(idProducto, {
+          modelo: productoExistente.modelo,
+          id_categoria: productoExistente.id_categoria,
+          stock: totalStock,
+          precio: Number(formCrear.precio) || Number(productoExistente.precio) || 0,
+          estado: productoExistente.estado || "activo",
+          tallas: productoExistente.tallas,
+          colores: productoExistente.colores || "",
+          cantidad_inicial: productoExistente.cantidad_inicial || 0,
+        })
 
-      if (productoCreado?.id_producto) {
-        const colorMap = readMap(COLOR_MAP_KEY)
-        colorMap[productoCreado.id_producto] = parseColores(payload.colores)
-        localStorage.setItem(COLOR_MAP_KEY, JSON.stringify(colorMap))
-
+        // Actualizar localStorage
         const variantMap = readMap(VARIANT_STOCK_MAP_KEY)
-        variantMap[productoCreado.id_producto] = stockVariantes
+        variantMap[idProducto] = mergedVariantMap
         localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(variantMap))
+
+        const registradoPor = user?.nombre || user?.email || getSessionUserName()
+        const categoriaNombre = categorias.find(
+          (cat) => Number(cat.id_categoria) === Number(formCrear.id_categoria)
+        )?.nombre_categoria || null
+
+        const entradasNuevas = pairs
+          .map((pair) => ({ pair, cantidad: Number(stockVariantes[pair.key] || 0) }))
+          .filter((item) => item.cantidad > 0)
+          .map((item) =>
+            buildEntradaRecord({
+              idProducto,
+              modelo: productoExistente.modelo,
+              idCategoria: productoExistente.id_categoria,
+              nombreCategoria: categoriaNombre,
+              precio: Number(formCrear.precio) || Number(productoExistente.precio) || 0,
+              cantidad: item.cantidad,
+              talla: item.pair.talla,
+              color: item.pair.color,
+              registradoPor,
+              registradoPorId: userIdValido ? userId : null,
+              stockAnterior: Number(existingVariantMap[item.pair.key] || 0),
+              stockNuevo: Number(existingVariantMap[item.pair.key] || 0) + item.cantidad,
+            })
+          )
+
+        pushEntradasToStorage(entradasNuevas)
+
+        if (entradasNuevas.length) {
+          const resultados = await Promise.allSettled(
+            entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
+          )
+          const fallidos = resultados.filter((r) => r.status === "rejected").length
+          if (fallidos > 0) {
+            toast.warning("Algunas entradas no se reflejaron en reportes en tiempo real.")
+          }
+        }
+
+        // Capturar estado previo para poder deshacer
+        const idsAgregados = new Set(entradasNuevas.map((e) => e.registroId))
+        const precioUsado = Number(formCrear.precio) || Number(productoExistente.precio) || 0
+        const prevTotalStock = Object.values(existingVariantMap).reduce((sum, v) => sum + Number(v || 0), 0)
+
+        const undoAgregarStock = async () => {
+          try {
+            await updateProducto(idProducto, {
+              modelo: productoExistente.modelo,
+              id_categoria: productoExistente.id_categoria,
+              stock: prevTotalStock,
+              precio: precioUsado,
+              estado: productoExistente.estado || "activo",
+              tallas: productoExistente.tallas,
+              colores: productoExistente.colores || "",
+              cantidad_inicial: productoExistente.cantidad_inicial || 0,
+            })
+
+            // Restaurar variantMap en localStorage
+            const vm = readMap(VARIANT_STOCK_MAP_KEY)
+            vm[idProducto] = existingVariantMap
+            localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(vm))
+
+            // Quitar las entradas recién agregadas de localStorage y del estado
+            const rawEnt = localStorage.getItem(ENTRADAS_LS_KEY)
+            const prevList = rawEnt ? JSON.parse(rawEnt) : []
+            const restoredList = Array.isArray(prevList)
+              ? prevList.filter((e) => !idsAgregados.has(e.registroId))
+              : []
+            localStorage.setItem(ENTRADAS_LS_KEY, JSON.stringify(restoredList))
+            window.dispatchEvent(new Event("entradas-updated"))
+
+            setEntradas((prev) => prev.filter((e) => !idsAgregados.has(e.registroId)))
+
+            window.dispatchEvent(new Event("inventario-updated"))
+            toast.success("Stock revertido.")
+          } catch {
+            toast.error("No se pudo deshacer el stock agregado.")
+          }
+        }
+
+        toast.info(
+          ({ closeToast }) => (
+            <div className="undo-toast-row">
+              <span className="undo-toast-text">Stock agregado para <strong>{productoExistente.modelo}</strong>.</span>
+              <button
+                type="button"
+                onClick={() => { undoAgregarStock(); closeToast?.() }}
+                className="undo-toast-btn"
+              >
+                Deshacer
+              </button>
+            </div>
+          ),
+          { autoClose: 6000 }
+        )
+      } else {
+        // ── Modo: registrar nuevo modelo ──
+        const payload = {
+          ...formCrear,
+          stock: sumVariantStocks(stockVariantes),
+          precio: Number(formCrear.precio) || 0,
+          stock_variantes: stockVariantes,
+        }
+
+        const { data: productoCreado } = await createProducto(payload)
+        const registradoPor = user?.nombre || user?.email || getSessionUserName()
+        const categoriaNombre = categorias.find(
+          (cat) => Number(cat.id_categoria) === Number(payload.id_categoria)
+        )?.nombre_categoria || null
+
+        const entradasNuevas = pairs
+          .map((pair) => ({ pair, cantidad: Number(stockVariantes[pair.key] || 0) }))
+          .filter((item) => item.cantidad > 0)
+          .map((item) =>
+            buildEntradaRecord({
+              idProducto: productoCreado?.id_producto,
+              modelo: payload.modelo,
+              idCategoria: payload.id_categoria,
+              nombreCategoria: categoriaNombre,
+              precio: payload.precio,
+              cantidad: item.cantidad,
+              talla: item.pair.talla,
+              color: item.pair.color,
+              registradoPor,
+              registradoPorId: userIdValido ? userId : null,
+              stockAnterior: 0,
+              stockNuevo: item.cantidad,
+            })
+          )
+
+        pushEntradasToStorage(entradasNuevas)
+
+        if (entradasNuevas.length) {
+          const resultados = await Promise.allSettled(
+            entradasNuevas.map((entrada) => registrarMovimientoEntrada(entrada))
+          )
+          const fallidos = resultados.filter((r) => r.status === "rejected").length
+          if (fallidos > 0) {
+            toast.warning("Algunas entradas no se reflejaron en reportes en tiempo real.")
+          }
+        }
+
+        if (productoCreado?.id_producto) {
+          const colorMap = readMap(COLOR_MAP_KEY)
+          colorMap[productoCreado.id_producto] = parseColores(payload.colores)
+          localStorage.setItem(COLOR_MAP_KEY, JSON.stringify(colorMap))
+
+          const variantMap = readMap(VARIANT_STOCK_MAP_KEY)
+          variantMap[productoCreado.id_producto] = stockVariantes
+          localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(variantMap))
+        }
+
+        toast.success("Modelo registrado con éxito")
       }
 
-      toast.success("Modelo registrado con éxito")
       setFormCrear(FORM_EMPTY)
       setModalRegistrarModelo(false)
       window.dispatchEvent(new Event("inventario-updated"))
@@ -1020,7 +1183,7 @@ function Entradas() {
         <div className="modal-overlay" onClick={() => setModalRegistrarModelo(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Registrar Modelo</h2>
+              <h2>{modoAgregarStock ? "Agregar Stock" : "Registrar Modelo"}</h2>
               <button className="modal-close" onClick={() => setModalRegistrarModelo(false)}>x</button>
             </div>
             <div className="modal-body">
@@ -1028,11 +1191,15 @@ function Entradas() {
                 form={formCrear}
                 setForm={setFormCrear}
                 categorias={categorias}
+                productos={productos}
+                modeloDuplicado={modeloDuplicadoCrear && !modoAgregarStock}
               />
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalRegistrarModelo(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleRegistrarModelo}>Registrar</button>
+              <button className="btn-primary" onClick={handleRegistrarModelo} disabled={modeloDuplicadoCrear && !modoAgregarStock}>
+                {modoAgregarStock ? "Agregar stock" : "Registrar"}
+              </button>
             </div>
           </div>
         </div>,
@@ -1042,7 +1209,7 @@ function Entradas() {
   )
 }
 
-const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
+const FormularioRegistroModelo = ({ form, setForm, categorias, productos = [], modeloDuplicado = false }) => {
   const [nuevaTalla, setNuevaTalla] = useState("")
   const [nuevoColor, setNuevoColor] = useState("")
   const tallasSeleccionadas = useMemo(
@@ -1059,12 +1226,52 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
     [combinaciones, form.stock_variantes]
   )
   const stockTotalCalculado = useMemo(() => sumVariantStocks(stockVariantes), [stockVariantes])
+  const modelosSugeridos = useMemo(() => {
+    const map = new Map()
+    ;(Array.isArray(productos) ? productos : []).forEach((p) => {
+      const modelo = String(p?.modelo || "").trim()
+      if (!modelo) return
+      const key = normalizeText(modelo)
+      if (!map.has(key)) map.set(key, modelo)
+    })
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b))
+  }, [productos])
+
+  const getCoincidenciaExacta = (modeloRaw = "") => {
+    const objetivo = normalizeText(modeloRaw)
+    if (!objetivo) return null
+
+    const matches = (Array.isArray(productos) ? productos : []).filter(
+      (p) => normalizeText(p?.modelo) === objetivo
+    )
+
+    if (matches.length !== 1) return null
+    return matches[0]
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
 
     if (name === "modelo") {
-      setForm((prev) => ({ ...prev, [name]: value }))
+      const match = getCoincidenciaExacta(value)
+      if (!match) {
+        setForm((prev) => ({ ...prev, [name]: value }))
+        return
+      }
+
+      // Leer stock actual por variante del localStorage para pre-llenar la cuadrícula
+      const storedVariantMap = readMap(VARIANT_STOCK_MAP_KEY)[match.id_producto] || {}
+
+      setForm((prev) => ({
+        ...prev,
+        modelo: value,
+        id_categoria: match?.id_categoria ?? "",
+        precio: Number.isFinite(Number(match?.precio)) ? String(match.precio) : prev.precio,
+        tallas: String(match?.tallas || prev.tallas || ""),
+        colores: String(match?.colores || prev.colores || ""),
+        estado: String(match?.estado || prev.estado || "activo"),
+        stock_variantes: storedVariantMap,
+      }))
       return
     }
 
@@ -1178,9 +1385,23 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
           value={form.modelo}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          list="inventario-modelos-empleado"
           placeholder="Ej. 1100"
           autoFocus
         />
+        <datalist id="inventario-modelos-empleado">
+          {modelosSugeridos.map((modelo) => (
+            <option key={modelo} value={modelo} />
+          ))}
+        </datalist>
+        <small style={{ color: '#667085', display: 'block', marginTop: 6 }}>
+          Sugerencias basadas en el inventario actual.
+        </small>
+        {modeloDuplicado && (
+          <small style={{ color: '#b42318', display: 'block', marginTop: 6 }}>
+            Ya existe un modelo con ese nombre en esta categoría.
+          </small>
+        )}
       </div>
 
       <div className="form-group span-2">

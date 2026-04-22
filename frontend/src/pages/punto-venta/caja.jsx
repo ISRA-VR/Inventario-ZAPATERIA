@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { Banknote, CreditCard, Smartphone } from "lucide-react";
 import { getProductos, updateProducto } from "../../api/productos";
@@ -252,6 +252,7 @@ export default function NuevaVenta() {
   const [carrito, setCarrito] = useState([]);
   const [pagoConInput, setPagoConInput] = useState("0");
   const [metodoPago, setMetodoPago] = useState("efectivo");
+  const ventaUndoRef = useRef(null);
 
   const pagoCon = Number(pagoConInput || 0);
 
@@ -543,32 +544,34 @@ export default function NuevaVenta() {
           marca: p.marca,
           stock_anterior: stockAnterior,
           stock_nuevo: stockNuevo,
+          raw: productoActual?.raw,
         };
       });
 
-      // Actualiza stock en inventario por cada producto vendido
+      // 1. Descontar stock en backend
       for (const item of detalleVenta) {
-        const productoActual = productosDisponibles.find((p) => p.id === item.id_producto);
-        if (!productoActual || !productoActual.raw) continue;
-
-        const stockRestante = Math.max(0, (Number(productoActual.stock) || 0) - item.cantidad);
-        const raw = productoActual.raw;
-
+        if (!item.raw) continue;
+        const raw = item.raw;
         await updateProducto(raw.id_producto, {
           modelo: raw.modelo,
           id_categoria: raw.id_categoria,
-          stock: stockRestante,
+          stock: item.stock_nuevo,
           precio: Number(raw.precio) || 0,
           estado: raw.estado || "activo",
           tallas: raw.tallas || "",
-          colores: raw.colores || productoActual.coloresDisponibles?.join(", ") || "",
+          colores: raw.colores || "",
           cantidad_inicial: Number(raw.cantidad_inicial) || 0,
         });
       }
 
+      // 2. Descontar stock local de variantes
+      descontarStockVariantesLocal(detalleVenta);
+      await cargarProductos();
+
       const ahora = new Date();
       const fecha = ahora.toISOString().slice(0, 10);
       const hora = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+      const carritoSnapshot = [...carrito];
       const venta = {
         id: `V-${Date.now()}`,
         fecha,
@@ -581,22 +584,99 @@ export default function NuevaVenta() {
         created_at: ahora.toISOString(),
       };
 
-      descontarStockVariantesLocal(venta.detalle);
+      // Limpiar carrito
+      setCarrito([]);
+      setBusqueda("");
+      setPagoConInput("0");
 
-      const ventasRaw = localStorage.getItem(VENTAS_LS_KEY);
-      const ventasPrevias = ventasRaw ? JSON.parse(ventasRaw) : [];
-      localStorage.setItem(VENTAS_LS_KEY, JSON.stringify([venta, ...ventasPrevias]));
-      window.dispatchEvent(new Event("ventas-pos-updated"));
-
-      try {
-        await registrarMovimientoVenta(venta);
-      } catch (movError) {
-        console.error("No se pudo persistir la venta en historial backend:", movError);
+      // Cancelar undo anterior si existía
+      if (ventaUndoRef.current) {
+        clearTimeout(ventaUndoRef.current);
+        ventaUndoRef.current = null;
       }
 
-      toast.success("Venta registrada y stock actualizado");
-      cancelar();
-      await cargarProductos();
+      // 3. Mostrar toast con Deshacer (3s). Solo si no se deshace, guardar.
+      const timeoutId = setTimeout(async () => {
+        ventaUndoRef.current = null;
+
+        // Guardar en localStorage
+        const ventasRaw = localStorage.getItem(VENTAS_LS_KEY);
+        const ventasPrevias = ventasRaw ? JSON.parse(ventasRaw) : [];
+        localStorage.setItem(VENTAS_LS_KEY, JSON.stringify([venta, ...ventasPrevias]));
+        window.dispatchEvent(new Event("ventas-pos-updated"));
+
+        // Registrar movimiento en backend
+        try {
+          await registrarMovimientoVenta(venta);
+        } catch (movError) {
+          console.error("No se pudo persistir la venta en historial backend:", movError);
+        }
+      }, 3000);
+
+      ventaUndoRef.current = timeoutId;
+
+      toast.info(
+        ({ closeToast }) => (
+          <div className="undo-toast-row">
+            <span className="undo-toast-text">Venta registrada. Deshacer en 3s.</span>
+            <button
+              type="button"
+              className="undo-toast-btn"
+              onClick={async () => {
+                if (ventaUndoRef.current !== timeoutId) {
+                  closeToast?.();
+                  return;
+                }
+                clearTimeout(timeoutId);
+                ventaUndoRef.current = null;
+                closeToast?.();
+
+                // Revertir stock en backend
+                try {
+                  for (const item of detalleVenta) {
+                    if (!item.raw) continue;
+                    const raw = item.raw;
+                    await updateProducto(raw.id_producto, {
+                      modelo: raw.modelo,
+                      id_categoria: raw.id_categoria,
+                      stock: item.stock_anterior,
+                      precio: Number(raw.precio) || 0,
+                      estado: raw.estado || "activo",
+                      tallas: raw.tallas || "",
+                      colores: raw.colores || "",
+                      cantidad_inicial: Number(raw.cantidad_inicial) || 0,
+                    });
+                  }
+
+                  // Revertir stock local de variantes
+                  try {
+                    const rawMap = localStorage.getItem(VARIANT_STOCK_MAP_KEY);
+                    const mapa = rawMap ? { ...JSON.parse(rawMap) } : {};
+                    detalleVenta.forEach((item) => {
+                      const id = item?.id_producto;
+                      if (!id || !mapa[id]) return;
+                      const key = `${item.talla}__${item.color}`;
+                      mapa[id][key] = item.stock_anterior;
+                    });
+                    localStorage.setItem(VARIANT_STOCK_MAP_KEY, JSON.stringify(mapa));
+                    window.dispatchEvent(new Event("inventario-updated"));
+                  } catch {}
+
+                  // Restaurar carrito
+                  setCarrito(carritoSnapshot);
+                  await cargarProductos();
+                  toast.success("Venta deshecha. Stock restaurado.");
+                } catch {
+                  toast.error("No se pudo deshacer la venta.");
+                }
+              }}
+            >
+              Deshacer
+            </button>
+          </div>
+        ),
+        { autoClose: 3000 }
+      );
     } catch (error) {
       console.error("Error al finalizar venta:", error);
       toast.error("No se pudo finalizar la venta");
