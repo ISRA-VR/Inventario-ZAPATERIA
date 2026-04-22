@@ -162,6 +162,10 @@ export default function AssistantWidget() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState(() => []);
 
+  if (user?.role !== 'admin') {
+    return null;
+  }
+
   useEffect(() => {
     const nombreUsuario = user?.nombre || user?.email;
     if (!nombreUsuario) return;
@@ -262,7 +266,6 @@ export default function AssistantWidget() {
               <span className="assistant-badge"><Bot size={14} /></span>
               <div>
                 <h3 className="assistant-title">Asistente</h3>
-                <p className="assistant-subtitle">{user?.role === 'admin' ? 'Vista administrador' : 'Vista empleado'}</p>
               </div>
             </div>
             <button className="assistant-close" type="button" onClick={() => setOpen(false)}>

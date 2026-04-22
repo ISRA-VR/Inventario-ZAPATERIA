@@ -56,7 +56,7 @@ const Sidebar = () => {
     { icon: <FileText size={20} />, label: 'Liquidaciones', path: '/admin/liquidaciones', roles: ['admin'] },
     {
       icon: <ArrowUpRight size={20} />,
-      label: 'Movimientos',
+      label: user?.role === 'empleado' ? 'Mis movimientos' : 'Movimientos',
       path: user?.role === 'admin' ? '/admin/movimientos' : '/empleado/movimientos',
       roles: ['admin', 'empleado']
     },

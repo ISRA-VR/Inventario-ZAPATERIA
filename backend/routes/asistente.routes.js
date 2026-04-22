@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { chatAsistente } from '../controllers/asistenteController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { authAdmin, protect } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.post('/chat', protect, chatAsistente);
+router.post('/chat', protect, authAdmin, chatAsistente);
 
 export default router;

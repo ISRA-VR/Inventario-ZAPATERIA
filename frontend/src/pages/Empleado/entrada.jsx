@@ -15,6 +15,28 @@ const VENTAS_LS_KEY = "ventas_punto_venta"
 const ENTRADAS_RESUMEN_LS_KEY = "entradas_resumen"
 
 const normalizeText = (value = "") => String(value || "").trim().toLowerCase()
+const normalizeIdentity = (value = "") => String(value || "").trim().toLowerCase()
+
+const modeloEsValido = (value = "") => {
+  const limpio = String(value || "").trim()
+  if (!limpio) return false
+  if (/^-+$/.test(limpio)) return false
+  return /[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(limpio)
+}
+
+const tallaEsValida = (value = "") => {
+  const limpio = String(value || "").trim()
+  if (!limpio) return false
+  if (limpio.includes("-")) return false
+  return /[A-Za-z0-9]/.test(limpio)
+}
+
+const colorEsValido = (value = "") => {
+  const limpio = String(value || "").trim()
+  if (!limpio) return false
+  if (/^-+$/.test(limpio)) return false
+  return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(limpio)
+}
 
 const includesIgnoreCase = (arr = [], candidate = "") => {
   const normalizedCandidate = normalizeText(candidate)
@@ -49,12 +71,13 @@ const parseCsv = (value = "") =>
     .filter(Boolean)
 
 const parseTallas = (value = "") => {
-  const lista = parseCsv(value)
+  const lista = parseCsv(value).filter((t) => tallaEsValida(t))
   return lista.length ? lista : ["Sin talla"]
 }
 
 const parseColores = (value = "") => {
   const lista = parseCsv(value).filter((color) => {
+    if (!colorEsValido(color)) return false
     const normalizado = String(color || "").toLowerCase()
     return normalizado !== "sin color" && normalizado !== "sin colores"
   })
@@ -184,6 +207,7 @@ const buildEntradaRecord = ({
   talla,
   color,
   registradoPor,
+  registradoPorId,
   stockAnterior,
   stockNuevo,
 }) => {
@@ -207,6 +231,7 @@ const buildEntradaRecord = ({
     registroId: `${idProducto || "producto"}-${talla || "na"}-${color || "na"}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     fecha_creacion: nowIso,
     registrado_por: registradoPor || "Empleado",
+    registrado_por_id: Number.isFinite(Number(registradoPorId)) ? Number(registradoPorId) : null,
   }
 }
 
@@ -236,6 +261,10 @@ function Entradas() {
     }
   })
   const { user } = useAuth()
+  const userId = Number(user?.id)
+  const userIdValido = Number.isFinite(userId)
+  const userNombreNorm = normalizeIdentity(user?.nombre)
+  const userEmailNorm = normalizeIdentity(user?.email)
   const [modalEliminar, setModalEliminar] = useState(false)
   const [modalConfirmar, setModalConfirmar] = useState(false)
   const [accionPendiente, setAccionPendiente] = useState(null)
@@ -441,9 +470,26 @@ function Entradas() {
           </button>
         </div>
       ),
-      { autoClose: 7000 }
+      { autoClose: 3000 }
     )
   }
+
+  const perteneceAlUsuarioActual = (registradoPor, registradoPorId) => {
+    const idRegistro = Number(registradoPorId)
+    if (userIdValido && Number.isFinite(idRegistro) && idRegistro === userId) {
+      return true
+    }
+
+    const registradoPorNorm = normalizeIdentity(registradoPor)
+    if (!registradoPorNorm) return false
+    return registradoPorNorm === userNombreNorm || registradoPorNorm === userEmailNorm
+  }
+
+  const entradaEsDelUsuario = (entrada) =>
+    perteneceAlUsuarioActual(entrada?.registrado_por, entrada?.registrado_por_id)
+
+  const ventaEsDelUsuario = (venta) =>
+    perteneceAlUsuarioActual(venta?.registrado_por, venta?.registrado_por_id)
 
   const eliminarEntradasHoy = () => {
     const prevEntradas = [...entradas]
@@ -452,13 +498,17 @@ function Entradas() {
     const nextEntradas = prevEntradas.filter((e) => {
       const fecha = obtenerFechaRegistro(e)
       if (!parseFecha(fecha)) return true
-      return !esHoy(fecha)
+      if (!esHoy(fecha)) return true
+      if (user?.role === "empleado" && !entradaEsDelUsuario(e)) return true
+      return false
     })
 
     const nextVentas = prevVentas.filter((venta) => {
       const fechaVenta = parseVentaFecha(venta)
       if (!fechaVenta) return true
-      return !esHoy(fechaVenta)
+      if (!esHoy(fechaVenta)) return true
+      if (user?.role === "empleado" && !ventaEsDelUsuario(venta)) return true
+      return false
     })
 
     setEntradas(nextEntradas)
@@ -475,13 +525,17 @@ function Entradas() {
     const nextEntradas = prevEntradas.filter((e) => {
       const fecha = obtenerFechaRegistro(e)
       if (!parseFecha(fecha)) return true
-      return !estaEnEstaSemana(fecha)
+      if (!estaEnEstaSemana(fecha)) return true
+      if (user?.role === "empleado" && !entradaEsDelUsuario(e)) return true
+      return false
     })
 
     const nextVentas = prevVentas.filter((venta) => {
       const fechaVenta = parseVentaFecha(venta)
       if (!fechaVenta) return true
-      return !estaEnEstaSemana(fechaVenta)
+      if (!estaEnEstaSemana(fechaVenta)) return true
+      if (user?.role === "empleado" && !ventaEsDelUsuario(venta)) return true
+      return false
     })
 
     setEntradas(nextEntradas)
@@ -498,13 +552,17 @@ function Entradas() {
     const nextEntradas = prevEntradas.filter((e) => {
       const fecha = obtenerFechaRegistro(e)
       if (!parseFecha(fecha)) return true
-      return !estaEnEsteMes(fecha)
+      if (!estaEnEsteMes(fecha)) return true
+      if (user?.role === "empleado" && !entradaEsDelUsuario(e)) return true
+      return false
     })
 
     const nextVentas = prevVentas.filter((venta) => {
       const fechaVenta = parseVentaFecha(venta)
       if (!fechaVenta) return true
-      return !estaEnEsteMes(fechaVenta)
+      if (!estaEnEsteMes(fechaVenta)) return true
+      if (user?.role === "empleado" && !ventaEsDelUsuario(venta)) return true
+      return false
     })
 
     setEntradas(nextEntradas)
@@ -573,6 +631,7 @@ function Entradas() {
           cantidad: Math.abs(Math.round(Number(item?.cantidad) || 0)),
           precio: Number(item?.precio) || 0,
           registrado_por: venta?.registrado_por || item?.registrado_por || "Empleado",
+          registrado_por_id: venta?.registrado_por_id ?? item?.registrado_por_id ?? null,
           fecha_creacion: fechaIso,
           movimiento_delta: delta,
           tipo_movimiento: "salida",
@@ -580,7 +639,12 @@ function Entradas() {
       })
     })
 
-    return [...entradasNormalizadas, ...salidasNormalizadas]
+    const movimientosCombinados = [...entradasNormalizadas, ...salidasNormalizadas]
+    const movimientosFiltrados = user?.role === "empleado"
+      ? movimientosCombinados.filter((item) => perteneceAlUsuarioActual(item?.registrado_por, item?.registrado_por_id))
+      : movimientosCombinados
+
+    return movimientosFiltrados
       .sort((a, b) => {
         const fa = parseFecha(a?.fecha_creacion || a?.created_at || a?.fechaCreacion)
         const fb = parseFecha(b?.fecha_creacion || b?.created_at || b?.fechaCreacion)
@@ -588,7 +652,7 @@ function Entradas() {
         const tb = fb ? fb.getTime() : 0
         return tb - ta
       })
-  }, [entradas, ventas])
+  }, [entradas, ventas, user?.role, userIdValido, userId, userNombreNorm, userEmailNorm])
 
   const entradasHoy = baseDatosEntradas.filter((p) => esHoy(obtenerFechaRegistro(p))).length
   const entradasSemana = baseDatosEntradas.filter((p) => estaEnEstaSemana(obtenerFechaRegistro(p))).length
@@ -668,6 +732,23 @@ function Entradas() {
       }
     }
 
+    if (!modeloEsValido(form.modelo)) {
+      toast.warn("El modelo no puede ser solo guiones o símbolos.")
+      return false
+    }
+
+    const tallasValidas = parseTallas(form.tallas).filter((talla) => normalizeText(talla) !== "sin talla")
+    if (!tallasValidas.length) {
+      toast.warn("La talla no puede ser solo guiones o símbolos.")
+      return false
+    }
+
+    const coloresValidos = parseColores(form.colores)
+    if (!coloresValidos.length) {
+      toast.warn("El color no puede ser solo guiones o símbolos.")
+      return false
+    }
+
     return true
   }
 
@@ -709,6 +790,7 @@ function Entradas() {
             talla: item.pair.talla,
             color: item.pair.color,
             registradoPor,
+            registradoPorId: userIdValido ? userId : null,
             stockAnterior: 0,
             stockNuevo: item.cantidad,
           })
@@ -750,7 +832,7 @@ function Entradas() {
     <div className="entradas-page">
       <div className="encabezado">
         <div className="encabezado-texto">
-          <h1 className="titulo-pagina">Movimientos de Inventario</h1>
+          <h1 className="titulo-pagina">{user?.role === "empleado" ? "Mis movimientos" : "Movimientos de Inventario"}</h1>
           <p className="subtitulo-pagina">Consulta en un solo lugar entradas y salidas de productos.</p>
         </div>
         {user?.role === "empleado" && (
@@ -982,9 +1064,7 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
     const { name, value } = e.target
 
     if (name === "modelo") {
-      if (value === "" || /^\d*$/.test(value)) {
-        setForm((prev) => ({ ...prev, [name]: value }))
-      }
+      setForm((prev) => ({ ...prev, [name]: value }))
       return
     }
 
@@ -1015,8 +1095,8 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
   const agregarColorPersonalizado = () => {
     const colorFormateado = toTitleCase(nuevoColor)
 
-    if (!colorFormateado) {
-      toast.warn("Escribe un color para agregar.")
+    if (!colorEsValido(colorFormateado)) {
+      toast.warn("El color no puede ser solo guiones o símbolos.")
       return
     }
 
@@ -1036,8 +1116,8 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
   const agregarTallaPersonalizada = () => {
     const tallaFormateada = normalizeCustomValue(nuevaTalla)
 
-    if (!tallaFormateada) {
-      toast.warn("Escribe una talla para agregar.")
+    if (!tallaEsValida(tallaFormateada)) {
+      toast.warn("La talla no puede ser solo guiones o símbolos.")
       return
     }
 
@@ -1142,12 +1222,16 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
             value={nuevaTalla}
             onChange={(e) => setNuevaTalla(e.target.value)}
             onKeyDown={(e) => {
+              if (e.key === "-") {
+                e.preventDefault()
+                return
+              }
               if (e.key === "Enter") {
                 e.preventDefault()
                 agregarTallaPersonalizada()
               }
             }}
-            placeholder="Otra talla (ej. 39.5)"
+            placeholder="Agregar talla (ej. 39.5)"
           />
           <button type="button" className="custom-option-btn" onClick={agregarTallaPersonalizada}>
             Agregar talla
@@ -1183,7 +1267,7 @@ const FormularioRegistroModelo = ({ form, setForm, categorias }) => {
                 agregarColorPersonalizado()
               }
             }}
-            placeholder="Otro color (ej. Mostaza)"
+            placeholder="Agregar color (ej. Mostaza)"
           />
           <button type="button" className="custom-option-btn" onClick={agregarColorPersonalizado}>
             Agregar color

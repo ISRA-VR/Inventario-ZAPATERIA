@@ -466,7 +466,7 @@ export default function NuevaVenta() {
           </button>
         </div>
       ),
-      { autoClose: 6000 }
+      { autoClose: 3000 }
     );
   };
 
@@ -501,7 +501,7 @@ export default function NuevaVenta() {
           </button>
         </div>
       ),
-      { autoClose: 7000 }
+      { autoClose: 3000 }
     );
   };
 
@@ -577,6 +577,7 @@ export default function NuevaVenta() {
         total: subtotal,
         metodo: metodoPago.charAt(0).toUpperCase() + metodoPago.slice(1),
         registrado_por: user?.nombre || user?.email || "Usuario",
+        registrado_por_id: Number.isFinite(Number(user?.id)) ? Number(user.id) : null,
         created_at: ahora.toISOString(),
       };
 

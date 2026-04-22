@@ -294,7 +294,7 @@ export default function Reportes() {
           </button>
         </div>
       ),
-      { autoClose: 7000 }
+      { autoClose: 3000 }
     );
   };
 

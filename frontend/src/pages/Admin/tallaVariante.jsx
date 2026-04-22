@@ -3,6 +3,15 @@ import { getTallas, updateTalla } from '../../api/productos';
 import { toast } from 'react-toastify';
 import '../../styles/tallas.css';
 
+const parseTallasValidas = (raw = '') => {
+    return String(raw || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => !/^-+$/.test(item))
+        .filter((item) => /[0-9]/.test(item));
+};
+
 const EntradasPage = () => {
     const [tallas, setTallas] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -70,9 +79,17 @@ const EntradasPage = () => {
             return;
         }
 
+        const tallasValidas = parseTallasValidas(formEditar.tallas);
+        if (!tallasValidas.length) {
+            toast.warn('La talla no puede ser "-" ni valores inválidos.');
+            return;
+        }
+
+        const tallasNormalizadas = tallasValidas.join(', ');
+
         try {
             await updateTalla(formEditar.id_producto, {
-                tallas: formEditar.tallas,
+                tallas: tallasNormalizadas,
                 cantidad_inicial: Number(formEditar.cantidad_inicial)
             });
             toast.success('Tallas actualizadas correctamente.');

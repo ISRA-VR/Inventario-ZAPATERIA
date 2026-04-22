@@ -9,7 +9,17 @@ import { toast } from 'react-toastify';
 import '../../styles/empleados.css';
 
 const LOCAL_LAST_LOGOUT_KEY = 'presence_last_logout_local';
-const DELETE_UNDO_MS = 7000;
+const DELETE_UNDO_MS = 3000;
+const DOMINIOS_EMAIL_PERMITIDOS = [
+    'gmail.com',
+    'hotmail.com',
+    'outlook.com',
+    'live.com',
+    'yahoo.com',
+    'icloud.com',
+    'proton.me',
+    'protonmail.com',
+];
 
 const IconPlus   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 const IconEdit   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
@@ -126,6 +136,16 @@ const EmpleadosPage = () => {
     };
 
     const msgPasswordInsegura = "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
+    const msgEmailInvalido = "Ingresa un correo válido de proveedor permitido (gmail, hotmail, outlook, etc.).";
+
+    const validarEmailEmpleado = (email) => {
+        const correo = String(email || '').trim().toLowerCase();
+        const estructuraValida = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(correo);
+        if (!estructuraValida) return false;
+
+        const dominio = correo.split('@')[1] || '';
+        return DOMINIOS_EMAIL_PERMITIDOS.includes(dominio);
+    };
 
     const openModal = () => setModalOpen(true);
     const closeModal = () => {
@@ -227,6 +247,12 @@ const EmpleadosPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!validarEmailEmpleado(formData.email)) {
+            setError(msgEmailInvalido);
+            toast.warning(msgEmailInvalido);
+            return;
+        }
         
         if (formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
@@ -329,7 +355,7 @@ const EmpleadosPage = () => {
             ({ closeToast }) => (
                 <div className="undo-toast-row">
                     <span className="undo-toast-text">
-                        {empleadoObjetivo.nombre || 'Empleado'} se eliminará en 7s.
+                        {empleadoObjetivo.nombre || 'Empleado'} se eliminará en 3s.
                     </span>
                     <button
                         type="button"

@@ -10,9 +10,29 @@ const COLOR_MAP_KEY = 'inventario_colores_map';
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
 const ENTRADAS_LS_KEY = 'entradas_inventario';
 const VARIANT_LOW_STOCK_LIMIT = 30;
-const DELETE_UNDO_MS = 7000;
+const DELETE_UNDO_MS = 3000;
 
 const normalizeText = (value = '') => String(value || '').trim().toLowerCase();
+const modeloEsValido = (value = '') => {
+  const limpio = String(value || '').trim();
+  if (!limpio) return false;
+  if (/^-+$/.test(limpio)) return false;
+  return /[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(limpio);
+};
+
+const tallaEsValida = (value = '') => {
+  const limpio = String(value || '').trim();
+  if (!limpio) return false;
+  if (limpio.includes('-')) return false;
+  return /[A-Za-z0-9]/.test(limpio);
+};
+
+const colorEsValido = (value = '') => {
+  const limpio = String(value || '').trim();
+  if (!limpio) return false;
+  if (/^-+$/.test(limpio)) return false;
+  return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(limpio);
+};
 
 const includesIgnoreCase = (arr = [], candidate = '') => {
   const normalizedCandidate = normalizeText(candidate);
@@ -61,7 +81,7 @@ const parseTallas = (texto = "") => {
   const lista = String(texto)
     .split(",")
     .map((t) => t.trim())
-    .filter(Boolean);
+    .filter((t) => tallaEsValida(t));
 
   return lista.length ? lista : ["Sin talla"];
 };
@@ -74,7 +94,7 @@ const parseColores = (texto = "") => {
       const valor = String(t || "").trim();
       const normalizado = valor.toLowerCase();
       return (
-        Boolean(valor)
+        colorEsValido(valor)
         && !isPlaceholderColor(valor)
         && normalizado !== "null"
         && normalizado !== "undefined"
@@ -363,6 +383,23 @@ export default function InventarioDetalladoPage() {
       }
     }
 
+    if (!modeloEsValido(form.modelo)) {
+      toast.warn('El modelo no puede ser solo guiones o símbolos.');
+      return false;
+    }
+
+    const tallasValidas = parseTallas(form.tallas).filter((talla) => normalizeText(talla) !== 'sin talla');
+    if (!tallasValidas.length) {
+      toast.warn('La talla no puede ser solo guiones o símbolos.');
+      return false;
+    }
+
+    const coloresValidos = parseColores(form.colores);
+    if (!coloresValidos.length) {
+      toast.warn('El color no puede ser solo guiones o símbolos.');
+      return false;
+    }
+
     return true;
   };
 
@@ -636,7 +673,7 @@ export default function InventarioDetalladoPage() {
       ({ closeToast }) => (
         <div className="undo-toast-row">
           <span className="undo-toast-text">
-            {productoObjetivo.modelo || "Modelo"} se eliminara en 7s.
+            {productoObjetivo.modelo || "Modelo"} se eliminara en 3s.
           </span>
           <button
             type="button"
@@ -1036,7 +1073,7 @@ export default function InventarioDetalladoPage() {
             <div className="modal-body">
               <p>¿Seguro que quieres eliminar este modelo?</p>
               <p><strong>{productoEliminar?.modelo || 'Modelo'}</strong></p>
-              <p>Podrás deshacer durante 7 segundos.</p>
+              <p>Podras deshacer durante 3 segundos.</p>
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalEliminar(false)}>Cancelar</button>
@@ -1065,9 +1102,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
     const { name, value } = e.target;
 
     if (name === 'modelo') {
-      if (value === '' || /^\d*$/.test(value)) {
-        setForm((prev) => ({ ...prev, [name]: value }));
-      }
+      setForm((prev) => ({ ...prev, [name]: value }));
       return;
     }
 
@@ -1098,8 +1133,8 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
   const agregarColorPersonalizado = () => {
     const colorFormateado = toTitleCase(nuevoColor);
 
-    if (!colorFormateado) {
-      toast.warn('Escribe un color para agregar.');
+    if (!colorEsValido(colorFormateado)) {
+      toast.warn('El color no puede ser solo guiones o símbolos.');
       return;
     }
 
@@ -1119,8 +1154,8 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
   const agregarTallaPersonalizada = () => {
     const tallaFormateada = normalizeCustomValue(nuevaTalla);
 
-    if (!tallaFormateada) {
-      toast.warn('Escribe una talla para agregar.');
+    if (!tallaEsValida(tallaFormateada)) {
+      toast.warn('La talla no puede ser solo guiones o símbolos.');
       return;
     }
 
@@ -1221,12 +1256,16 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
             value={nuevaTalla}
             onChange={(e) => setNuevaTalla(e.target.value)}
             onKeyDown={(e) => {
+              if (e.key === '-') {
+                e.preventDefault();
+                return;
+              }
               if (e.key === 'Enter') {
                 e.preventDefault();
                 agregarTallaPersonalizada();
               }
             }}
-            placeholder="Otra talla (ej. 39.5)"
+            placeholder="Agregar talla (ej. 39.5)"
           />
           <button type="button" className="custom-option-btn" onClick={agregarTallaPersonalizada}>
             Agregar talla
@@ -1262,7 +1301,7 @@ const FormularioProducto = ({ form, setForm, categorias }) => {
                 agregarColorPersonalizado();
               }
             }}
-            placeholder="Otro color (ej. Mostaza)"
+            placeholder="Agregar color (ej. Mostaza)"
           />
           <button type="button" className="custom-option-btn" onClick={agregarColorPersonalizado}>
             Agregar color

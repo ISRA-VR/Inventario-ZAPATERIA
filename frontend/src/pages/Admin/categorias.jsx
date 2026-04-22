@@ -19,7 +19,7 @@ const IconFolder = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="n
 const API_CATEGORIAS = `${API_BASE_URL}/api/categorias`;
 const COLOR_MAP_KEY = 'inventario_colores_map';
 const VARIANT_STOCK_MAP_KEY = 'inventario_stock_variantes_map';
-const DELETE_UNDO_MS = 7000;
+const DELETE_UNDO_MS = 3000;
 
 const COLOR_KEYWORDS = [
   'negro', 'negra', 'blanco', 'blanca', 'azul', 'rojo', 'roja', 'verde', 'amarillo', 'amarilla',
@@ -281,7 +281,7 @@ const CategoriasPage = () => {
       ({ closeToast }) => (
         <div className="undo-toast-row">
           <span className="undo-toast-text">
-            {categoriaObjetivo.nombre_categoria || 'Categoría'} se eliminará en 7s.
+            {categoriaObjetivo.nombre_categoria || 'Categoría'} se eliminará en 3s.
           </span>
           <button
             type="button"

@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import AssistantWidget from '../components/AssistantWidget';
 /* Reutilizamos el estilo de layout para mantener la coherencia visual */
 import "../styles/sidebar.css"; 
 
@@ -11,7 +10,6 @@ const EmpleadoLayout = () => {
       <main className="admin-content">
         <Outlet />
       </main>
-      <AssistantWidget />
     </div>
   );
 };

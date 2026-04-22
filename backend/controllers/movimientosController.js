@@ -34,12 +34,27 @@ const ensureMovimientosTable = async () => {
       cantidad INT NOT NULL DEFAULT 0,
       monto DECIMAL(12,2) NOT NULL DEFAULT 0,
       registrado_por VARCHAR(150) NULL,
+      registrado_por_id BIGINT NULL,
       source VARCHAR(30) NOT NULL DEFAULT 'sistema',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_fecha_evento (fecha_evento),
-      INDEX idx_tipo_fecha (tipo, fecha_evento)
+      INDEX idx_tipo_fecha (tipo, fecha_evento),
+      INDEX idx_registrado_por_id (registrado_por_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
+
+  const [idColumnRows] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'asistente_movimientos'
+       AND COLUMN_NAME = 'registrado_por_id'`
+  );
+
+  if (!idColumnRows.length) {
+    await pool.query('ALTER TABLE asistente_movimientos ADD COLUMN registrado_por_id BIGINT NULL');
+    await pool.query('CREATE INDEX idx_registrado_por_id ON asistente_movimientos (registrado_por_id)');
+  }
 
   movimientosTableReady = true;
 };
@@ -53,13 +68,14 @@ const insertarMovimiento = async ({
   cantidad,
   monto,
   registradoPor,
+  registradoPorId,
   source,
 }) => {
   await pool.query(
     `INSERT IGNORE INTO asistente_movimientos
-      (event_key, tipo, fecha_evento, modelo, categoria, cantidad, monto, registrado_por, source)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [eventKey, tipo, fechaEvento, modelo, categoria, cantidad, monto, registradoPor, source]
+      (event_key, tipo, fecha_evento, modelo, categoria, cantidad, monto, registrado_por, registrado_por_id, source)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [eventKey, tipo, fechaEvento, modelo, categoria, cantidad, monto, registradoPor, registradoPorId ?? null, source]
   );
 };
 
@@ -98,13 +114,20 @@ const toTotalsObject = (rows = []) => {
   return base;
 };
 
-const queryTotalesPorRango = async (desde, hasta) => {
+const queryTotalesPorRango = async (desde, hasta, { registradoPorId = null } = {}) => {
+  const filtroEmpleadoSql = Number.isFinite(Number(registradoPorId))
+    ? ' AND registrado_por_id = ?'
+    : '';
+  const params = Number.isFinite(Number(registradoPorId))
+    ? [desde, hasta, Number(registradoPorId)]
+    : [desde, hasta];
+
   const [rows] = await pool.query(
     `SELECT tipo, COALESCE(SUM(cantidad), 0) AS cantidad_total, COALESCE(SUM(monto), 0) AS monto_total
      FROM asistente_movimientos
-     WHERE fecha_evento >= ? AND fecha_evento < ?
+     WHERE fecha_evento >= ? AND fecha_evento < ?${filtroEmpleadoSql}
      GROUP BY tipo`,
-    [desde, hasta]
+    params
   );
 
   return toTotalsObject(rows);
@@ -147,7 +170,8 @@ export const registrarEntrada = async (req, res) => {
       categoria: nombre_categoria || null,
       cantidad: cant,
       monto,
-      registradoPor: registrado_por || req.user?.nombre || req.user?.email || null,
+      registradoPor: req.user?.nombre || req.user?.email || registrado_por || null,
+      registradoPorId: req.user?.id ?? null,
       source: 'productos',
     });
 
@@ -192,7 +216,8 @@ export const registrarVenta = async (req, res) => {
         categoria: item?.categoria || item?.marca || null,
         cantidad: cant,
         monto,
-        registradoPor: venta?.registrado_por || req.user?.nombre || req.user?.email || null,
+        registradoPor: req.user?.nombre || req.user?.email || venta?.registrado_por || null,
+        registradoPorId: req.user?.id ?? null,
         source: 'caja',
       });
     }
@@ -207,6 +232,17 @@ export const registrarVenta = async (req, res) => {
 export const obtenerResumenMovimientos = async (req, res) => {
   try {
     await ensureMovimientosTable();
+
+    const userId = Number(req.user?.id);
+    const filtroEmpleadoId = req.user?.role === 'empleado' && Number.isFinite(userId)
+      ? userId
+      : null;
+    const filtroEmpleadoSql = Number.isFinite(filtroEmpleadoId) ? ' AND registrado_por_id = ?' : '';
+    const withEmpleadoParams = (params = []) => (
+      Number.isFinite(filtroEmpleadoId)
+        ? [...params, filtroEmpleadoId]
+        : params
+    );
 
     const now = new Date();
     const todayStart = inicioDia(now);
@@ -244,10 +280,10 @@ export const obtenerResumenMovimientos = async (req, res) => {
     inicioSemana.setDate(inicioSemana.getDate() - 6);
 
     const [hoy, ayer, mes, mesAnterior] = await Promise.all([
-      queryTotalesPorRango(todayStart, tomorrowStart),
-      queryTotalesPorRango(yesterdayStart, todayStart),
-      queryTotalesPorRango(periodoInicio, periodoFin),
-      queryTotalesPorRango(periodoAnteriorInicio, periodoAnteriorFin),
+      queryTotalesPorRango(todayStart, tomorrowStart, { registradoPorId: filtroEmpleadoId }),
+      queryTotalesPorRango(yesterdayStart, todayStart, { registradoPorId: filtroEmpleadoId }),
+      queryTotalesPorRango(periodoInicio, periodoFin, { registradoPorId: filtroEmpleadoId }),
+      queryTotalesPorRango(periodoAnteriorInicio, periodoAnteriorFin, { registradoPorId: filtroEmpleadoId }),
     ]);
 
     const [seriesMesRows, seriesSemanaRows, seriesAnualRows, categoriaRows, topRows, actividadRows] = await Promise.all([
@@ -255,22 +291,25 @@ export const obtenerResumenMovimientos = async (req, res) => {
         `SELECT DATE_FORMAT(fecha_evento, '%Y-%m') AS ym, tipo, COALESCE(SUM(cantidad), 0) AS cantidad
          FROM asistente_movimientos
          WHERE fecha_evento >= ? AND fecha_evento < ?
+         ${filtroEmpleadoSql}
          GROUP BY DATE_FORMAT(fecha_evento, '%Y-%m'), tipo`,
-        [tieneRangoValido ? periodoInicio : inicio5Meses, tieneRangoValido ? periodoFin : nextMonthStart]
+        withEmpleadoParams([tieneRangoValido ? periodoInicio : inicio5Meses, tieneRangoValido ? periodoFin : nextMonthStart])
       ),
       pool.query(
         `SELECT DATE(fecha_evento) AS dia, COALESCE(SUM(monto), 0) AS ventas
          FROM asistente_movimientos
          WHERE tipo = 'salida' AND fecha_evento >= ? AND fecha_evento < ?
+         ${filtroEmpleadoSql}
          GROUP BY DATE(fecha_evento)`,
-        [tieneRangoValido ? periodoInicio : inicioSemana, tieneRangoValido ? periodoFin : tomorrowStart]
+        withEmpleadoParams([tieneRangoValido ? periodoInicio : inicioSemana, tieneRangoValido ? periodoFin : tomorrowStart])
       ),
       pool.query(
         `SELECT DATE_FORMAT(fecha_evento, '%Y-%m') AS ym, COALESCE(SUM(monto), 0) AS ventas
          FROM asistente_movimientos
          WHERE tipo = 'salida' AND fecha_evento >= ? AND fecha_evento < ?
+         ${filtroEmpleadoSql}
          GROUP BY DATE_FORMAT(fecha_evento, '%Y-%m')`,
-        [tieneRangoValido ? periodoInicio : inicio12Meses, tieneRangoValido ? periodoFin : nextMonthStart]
+        withEmpleadoParams([tieneRangoValido ? periodoInicio : inicio12Meses, tieneRangoValido ? periodoFin : nextMonthStart])
       ),
       pool.query(
         `SELECT COALESCE(categoria, 'Sin categoría') AS cat,
@@ -278,17 +317,18 @@ export const obtenerResumenMovimientos = async (req, res) => {
                 COALESCE(SUM(CASE WHEN fecha_evento >= ? AND fecha_evento < ? THEN cantidad ELSE 0 END), 0) AS ayer
          FROM asistente_movimientos
          WHERE tipo = 'salida' AND fecha_evento >= ? AND fecha_evento < ?
+         ${filtroEmpleadoSql}
          GROUP BY COALESCE(categoria, 'Sin categoría')
          ORDER BY hoy DESC, ayer DESC
          LIMIT 6`,
-        [
+        withEmpleadoParams([
           periodoInicio,
           periodoFin,
           periodoAnteriorInicio,
           periodoAnteriorFin,
           periodoAnteriorInicio,
           periodoFin,
-        ]
+        ])
       ),
       pool.query(
         `SELECT m.modelo AS nombre,
@@ -300,19 +340,21 @@ export const obtenerResumenMovimientos = async (req, res) => {
          WHERE m.tipo = 'salida'
            AND m.fecha_evento >= ?
            AND m.fecha_evento < ?
+           ${filtroEmpleadoSql ? 'AND m.registrado_por_id = ?' : ''}
            AND CHAR_LENGTH(m.modelo) <= 120
          GROUP BY m.modelo
          ORDER BY ventas DESC
          LIMIT 5`,
-        [periodoInicio, periodoFin]
+        withEmpleadoParams([periodoInicio, periodoFin])
       ),
       pool.query(
         `SELECT tipo, modelo, cantidad, monto, fecha_evento
          FROM asistente_movimientos
          WHERE fecha_evento >= ? AND fecha_evento < ?
+         ${filtroEmpleadoSql}
          ORDER BY fecha_evento DESC
          LIMIT 8`,
-        [periodoInicio, periodoFin]
+        withEmpleadoParams([periodoInicio, periodoFin])
       ),
     ]);
 

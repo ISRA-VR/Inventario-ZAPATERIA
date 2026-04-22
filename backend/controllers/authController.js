@@ -3,6 +3,17 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
+const ALLOWED_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "yahoo.com",
+  "icloud.com",
+  "proton.me",
+  "protonmail.com",
+]);
+
 const hasConfiguredEnvValue = (value) => {
   const normalized = String(value || "").trim();
   return normalized.length > 0 && !normalized.includes("PEGA_AQUI");
@@ -112,6 +123,15 @@ const verifyPassword = async (plainPassword, storedPassword) => {
   }
 
   return plainPassword === storedPassword;
+};
+
+const isAllowedEmployeeEmail = (email) => {
+  const normalized = String(email || "").trim().toLowerCase();
+  const validStructure = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(normalized);
+  if (!validStructure) return false;
+
+  const domain = normalized.split("@")[1] || "";
+  return ALLOWED_EMAIL_DOMAINS.has(domain);
 };
 
 const hashPassword = async (plainPassword) => {
@@ -246,6 +266,10 @@ export const register = async (req, res) => {
 
     if (!nombre || !email || !password) {
       return res.status(400).json({ message: "Nombre, correo y contraseña son obligatorios." });
+    }
+
+    if (!isAllowedEmployeeEmail(email)) {
+      return res.status(400).json({ message: "Correo inválido. Usa un proveedor permitido (gmail, hotmail, outlook, etc.)." });
     }
 
     const [existingUser] = await pool.query("SELECT id FROM usuarios WHERE email = ?", [email]);
