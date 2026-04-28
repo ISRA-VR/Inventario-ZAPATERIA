@@ -11,6 +11,8 @@ import {
 	forgotPassword,
 	confirmResetRequest,
 	resetPassword,
+	checkFirstAdmin,
+	setupFirstAdmin,
 } from "../controllers/authController.js";
 import { authAdmin, protect } from "../middleware/authMiddleware.js"; 
 
@@ -20,6 +22,8 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/confirm-reset-request", confirmResetRequest);
 router.post("/reset-password", resetPassword);
+router.get("/check-first-admin", checkFirstAdmin);
+router.post("/setup-first-admin", setupFirstAdmin);
 
 router.post("/register", authAdmin, register); 
 router.post('/presence/ping', protect, pingPresence);

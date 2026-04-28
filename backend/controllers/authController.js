@@ -672,3 +672,78 @@ export const updateEmpleadoEstado = async (req, res) => {
     return res.status(500).json({ message: "Error del servidor" });
   }
 };
+
+// Verificar si existe un administrador en el sistema
+export const checkFirstAdmin = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id FROM usuarios WHERE role = 'admin' LIMIT 1"
+    );
+
+    const adminExists = rows.length > 0;
+    res.json({ adminExists });
+  } catch (err) {
+    console.error("Error en checkFirstAdmin:", err.message);
+    res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
+  }
+};
+
+// Crear el primer administrador (solo se puede hacer una vez)
+export const setupFirstAdmin = async (req, res) => {
+  try {
+    const nombre = String(req.body?.nombre || "").trim();
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+
+    if (!nombre || !email || !password) {
+      return res.status(400).json({ message: "Nombre, correo y contraseña son obligatorios." });
+    }
+
+    // Verificar que no existe ya un administrador
+    const [existingAdmin] = await pool.query(
+      "SELECT id FROM usuarios WHERE role = 'admin' LIMIT 1"
+    );
+
+    if (existingAdmin.length > 0) {
+      return res.status(400).json({ message: "Ya existe un administrador en el sistema." });
+    }
+
+    if (!isAllowedEmployeeEmail(email)) {
+      return res.status(400).json({ message: "Correo inválido. Usa un proveedor permitido (gmail, hotmail, outlook, etc.)." });
+    }
+
+    const [existingUser] = await pool.query(
+      "SELECT id FROM usuarios WHERE email = ?",
+      [email]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: "El correo electrónico ya está en uso." });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const [result] = await pool.query(
+      "INSERT INTO usuarios (nombre, email, password, role, activo) VALUES (?, ?, ?, 'admin', 1)",
+      [nombre, email, hashedPassword]
+    );
+
+    // Generar token JWT para login automático
+    const token = jwt.sign(
+      { id: result.insertId, role: 'admin', nombre },
+      process.env.JWT_SECRET || "84c0c491bdc299bd803327fcf3019f0e6f4b35165e7aeb9d58c596e6c4eb78b6",
+      { expiresIn: "8h" }
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      nombre,
+      email,
+      role: "admin",
+      token,
+    });
+  } catch (err) {
+    console.error("Error en setupFirstAdmin:", err.message);
+    res.status(500).json({ message: "Error del servidor", errorCode: "SERVER_ERROR" });
+  }
+};
